@@ -1,5 +1,7 @@
 # Fire - Requirements Management System for Bazel
 
+[![CI](https://github.com/nesono/fire/workflows/CI/badge.svg)](https://github.com/nesono/fire/actions)
+
 Fire is a Bazel module for managing safety-critical system requirements, parameters, and their relationships through Bazel's dependency graph.
 
 ## Status: Phase 1 - Parameter System ✓

@@ -230,6 +230,32 @@ git commit --no-verify -m "Your message"
    - Updated documentation if needed
    - All checks passing
 
+## Continuous Integration
+
+All pull requests must pass CI checks before merging. The CI pipeline runs:
+
+### Pre-commit Checks
+- Black (Python formatting)
+- isort (import sorting)
+- flake8 (linting)
+- mypy (type checking)
+- pydocstyle (docstring style)
+- Buildifier (Bazel formatting)
+- General file checks
+
+### Bazel Tests
+- Runs on both Ubuntu and macOS
+- All unit tests (`//fire/parameters:*_test`)
+- Integration tests (`//examples:vehicle_params_test`)
+- Build verification for all targets
+
+### Integration Verification
+- Verifies parameter validation
+- Checks C++ code generation
+- Validates generated headers
+
+CI workflow is defined in `.github/workflows/ci.yaml`.
+
 ## Project Structure
 
 ```
