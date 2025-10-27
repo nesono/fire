@@ -1,4 +1,20 @@
-bazel-bin
-bazel-out
-bazel-testlogs
-bazel-fire.git
+# Bazel build outputs
+bazel-*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
