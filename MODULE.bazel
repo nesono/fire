@@ -1,5 +1,7 @@
 """
 Fire - Requirements Management System for Bazel
+
+Pure Starlark implementation - no runtime dependencies!
 """
 
 module(
@@ -10,19 +12,3 @@ module(
 
 # C++ rules for generated code
 bazel_dep(name = "rules_cc", version = "0.0.9")
-
-# Python dependencies for parameter validation and code generation
-bazel_dep(name = "rules_python", version = "0.31.0")
-
-python = use_extension("@rules_python//python/extensions:python.bzl", "python")
-python.toolchain(
-    python_version = "3.11",
-)
-
-pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
-pip.parse(
-    hub_name = "pip",
-    python_version = "3.11",
-    requirements_lock = "//:requirements_lock.txt",
-)
-use_repo(pip, "pip")
