@@ -1,0 +1,21 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+load("//fire/rules:parameters.bzl", "cc_parameter_library", "parameter_library")
+
+# Validate the parameter file
+parameter_library(
+    name = "vehicle_params",
+    src = "vehicle_params.yaml",
+)
+
+# Generate C++ header from parameters
+cc_parameter_library(
+    name = "vehicle_params_cc",
+    parameter_library = ":vehicle_params",
+)
+
+# Test that uses the generated parameters
+cc_test(
+    name = "vehicle_params_test",
+    srcs = ["vehicle_params_test.cc"],
+    deps = [":vehicle_params_cc"],
+)
