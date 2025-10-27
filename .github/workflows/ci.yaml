@@ -65,15 +65,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Python dependencies
-        run: |
-          pip install -r requirements.txt
-
       - name: Mount bazel cache
         uses: actions/cache@v4
         with:
@@ -88,13 +79,13 @@ jobs:
 
       - name: Verify generated header
         run: |
-          bazel build //examples:vehicle_params_cc
-          if [ ! -f bazel-bin/examples/vehicle_params_cc.h ]; then
+          bazel build //examples:vehicle_params_header
+          if [ ! -f bazel-bin/examples/vehicle_params_header.h ]; then
             echo "Generated header not found!"
             exit 1
           fi
           echo "Generated header:"
-          cat bazel-bin/examples/vehicle_params_cc.h
+          cat bazel-bin/examples/vehicle_params_header.h
 
       - name: Upload test results
         if: always()
