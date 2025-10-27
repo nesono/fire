@@ -1,4 +1,4 @@
-"""Parameter validation logic in pure Starlark."""
+"""Parameter validation logic."""
 
 def _is_valid_identifier_char(c, allow_dot = False):
     """Check if character is valid in an identifier."""

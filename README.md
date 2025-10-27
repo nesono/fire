@@ -4,59 +4,62 @@
 
 Fire is a Bazel module for managing safety-critical system requirements, parameters, and their relationships through Bazel's dependency graph.
 
+**Pure Starlark implementation** - no runtime dependencies, validation at load time, type-safe code generation.
+
 ## Status: Phase 1 - Parameter System ✓
 
 Phase 1 is complete and provides parameter management with code generation capabilities.
 
 ## Features (Phase 1)
 
-- **Parameter Validation**: Validate parameter files against a well-defined schema
+- **Load-Time Validation**: Parameters validated when BUILD files load
 - **Type System**: Support for `float`, `integer`, `string`, `boolean`, and `table` types
 - **Units**: Associate physical units with parameters
 - **Tables**: Define multi-column tabular data with typed columns
 - **C++ Code Generation**: Generate type-safe `constexpr` C++ headers from parameters
-- **Bazel Integration**: Custom Bazel rules for seamless build integration
-- **Test-Driven Development**: All components have comprehensive test coverage
+- **Bazel Integration**: Native Starlark rules for seamless integration
+- **No Dependencies**: Zero runtime dependencies
 
 ## Quick Start
 
 ### 1. Define Parameters
 
-Create a parameter file in YAML format (e.g., `vehicle_params.yaml`):
+Parameters are defined in Starlark (either inline in BUILD files or in separate .bzl files):
 
-```yaml
-schema_version: "1.0"
-namespace: "vehicle.dynamics"
+**vehicle_params.bzl**:
+```python
+"""Vehicle parameter definitions."""
 
-parameters:
-  - name: maximum_vehicle_velocity
-    type: float
-    unit: m/s
-    value: 55.0
-    description: "Maximum design velocity for the vehicle"
-
-  - name: wheel_count
-    type: integer
-    value: 4
-    description: "Number of wheels on the vehicle"
-
-  - name: braking_distance_table
-    type: table
-    description: "Braking distances under various conditions"
-    columns:
-      - name: velocity
-        type: float
-        unit: m/s
-      - name: friction_coefficient
-        type: float
-        unit: dimensionless
-      - name: braking_distance
-        type: float
-        unit: m
-    rows:
-      - [10.0, 0.7, 7.1]
-      - [20.0, 0.7, 28.6]
-      - [30.0, 0.7, 64.3]
+VEHICLE_PARAMS = [
+    {
+        "name": "maximum_vehicle_velocity",
+        "type": "float",
+        "unit": "m/s",
+        "value": 55.0,
+        "description": "Maximum design velocity for the vehicle",
+    },
+    {
+        "name": "wheel_count",
+        "type": "integer",
+        "value": 4,
+        "description": "Number of wheels on the vehicle",
+    },
+    {
+        "name": "braking_distance_table",
+        "type": "table",
+        "description": "Braking distances under various conditions",
+        "columns": [
+            {"name": "velocity", "type": "float", "unit": "m/s"},
+            {"name": "friction_coefficient", "type": "float", "unit": "dimensionless"},
+            {"name": "braking_distance", "type": "float", "unit": "m"},
+        ],
+        "rows": [
+            [10.0, 0.7, 7.1],
+            [20.0, 0.7, 28.6],
+            [30.0, 0.7, 64.3],
+        ],
+    },
+]
 ```
 
 ### 2. Create Bazel Targets
@@ -64,19 +67,21 @@ parameters:
 In your `BUILD.bazel` file:
 
 ```python
-load("@fire//fire/rules:parameters.bzl", "parameter_library", "cc_parameter_library")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
 load("@rules_cc//cc:defs.bzl", "cc_test")
+load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
-# Validate the parameter file
+# Validate parameters and generate header
 parameter_library(
-    name = "vehicle_params",
-    src = "vehicle_params.yaml",
+    name = "vehicle_params_header",
+    namespace = "vehicle.dynamics",
+    parameters = VEHICLE_PARAMS,
 )
 
-# Generate C++ header from parameters
+# Create C++ library from parameters
 cc_parameter_library(
     name = "vehicle_params_cc",
-    parameter_library = ":vehicle_params",
+    parameter_library = ":vehicle_params_header",
 )
 
 # Use generated parameters in C++ code
@@ -92,7 +97,7 @@ cc_test(
 The generated header provides type-safe access to parameters:
 
 ```cpp
-#include "your/package/vehicle_params_cc.h"
+#include "vehicle_params_header.h"
 
 int main() {
     using namespace vehicle::dynamics;
@@ -113,22 +118,18 @@ int main() {
 }
 ```
 
-## Parameter File Format
-
-### Schema Version
-
-Every parameter file must specify a schema version:
-
-```yaml
-schema_version: "1.0"
-```
+## Parameter Format
 
 ### Namespace
 
-Parameters are generated within a C++ namespace (supports nested namespaces):
+When defining a `parameter_library`, specify the C++ namespace (supports nested namespaces):
 
-```yaml
-namespace: "vehicle.dynamics.braking"
+```python
+parameter_library(
+    name = "my_params_header",
+    namespace = "vehicle.dynamics.braking",
+    parameters = [...],
+)
 ```
 
 This generates:
@@ -144,7 +145,7 @@ namespace braking {
 
 ### Simple Parameters
 
-Parameters have the following fields:
+Parameters are defined as dictionaries with the following fields:
 
 - `name` (required): Identifier for the parameter
 - `type` (required): One of `float`, `integer`, `string`, `boolean`, `table`
@@ -154,37 +155,37 @@ Parameters have the following fields:
 
 Example:
 
-```yaml
-parameters:
-  - name: max_temperature
-    type: float
-    unit: celsius
-    value: 85.0
-    description: "Maximum operating temperature"
+```python
+{
+    "name": "max_temperature",
+    "type": "float",
+    "unit": "celsius",
+    "value": 85.0,
+    "description": "Maximum operating temperature",
+}
 ```
 
 ### Table Parameters
 
 Tables define multi-column tabular data:
 
-```yaml
-parameters:
-  - name: gear_ratios
-    type: table
-    description: "Gear ratios by gear number"
-    columns:
-      - name: gear
-        type: integer
-      - name: ratio
-        type: float
-      - name: max_speed
-        type: float
-        unit: km/h
-    rows:
-      - [1, 3.5, 40.0]
-      - [2, 2.1, 70.0]
-      - [3, 1.4, 110.0]
-      - [4, 1.0, 160.0]
+```python
+{
+    "name": "gear_ratios",
+    "type": "table",
+    "description": "Gear ratios by gear number",
+    "columns": [
+        {"name": "gear", "type": "integer"},
+        {"name": "ratio", "type": "float"},
+        {"name": "max_speed", "type": "float", "unit": "km/h"},
+    ],
+    "rows": [
+        [1, 3.5, 40.0],
+        [2, 2.1, 70.0],
+        [3, 1.4, 110.0],
+        [4, 1.0, 160.0],
+    ],
+}
 ```
 
 Generated C++ code:
@@ -210,33 +211,39 @@ constexpr size_t gear_ratios_size = 4;
 
 ### `parameter_library()`
 
-Validates a parameter YAML file.
+Validates parameters and generates a C++ header file.
 
 **Attributes:**
-- `src`: The YAML parameter file (`.yaml` or `.yml`)
+- `name`: Name of the target (generates `<name>.h`)
+- `namespace`: C++ namespace for parameters (required)
+- `parameters`: List of parameter dictionaries (required)
+- `schema_version`: Schema version (optional, defaults to "1.0")
 
 **Example:**
 ```python
 parameter_library(
-    name = "my_params",
-    src = "parameters.yaml",
+    name = "my_params_header",
+    namespace = "my.namespace",
+    parameters = [
+        {"name": "value1", "type": "float", "value": 1.0, "description": "..."},
+    ],
 )
 ```
 
 ### `cc_parameter_library()`
 
-Generates a C++ header file from a validated parameter library.
+Creates a `cc_library` from a parameter library for easy inclusion in C++ targets.
 
 **Attributes:**
-- `parameter_library`: The `parameter_library` target to generate code from
-- `namespace` (optional): Override the namespace from the parameter file
+- `name`: Name of the `cc_library`
+- `parameter_library`: Label of the `parameter_library` target (the generated `.h` file)
+- Additional `cc_library` attributes supported
 
 **Example:**
 ```python
 cc_parameter_library(
     name = "my_params_cc",
-    parameter_library = ":my_params",
-    # namespace = "custom.namespace",  # Optional override
+    parameter_library = ":my_params_header",
 )
 ```
 
@@ -248,21 +255,13 @@ fire/
 ├── BUILD.bazel               # Root build file
 ├── README.md                 # This file
 ├── fire/
-│   ├── parameters/           # Parameter validation and code generation
-│   │   ├── validator.py      # Parameter validation logic
-│   │   ├── validator_test.py # Validation tests
-│   │   ├── cpp_generator.py  # C++ code generator
-│   │   ├── cpp_generator_test.py  # Generator tests
-│   │   └── BUILD.bazel
-│   ├── rules/                # Bazel rule definitions
-│   │   ├── parameters.bzl    # parameter_library and cc_parameter_library rules
-│   │   └── BUILD.bazel
-│   └── tools/                # Command-line tools
-│       ├── validate_parameters.py      # Validation tool
-│       ├── generate_cpp_parameters.py  # C++ generation tool
+│   └── starlark/             # Starlark implementation
+│       ├── validator.bzl     # Parameter validation logic
+│       ├── cpp_generator.bzl # C++ code generation
+│       ├── parameters.bzl    # parameter_library and cc_parameter_library rules
 │       └── BUILD.bazel
 └── examples/                 # Example usage
-    ├── vehicle_params.yaml   # Example parameter file
+    ├── vehicle_params.bzl    # Example parameter definitions
     ├── vehicle_params_test.cc  # Integration test
     └── BUILD.bazel
 ```
@@ -285,13 +284,8 @@ pre-commit run --all-files
 ```
 
 Pre-commit hooks include:
-- **Black**: Python code formatting
-- **isort**: Import sorting
-- **flake8**: Python linting
-- **mypy**: Type checking
-- **pydocstyle**: Docstring style checking
-- **Buildifier**: Bazel file formatting
-- **General**: Trailing whitespace, EOF fixers, YAML validation
+- **Buildifier**: Bazel and Starlark file formatting
+- **General**: Trailing whitespace, EOF fixers, file checks
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
 
@@ -303,11 +297,9 @@ Run all tests:
 bazel test //...
 ```
 
-Run specific test suites:
+Run example tests:
 
 ```bash
-bazel test //fire/parameters:validator_test
-bazel test //fire/parameters:cpp_generator_test
 bazel test //examples:vehicle_params_test
 ```
 
@@ -315,12 +307,12 @@ bazel test //examples:vehicle_params_test
 
 The parameter validator enforces:
 
-1. **Required Fields**: `schema_version`, `namespace`, `parameters` at top level
+1. **Required Fields**: `namespace` and `parameters` in `parameter_library()`
 2. **Namespace Format**: Must be dot-separated identifiers (e.g., `vehicle.dynamics`)
 3. **Parameter Types**: Only `float`, `integer`, `string`, `boolean`, `table` are valid
 4. **Type Checking**: Values must match their declared types
 5. **Table Consistency**: All rows must have the same number of columns as defined
-6. **Unique Names**: Parameter names must be unique within a file
+6. **Unique Names**: Parameter names must be unique
 7. **Required Parameter Fields**: Each parameter needs `name`, `type`, `description`
 
 ## Design Philosophy
@@ -336,10 +328,10 @@ Fire follows these principles:
 ## Roadmap
 
 ### ✅ Phase 1: Foundation & Parameter System (Complete)
-- Parameter file validation
+- Starlark parameter validation
 - C++ code generation
 - Bazel rules integration
-- Comprehensive tests
+- Load-time validation
 
 ### Phase 2: Requirements & Templates (Planned)
 - Markdown requirement documents
@@ -374,10 +366,10 @@ Fire follows these principles:
 
 This project follows Test-Driven Development practices:
 
-1. Write tests first (in `*_test.py` or `*_test.cc` files)
+1. Write tests first (in `*_test.cc` files for integration tests)
 2. Implement functionality to make tests pass
 3. Refactor while keeping tests green
-4. Keep implementation and test files together in the same directory
+4. Ensure Buildifier passes on all Starlark code
 
 ## License
 

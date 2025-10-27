@@ -1,4 +1,4 @@
-"""C++ code generation in pure Starlark."""
+"""C++ code generation."""
 
 def _to_pascal_case(snake_case):
     """Convert snake_case to PascalCase."""

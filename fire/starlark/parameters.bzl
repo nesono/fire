@@ -1,4 +1,4 @@
-"""Bazel rules for parameter management in pure Starlark.
+"""Bazel rules for parameter management.
 
 Parameters can be defined inline in BUILD files or loaded from separate .bzl files.
 Validation happens at load time, and C++ code is generated at build time.

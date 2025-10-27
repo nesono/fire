@@ -2,7 +2,7 @@
 
 This guide shows how to use Fire as a Bazel module in your own projects.
 
-Fire provides **pure Starlark** parameter management with compile-time validation and C++ code generation.
+Fire provides parameter management with compile-time validation and C++ code generation.
 
 ## Adding Fire as a Dependency
 
@@ -510,7 +510,7 @@ Starlark is understood by Bazel IDEs - syntax highlighting, validation, refactor
 Parameters are in BUILD files alongside the code that uses them.
 
 ### Bazel-Native
-Everything is pure Starlark - no external tools or dependencies.
+No external tools or dependencies required.
 
 ## Building and Testing
 

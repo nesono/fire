@@ -1,7 +1,5 @@
 """
 Fire - Requirements Management System for Bazel
-
-Pure Starlark implementation - no runtime dependencies!
 """
 
 module(
