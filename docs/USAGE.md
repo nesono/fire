@@ -2,6 +2,8 @@
 
 This guide shows how to use Fire as a Bazel module in your own projects.
 
+Fire provides parameter management with compile-time validation and C++ code generation.
+
 ## Adding Fire as a Dependency
 
 ### Step 1: Add to MODULE.bazel
@@ -14,14 +16,8 @@ bazel_dep(name = "fire", version = "0.1.0")
 # If using a local checkout during development:
 local_path_override(
     module_name = "fire",
-    path = "../fire.git",  # Adjust path as needed
+    path = "../fire",  # Adjust path as needed
 )
-```
-
-For production use with a published module:
-
-```python
-bazel_dep(name = "fire", version = "0.1.0")
 ```
 
 ### Step 2: Import Rules in BUILD Files
@@ -29,12 +25,105 @@ bazel_dep(name = "fire", version = "0.1.0")
 In your `BUILD.bazel` files where you want to use Fire:
 
 ```python
-load("@fire//fire/rules:parameters.bzl", "parameter_library", "cc_parameter_library")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
+```
+
+## Quick Start Example
+
+### Define Parameters
+
+Parameters can be defined inline in BUILD.bazel or in separate .bzl files.
+
+**Option 1: Separate .bzl file (recommended for larger parameter sets)**
+
+`vehicle_params.bzl`:
+```python
+"""Vehicle parameter definitions."""
+
+VEHICLE_PARAMS = [
+    {
+        "name": "max_velocity",
+        "type": "float",
+        "unit": "m/s",
+        "value": 55.0,
+        "description": "Maximum vehicle velocity",
+    },
+    {
+        "name": "wheel_count",
+        "type": "integer",
+        "value": 4,
+        "description": "Number of wheels",
+    },
+]
+```
+
+`BUILD.bazel`:
+```python
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
+load(":vehicle_params.bzl", "VEHICLE_PARAMS")
+
+# Define parameters (validated at load time!)
+parameter_library(
+    name = "vehicle_params_header",
+    namespace = "vehicle.dynamics",
+    parameters = VEHICLE_PARAMS,
+)
+
+# Create C++ library from parameters
+cc_parameter_library(
+    name = "vehicle_params",
+    parameter_library = ":vehicle_params_header",
+)
+
+# Use in your code
+cc_library(
+    name = "controller",
+    srcs = ["controller.cc"],
+    hdrs = ["controller.h"],
+    deps = [":vehicle_params"],
+)
+```
+
+**Option 2: Inline (good for small parameter sets)**
+
+```python
+load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
+
+parameter_library(
+    name = "vehicle_params_header",
+    namespace = "vehicle.dynamics",
+    parameters = [
+        {"name": "max_velocity", "type": "float", "value": 55.0, ...},
+        {"name": "wheel_count", "type": "integer", "value": 4, ...},
+    ],
+)
+```
+
+### Use in C++ Code
+
+```cpp
+#include "vehicle_params_header.h"
+
+namespace my_controller {
+
+void Controller::Initialize() {
+    using namespace vehicle::dynamics;
+
+    // Access parameters as constexpr values
+    double max_vel = max_velocity;  // 55.0 m/s
+    int wheels = wheel_count;       // 4
+
+    // Compile-time constants - fully optimized
+    static_assert(wheel_count == 4, "Expected 4 wheels");
+}
+
+} // namespace my_controller
 ```
 
 ## Complete Example
 
-Here's a complete example showing how to integrate Fire into an autonomous vehicle project:
+Here's a complete example for an autonomous vehicle project:
 
 ### Project Structure
 
@@ -44,9 +133,7 @@ my_vehicle_project/
 ├── vehicle/
 │   ├── BUILD.bazel
 │   ├── parameters/
-│   │   ├── BUILD.bazel
-│   │   ├── dynamics.yaml
-│   │   └── safety.yaml
+│   │   └── BUILD.bazel          # Parameter definitions
 │   └── control/
 │       ├── BUILD.bazel
 │       ├── controller.h
@@ -54,126 +141,88 @@ my_vehicle_project/
 │       └── controller_test.cc
 ```
 
-### MODULE.bazel
-
-```python
-module(
-    name = "my_vehicle_project",
-    version = "1.0.0",
-)
-
-bazel_dep(name = "fire", version = "0.1.0")
-bazel_dep(name = "rules_cc", version = "0.0.9")
-```
-
-### vehicle/parameters/dynamics.yaml
-
-```yaml
-schema_version: "1.0"
-namespace: "vehicle.parameters.dynamics"
-
-parameters:
-  - name: max_velocity
-    type: float
-    unit: m/s
-    value: 55.0
-    description: "Maximum vehicle velocity"
-
-  - name: max_acceleration
-    type: float
-    unit: m/s^2
-    value: 3.5
-    description: "Maximum acceleration"
-
-  - name: max_deceleration
-    type: float
-    unit: m/s^2
-    value: 8.0
-    description: "Maximum deceleration (braking)"
-
-  - name: wheel_base
-    type: float
-    unit: m
-    value: 2.7
-    description: "Distance between front and rear axles"
-```
-
-### vehicle/parameters/safety.yaml
-
-```yaml
-schema_version: "1.0"
-namespace: "vehicle.parameters.safety"
-
-parameters:
-  - name: min_safe_distance
-    type: float
-    unit: m
-    value: 10.0
-    description: "Minimum safe following distance"
-
-  - name: emergency_brake_threshold
-    type: float
-    unit: m
-    value: 5.0
-    description: "Distance threshold for emergency braking"
-
-  - name: collision_warning_time
-    type: float
-    unit: s
-    value: 2.5
-    description: "Time to collision for warning activation"
-
-  - name: safety_margins_by_speed
-    type: table
-    description: "Required safety margins at different speeds"
-    columns:
-      - name: speed
-        type: float
-        unit: m/s
-      - name: lateral_margin
-        type: float
-        unit: m
-      - name: longitudinal_margin
-        type: float
-        unit: m
-    rows:
-      - [10.0, 0.5, 10.0]
-      - [20.0, 0.75, 20.0]
-      - [30.0, 1.0, 40.0]
-```
-
 ### vehicle/parameters/BUILD.bazel
 
 ```python
-load("@fire//fire/rules:parameters.bzl", "parameter_library", "cc_parameter_library")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
 
 # Dynamics parameters
 parameter_library(
-    name = "dynamics",
-    src = "dynamics.yaml",
+    name = "dynamics_header",
+    namespace = "vehicle.parameters.dynamics",
+    parameters = [
+        {
+            "name": "max_velocity",
+            "type": "float",
+            "unit": "m/s",
+            "value": 55.0,
+            "description": "Maximum vehicle velocity",
+        },
+        {
+            "name": "max_acceleration",
+            "type": "float",
+            "unit": "m/s^2",
+            "value": 3.5,
+            "description": "Maximum acceleration",
+        },
+        {
+            "name": "wheel_base",
+            "type": "float",
+            "unit": "m",
+            "value": 2.7,
+            "description": "Distance between front and rear axles",
+        },
+    ],
 )
 
 cc_parameter_library(
-    name = "dynamics_cc",
-    parameter_library = ":dynamics",
+    name = "dynamics",
+    parameter_library = ":dynamics_header",
+    visibility = ["//visibility:public"],
 )
 
 # Safety parameters
 parameter_library(
-    name = "safety",
-    src = "safety.yaml",
+    name = "safety_header",
+    namespace = "vehicle.parameters.safety",
+    parameters = [
+        {
+            "name": "min_safe_distance",
+            "type": "float",
+            "unit": "m",
+            "value": 10.0,
+            "description": "Minimum safe following distance",
+        },
+        {
+            "name": "emergency_brake_threshold",
+            "type": "float",
+            "unit": "m",
+            "value": 5.0,
+            "description": "Distance threshold for emergency braking",
+        },
+        {
+            "name": "safety_margins_by_speed",
+            "type": "table",
+            "description": "Required safety margins at different speeds",
+            "columns": [
+                {"name": "speed", "type": "float", "unit": "m/s"},
+                {"name": "lateral_margin", "type": "float", "unit": "m"},
+                {"name": "longitudinal_margin", "type": "float", "unit": "m"},
+            ],
+            "rows": [
+                [10.0, 0.5, 10.0],
+                [20.0, 0.75, 20.0],
+                [30.0, 1.0, 40.0],
+            ],
+        },
+    ],
 )
 
 cc_parameter_library(
-    name = "safety_cc",
-    parameter_library = ":safety",
+    name = "safety",
+    parameter_library = ":safety_header",
+    visibility = ["//visibility:public"],
 )
-
-# Make parameters visible to other packages
-exports_files([
-    "dynamics.yaml",
-    "safety.yaml",
-])
 ```
 
 ### vehicle/control/controller.h
@@ -181,29 +230,16 @@ exports_files([
 ```cpp
 #pragma once
 
-#include "vehicle/parameters/dynamics_cc.h"
-#include "vehicle/parameters/safety_cc.h"
-
 namespace vehicle::control {
 
 class VelocityController {
 public:
     VelocityController() = default;
 
-    // Calculate safe target velocity based on current conditions
     double CalculateSafeVelocity(double desired_velocity,
                                   double distance_to_obstacle) const;
 
-    // Check if emergency braking is required
     bool RequiresEmergencyBrake(double distance_to_obstacle) const;
-
-private:
-    // Parameters are accessible as compile-time constants
-    static constexpr double max_velocity_ =
-        vehicle::parameters::dynamics::max_velocity;
-
-    static constexpr double emergency_threshold_ =
-        vehicle::parameters::safety::emergency_brake_threshold;
 };
 
 } // namespace vehicle::control
@@ -213,6 +249,9 @@ private:
 
 ```cpp
 #include "vehicle/control/controller.h"
+#include "vehicle/parameters/dynamics_header.h"
+#include "vehicle/parameters/safety_header.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -224,15 +263,14 @@ double VelocityController::CalculateSafeVelocity(
 
     using namespace vehicle::parameters;
 
-    // Clamp to maximum velocity
+    // Clamp to maximum velocity (compile-time constant)
     double safe_velocity = std::min(desired_velocity,
                                     dynamics::max_velocity);
 
     // Reduce velocity if obstacle is close
     if (distance_to_obstacle < safety::min_safe_distance) {
-        // Calculate velocity based on braking distance
         double max_safe_vel = std::sqrt(
-            2.0 * dynamics::max_deceleration * distance_to_obstacle
+            2.0 * dynamics::max_acceleration * distance_to_obstacle
         );
         safe_velocity = std::min(safe_velocity, max_safe_vel);
     }
@@ -250,48 +288,6 @@ bool VelocityController::RequiresEmergencyBrake(
 } // namespace vehicle::control
 ```
 
-### vehicle/control/controller_test.cc
-
-```cpp
-#include "vehicle/control/controller.h"
-#include <cassert>
-#include <iostream>
-
-int main() {
-    using namespace vehicle::control;
-    using namespace vehicle::parameters;
-
-    VelocityController controller;
-
-    // Test 1: Normal operation
-    double safe_vel = controller.CalculateSafeVelocity(50.0, 100.0);
-    assert(safe_vel == 50.0);
-    std::cout << "✓ Normal velocity: " << safe_vel << " m/s\n";
-
-    // Test 2: Maximum velocity limit
-    safe_vel = controller.CalculateSafeVelocity(100.0, 100.0);
-    assert(safe_vel == dynamics::max_velocity);
-    std::cout << "✓ Clamped to max: " << safe_vel << " m/s\n";
-
-    // Test 3: Emergency braking
-    bool emergency = controller.RequiresEmergencyBrake(3.0);
-    assert(emergency == true);
-    std::cout << "✓ Emergency brake activated\n";
-
-    // Test 4: Using table parameters
-    std::cout << "\nSafety margins by speed:\n";
-    for (size_t i = 0; i < safety::safety_margins_by_speed_size; ++i) {
-        const auto& entry = safety::safety_margins_by_speed[i];
-        std::cout << "  Speed: " << entry.speed << " m/s"
-                  << ", Lateral: " << entry.lateral_margin << " m"
-                  << ", Longitudinal: " << entry.longitudinal_margin << " m\n";
-    }
-
-    std::cout << "\nAll tests passed!\n";
-    return 0;
-}
-```
-
 ### vehicle/control/BUILD.bazel
 
 ```python
@@ -302,8 +298,8 @@ cc_library(
     srcs = ["controller.cc"],
     hdrs = ["controller.h"],
     deps = [
-        "//vehicle/parameters:dynamics_cc",
-        "//vehicle/parameters:safety_cc",
+        "//vehicle/parameters:dynamics",
+        "//vehicle/parameters:safety",
     ],
     visibility = ["//visibility:public"],
 )
@@ -315,174 +311,274 @@ cc_test(
 )
 ```
 
-## Building and Testing
+## Parameter Types
 
-```bash
-# Build everything
-bazel build //...
+Fire supports the following parameter types:
 
-# Run tests
-bazel test //...
+| Type | C++ Type | Starlark Example | C++ Usage |
+|------|----------|------------------|-----------|
+| `float` | `double` | `"value": 55.0` | `constexpr double max_vel = 55.0;` |
+| `integer` | `int` | `"value": 4` | `constexpr int count = 4;` |
+| `string` | `const char*` | `"value": "test"` | `constexpr const char* name = "test";` |
+| `boolean` | `bool` | `"value": True` | `constexpr bool flag = true;` |
+| `table` | `struct + array` | See below | Array of structs with size constant |
 
-# Run specific test
-bazel test //vehicle/control:controller_test
+### Table Parameters
 
-# Build specific target
-bazel build //vehicle/parameters:dynamics_cc
-
-# View generated header
-cat bazel-bin/vehicle/parameters/dynamics_cc.h
-```
-
-## Benefits of Using Fire
-
-### 1. Type Safety
-
-Parameters are validated at build time and generated as `constexpr` constants:
-
-```cpp
-// Compile-time constant - optimized away by compiler
-constexpr double max_vel = vehicle::parameters::dynamics::max_velocity;
-
-// Compiler error if you try to modify it
-// max_vel = 100.0;  // ERROR: cannot assign to const
-```
-
-### 2. Dependency Tracking
-
-Bazel tracks parameter dependencies automatically:
+Tables generate a struct type and a constexpr array:
 
 ```python
-cc_library(
-    name = "controller",
-    deps = [
-        "//vehicle/parameters:dynamics_cc",  # Bazel knows about this dependency
+{
+    "name": "gear_ratios",
+    "type": "table",
+    "description": "Gear ratios by gear number",
+    "columns": [
+        {"name": "gear", "type": "integer"},
+        {"name": "ratio", "type": "float"},
+        {"name": "max_speed", "type": "float", "unit": "km/h"},
     ],
+    "rows": [
+        [1, 3.5, 40.0],
+        [2, 2.1, 70.0],
+        [3, 1.4, 110.0],
+    ],
+}
+```
+
+Generated C++ code:
+
+```cpp
+struct GearRatiosRow {
+    int gear;
+    double ratio;
+    /// Unit: km/h
+    double max_speed;
+};
+
+/// Gear ratios by gear number
+constexpr GearRatiosRow gear_ratios[] = {
+    {1, 3.5, 40.0},
+    {2, 2.1, 70.0},
+    {3, 1.4, 110.0},
+};
+
+/// Number of rows in gear_ratios
+constexpr size_t gear_ratios_size = 3;
+```
+
+Usage in C++:
+
+```cpp
+for (size_t i = 0; i < gear_ratios_size; ++i) {
+    int gear = gear_ratios[i].gear;
+    double ratio = gear_ratios[i].ratio;
+    double max_speed = gear_ratios[i].max_speed;
+    // ...
+}
+```
+
+## Key Features
+
+### 1. Load-Time Validation
+
+Parameters are validated when the BUILD file is loaded:
+
+```python
+parameter_library(
+    name = "bad_params",
+    namespace = "invalid namespace!",  # ERROR: Invalid namespace format!
+    parameters = [],
 )
 ```
 
-If `dynamics.yaml` changes, Bazel will rebuild `controller` automatically.
+Error appears immediately - no need to build to find errors.
 
-### 3. Documentation in Code
+### 2. Compile-Time Constants
 
-Generated headers include documentation from parameter files:
+All parameters are generated as `constexpr`, enabling:
+
+```cpp
+// Compiler can optimize these away
+constexpr double max_vel = vehicle::dynamics::max_velocity;
+
+// Can use in constant expressions
+constexpr double safety_factor = max_vel * 0.8;
+
+// Static assertions
+static_assert(max_vel > 0, "Max velocity must be positive");
+
+// Array sizes
+double speeds[static_cast<int>(max_vel) + 1];
+```
+
+### 3. Type Safety
+
+The C++ type system ensures correct usage:
+
+```cpp
+int wheels = vehicle::dynamics::wheel_count;  // OK: int
+double wheels = vehicle::dynamics::wheel_count;  // OK: implicit conversion
+std::string wheels = vehicle::dynamics::wheel_count;  // ERROR: No conversion
+```
+
+### 4. Documentation in Code
+
+Parameters include documentation from the BUILD file:
 
 ```cpp
 /// Maximum vehicle velocity - Unit: m/s
 constexpr double max_velocity = 55.0;
 ```
 
-### 4. Single Source of Truth
-
-Parameters are defined once in YAML and used everywhere:
-- In C++ code (via generated headers)
-- In documentation
-- In configuration files
-- In test cases
-
-### 5. Validation
-
-Invalid parameter files are caught at build time:
-
-```bash
-$ bazel build //vehicle/parameters:dynamics_cc
-ERROR: Validation failed: Parameter 'max_velocity' must be a number (float)
-```
+IDEs show this documentation on hover!
 
 ## Best Practices
 
 ### 1. Organize Parameters by Domain
 
-Group related parameters into separate files:
-
 ```
 parameters/
-├── dynamics.yaml      # Vehicle dynamics
-├── safety.yaml        # Safety thresholds
-├── hardware.yaml      # Hardware specifications
-└── environment.yaml   # Environment assumptions
+├── BUILD.bazel
+    ├── dynamics (velocity, acceleration, etc.)
+    ├── safety (thresholds, margins, etc.)
+    ├── hardware (sensor specs, etc.)
+    └── environment (assumptions, limits, etc.)
 ```
 
 ### 2. Use Meaningful Namespaces
 
-Choose namespaces that reflect your project structure:
-
-```yaml
-namespace: "company.product.subsystem"
+```python
+namespace = "company.product.subsystem"
+# Generates: company::product::subsystem
 ```
 
 ### 3. Always Specify Units
 
-Include units for all physical quantities:
-
-```yaml
-- name: max_velocity
-  type: float
-  unit: m/s
-  value: 55.0
+```python
+{
+    "name": "max_velocity",
+    "type": "float",
+    "unit": "m/s",  # Always include!
+    "value": 55.0,
+}
 ```
 
 ### 4. Provide Clear Descriptions
 
-Write descriptions that explain **why** a parameter has its value:
-
-```yaml
-description: "Maximum velocity per ISO 26262 safety analysis"
+```python
+"description": "Maximum velocity per ISO 26262 safety analysis"
 ```
+
+Explain **why** a parameter has its value, not just what it is.
 
 ### 5. Use Tables for Related Data
 
-When parameters are naturally tabular, use table types:
+```python
+# Good: Related data in a table
+{
+    "name": "speed_limits",
+    "type": "table",
+    "columns": [
+        {"name": "zone", "type": "string"},
+        {"name": "limit", "type": "float", "unit": "km/h"},
+    ],
+    "rows": [
+        ["residential", 30.0],
+        ["urban", 50.0],
+        ["highway", 130.0],
+    ],
+}
 
-```yaml
-- name: gear_ratios
-  type: table
-  columns:
-    - {name: gear, type: integer}
-    - {name: ratio, type: float}
-  rows:
-    - [1, 3.5]
-    - [2, 2.1]
+# Less good: Separate parameters
+{"name": "residential_limit", "value": 30.0},
+{"name": "urban_limit", "value": 50.0},
+{"name": "highway_limit", "value": 130.0},
+```
+
+## Advantages Over External Configuration Files
+
+### Immediate Feedback
+Errors are caught when loading BUILD files, not during builds or at runtime.
+
+### No File Parsing
+Parameters are Starlark data - no YAML/JSON parsing, no file I/O.
+
+### IDE Support
+Starlark is understood by Bazel IDEs - syntax highlighting, validation, refactoring.
+
+### Version Control Friendly
+Parameters are in BUILD files alongside the code that uses them.
+
+### Bazel-Native
+No external tools or dependencies required.
+
+## Building and Testing
+
+```bash
+# Build parameter libraries
+bazel build //vehicle/parameters:all
+
+# View generated headers
+cat bazel-bin/vehicle/parameters/dynamics_header.h
+
+# Build code that uses parameters
+bazel build //vehicle/control:controller
+
+# Run tests
+bazel test //vehicle/control:controller_test
 ```
 
 ## Troubleshooting
 
-### Build Fails: "cannot find parameter file"
+### "Parameter validation failed"
 
-Make sure the file is listed in the `srcs` of your `parameter_library`:
+Check the error message - it tells you exactly what's wrong:
+- Missing required fields
+- Invalid type
+- Table column mismatch
+- Duplicate names
+- Invalid namespace format
+
+### "file not found" when including header
+
+The generated header name is `<target_name>.h`:
 
 ```python
 parameter_library(
-    name = "params",
-    src = "parameters.yaml",  # Must exist
+    name = "my_params_header",  # Generates my_params_header.h
+    ...
 )
 ```
 
-### Include Path Not Found
-
-The generated header follows your package structure:
-
+Include it as:
 ```cpp
-// For //vehicle/parameters:dynamics_cc
-#include "vehicle/parameters/dynamics_cc.h"
+#include "my_params_header.h"
 ```
 
-### Namespace Mismatch
+### Parameters not updating
 
-The namespace comes from the YAML file, not the Bazel package:
+Bazel caches aggressively. After changing parameters:
 
-```yaml
-namespace: "vehicle.parameters.dynamics"  # This determines namespace
+```bash
+bazel clean
+bazel build //your:target
 ```
 
-```cpp
-namespace vehicle::parameters::dynamics {
-    // Parameters here
-}
+Or use:
+```bash
+bazel build //your:target --expunge
 ```
 
 ## Next Steps
 
-- See [README.md](../README.md) for full feature documentation
-- Check [examples/](../examples/) for more examples
-- Read about upcoming features in the Roadmap section
+- See [README.md](../README.md) for project overview
+- Check [examples/BUILD.bazel](../examples/BUILD.bazel) for a complete working example
+- Read [CONTRIBUTING.md](../CONTRIBUTING.md) for development guidelines
+
+## Example Repository
+
+See the `examples/` directory for a complete working example with:
+- Multiple parameter types (float, integer, string, boolean, table)
+- Nested namespaces
+- C++ test demonstrating usage
+- All features in action
