@@ -1,3 +1,0 @@
-# Fire has no Python dependencies - it's pure Starlark!
-#
-# For development setup (pre-commit, etc.), see CONTRIBUTING.md
