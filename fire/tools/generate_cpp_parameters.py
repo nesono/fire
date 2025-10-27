@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Tool to generate C++ header files from parameter files."""
 
-import sys
-import json
 import argparse
+import json
+import sys
+
 from fire.parameters.cpp_generator import CppGenerator
 
 
 def main():
+    """Generate C++ header file from validated parameter data."""
     parser = argparse.ArgumentParser(description="Generate C++ header from parameters")
     parser.add_argument("input", help="Input parameter file (.params)")
     parser.add_argument("output", help="Output C++ header file (.h)")

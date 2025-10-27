@@ -15,8 +15,7 @@ class CppGenerator:
     }
 
     def generate(self, param_data: Dict[str, Any]) -> str:
-        """
-        Generate C++ header file content from parameter data.
+        """Generate C++ header file content from parameter data.
 
         Args:
             param_data: Validated parameter data
@@ -69,7 +68,6 @@ class CppGenerator:
     def _generate_parameter(self, param: Dict[str, Any], lines: List[str]) -> None:
         """Generate C++ code for a single parameter."""
         param_type = param["type"]
-        param_name = param["name"]
         description = param.get("description", "")
         unit = param.get("unit", "")
 

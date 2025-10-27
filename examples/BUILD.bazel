@@ -1,5 +1,5 @@
-load("//fire/rules:parameters.bzl", "parameter_library", "cc_parameter_library")
 load("@rules_cc//cc:defs.bzl", "cc_test")
+load("//fire/rules:parameters.bzl", "cc_parameter_library", "parameter_library")
 
 # Validate the parameter file
 parameter_library(

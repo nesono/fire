@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """Tool to validate parameter files."""
 
-import sys
-import yaml
 import json
+import sys
+
+import yaml
+
 from fire.parameters.validator import ParameterValidator, ValidationError
 
 
 def main():
+    """Validate a parameter YAML file and output as JSON."""
     if len(sys.argv) != 3:
-        print("Usage: validate_parameters <input.yaml> <output.params>", file=sys.stderr)
+        print(
+            "Usage: validate_parameters <input.yaml> <output.params>", file=sys.stderr
+        )
         sys.exit(1)
 
     input_path = sys.argv[1]

@@ -1,7 +1,5 @@
 """Bazel rules for parameter management."""
 
-load("@rules_python//python:defs.bzl", "py_binary")
-
 def _parameter_library_impl(ctx):
     """Implementation of the parameter_library rule."""
 
@@ -105,13 +103,13 @@ def _cc_parameter_library_impl(ctx):
 cc_parameter_library = rule(
     implementation = _cc_parameter_library_impl,
     attrs = {
+        "namespace": attr.string(
+            doc = "C++ namespace for the generated code (overrides the namespace in the parameter file)",
+        ),
         "parameter_library": attr.label(
             mandatory = True,
             providers = [ParameterInfo],
             doc = "The parameter_library target to generate C++ code from",
-        ),
-        "namespace": attr.string(
-            doc = "C++ namespace for the generated code (overrides the namespace in the parameter file)",
         ),
         "_cpp_generator_tool": attr.label(
             default = Label("//fire/tools:generate_cpp_parameters"),

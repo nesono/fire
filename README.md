@@ -265,6 +265,34 @@ fire/
     └── BUILD.bazel
 ```
 
+## Development
+
+### Pre-commit Hooks
+
+Fire uses [pre-commit](https://pre-commit.com) to ensure code quality. To set up:
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install the git hooks
+pre-commit install
+
+# Optionally, run on all files
+pre-commit run --all-files
+```
+
+Pre-commit hooks include:
+- **Black**: Python code formatting
+- **isort**: Import sorting
+- **flake8**: Python linting
+- **mypy**: Type checking
+- **pydocstyle**: Docstring style checking
+- **Buildifier**: Bazel file formatting
+- **General**: Trailing whitespace, EOF fixers, YAML validation
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
+
 ## Testing
 
 Run all tests:

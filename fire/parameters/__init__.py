@@ -1,6 +1,6 @@
 """Parameter validation and code generation."""
 
-from fire.parameters.validator import ParameterValidator, ValidationError
 from fire.parameters.cpp_generator import CppGenerator
+from fire.parameters.validator import ParameterValidator, ValidationError
 
 __all__ = ["ParameterValidator", "ValidationError", "CppGenerator"]

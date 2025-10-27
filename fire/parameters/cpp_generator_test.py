@@ -1,6 +1,7 @@
 """Tests for C++ parameter code generator."""
 
 import unittest
+
 from fire.parameters.cpp_generator import CppGenerator
 
 
@@ -22,9 +23,9 @@ class TestCppGenerator(unittest.TestCase):
                     "type": "float",
                     "unit": "m/s",
                     "value": 55.0,
-                    "description": "Maximum velocity"
+                    "description": "Maximum velocity",
                 }
-            ]
+            ],
         }
 
         result = self.generator.generate(param_data)
@@ -58,9 +59,9 @@ class TestCppGenerator(unittest.TestCase):
                     "name": "wheel_count",
                     "type": "integer",
                     "value": 4,
-                    "description": "Number of wheels"
+                    "description": "Number of wheels",
                 }
-            ]
+            ],
         }
 
         result = self.generator.generate(param_data)
@@ -79,9 +80,9 @@ class TestCppGenerator(unittest.TestCase):
                     "name": "vehicle_name",
                     "type": "string",
                     "value": "TestVehicle",
-                    "description": "Vehicle identifier"
+                    "description": "Vehicle identifier",
                 }
-            ]
+            ],
         }
 
         result = self.generator.generate(param_data)
@@ -100,9 +101,9 @@ class TestCppGenerator(unittest.TestCase):
                     "name": "debug_mode",
                     "type": "boolean",
                     "value": True,
-                    "description": "Enable debug output"
+                    "description": "Enable debug output",
                 }
-            ]
+            ],
         }
 
         result = self.generator.generate(param_data)
@@ -124,15 +125,11 @@ class TestCppGenerator(unittest.TestCase):
                     "columns": [
                         {"name": "velocity", "type": "float", "unit": "m/s"},
                         {"name": "friction", "type": "float", "unit": "dimensionless"},
-                        {"name": "distance", "type": "float", "unit": "m"}
+                        {"name": "distance", "type": "float", "unit": "m"},
                     ],
-                    "rows": [
-                        [10.0, 0.7, 7.1],
-                        [20.0, 0.7, 28.6],
-                        [30.0, 0.3, 150.0]
-                    ]
+                    "rows": [[10.0, 0.7, 7.1], [20.0, 0.7, 28.6], [30.0, 0.3, 150.0]],
                 }
-            ]
+            ],
         }
 
         result = self.generator.generate(param_data)
@@ -166,15 +163,15 @@ class TestCppGenerator(unittest.TestCase):
                     "name": "param1",
                     "type": "float",
                     "value": 1.0,
-                    "description": "First parameter"
+                    "description": "First parameter",
                 },
                 {
                     "name": "param2",
                     "type": "integer",
                     "value": 42,
-                    "description": "Second parameter"
-                }
-            ]
+                    "description": "Second parameter",
+                },
+            ],
         }
 
         result = self.generator.generate(param_data)
@@ -190,7 +187,7 @@ class TestCppGenerator(unittest.TestCase):
         param_data = {
             "schema_version": "1.0",
             "namespace": "vehicle.dynamics",
-            "parameters": []
+            "parameters": [],
         }
 
         result = self.generator.generate(param_data)
@@ -208,9 +205,9 @@ class TestCppGenerator(unittest.TestCase):
                     "name": "test_param",
                     "type": "float",
                     "value": 1.0,
-                    "description": "Test"
+                    "description": "Test",
                 }
-            ]
+            ],
         }
 
         result = self.generator.generate(param_data)
@@ -235,9 +232,9 @@ class TestCppGenerator(unittest.TestCase):
                     "name": "max_velocity_m_s",
                     "type": "float",
                     "value": 55.0,
-                    "description": "Maximum velocity in m/s"
+                    "description": "Maximum velocity in m/s",
                 }
-            ]
+            ],
         }
 
         result = self.generator.generate(param_data)
@@ -259,14 +256,11 @@ class TestCppGenerator(unittest.TestCase):
                         {"name": "id", "type": "integer"},
                         {"name": "name", "type": "string"},
                         {"name": "value", "type": "float"},
-                        {"name": "enabled", "type": "boolean"}
+                        {"name": "enabled", "type": "boolean"},
                     ],
-                    "rows": [
-                        [1, "first", 1.5, True],
-                        [2, "second", 2.5, False]
-                    ]
+                    "rows": [[1, "first", 1.5, True], [2, "second", 2.5, False]],
                 }
-            ]
+            ],
         }
 
         result = self.generator.generate(param_data)

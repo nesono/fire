@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 class ValidationError(Exception):
     """Exception raised when parameter validation fails."""
+
     pass
 
 
@@ -16,11 +17,12 @@ class ParameterValidator:
     VALID_TYPES = {"float", "integer", "string", "boolean", "table"}
 
     # Namespace must be valid identifier-like format
-    NAMESPACE_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*$')
+    NAMESPACE_PATTERN = re.compile(
+        r"^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*$"
+    )
 
     def validate(self, param_data: Dict[str, Any]) -> None:
-        """
-        Validate a parameter file data structure.
+        """Validate a parameter file data structure.
 
         Args:
             param_data: The parsed parameter file data
@@ -123,7 +125,8 @@ class ParameterValidator:
                 )
             if col["type"] not in self.VALID_TYPES - {"table"}:
                 raise ValidationError(
-                    f"Table parameter '{param['name']}' has invalid column type: {col['type']}"
+                    f"Table parameter '{param['name']}' has invalid "
+                    f"column type: {col['type']}"
                 )
 
         # Validate rows
@@ -149,15 +152,13 @@ class ParameterValidator:
                 self._validate_value_type(
                     cell_value,
                     col_def["type"],
-                    f"Table parameter '{param['name']}' row {row_idx} column {col_idx}"
+                    f"Table parameter '{param['name']}' row {row_idx} column {col_idx}",
                 )
 
     def _validate_parameter_value(self, param: Dict[str, Any]) -> None:
         """Validate a parameter's value matches its type."""
         self._validate_value_type(
-            param["value"],
-            param["type"],
-            f"Parameter '{param['name']}'"
+            param["value"], param["type"], f"Parameter '{param['name']}'"
         )
 
     def _validate_value_type(
