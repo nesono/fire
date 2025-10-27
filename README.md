@@ -18,6 +18,7 @@ Phase 1 is complete and provides parameter management with code generation capab
 - **Tables**: Define multi-column tabular data with typed columns
 - **C++ Code Generation**: Generate type-safe `constexpr` C++ headers from parameters
 - **Bazel Integration**: Native Starlark rules for seamless integration
+- **Unit Tests**: Comprehensive Starlark unit tests using Skylib's unittest framework
 - **No Dependencies**: Zero runtime dependencies
 
 ## Quick Start
@@ -257,7 +258,9 @@ fire/
 ├── fire/
 │   └── starlark/             # Starlark implementation
 │       ├── validator.bzl     # Parameter validation logic
+│       ├── validator_test.bzl # Validator unit tests
 │       ├── cpp_generator.bzl # C++ code generation
+│       ├── cpp_generator_test.bzl # Generator unit tests
 │       ├── parameters.bzl    # parameter_library and cc_parameter_library rules
 │       └── BUILD.bazel
 └── examples/                 # Example usage
@@ -297,9 +300,14 @@ Run all tests:
 bazel test //...
 ```
 
-Run example tests:
+Run specific test suites:
 
 ```bash
+# Starlark unit tests
+bazel test //fire/starlark:validator_test
+bazel test //fire/starlark:cpp_generator_test
+
+# Integration tests
 bazel test //examples:vehicle_params_test
 ```
 
@@ -332,6 +340,7 @@ Fire follows these principles:
 - C++ code generation
 - Bazel rules integration
 - Load-time validation
+- Comprehensive unit tests
 
 ### Phase 2: Requirements & Templates (Planned)
 - Markdown requirement documents
@@ -366,7 +375,9 @@ Fire follows these principles:
 
 This project follows Test-Driven Development practices:
 
-1. Write tests first (in `*_test.cc` files for integration tests)
+1. Write tests first:
+   - Starlark unit tests in `*_test.bzl` files using Skylib's `unittest`
+   - C++ integration tests in `*_test.cc` files
 2. Implement functionality to make tests pass
 3. Refactor while keeping tests green
 4. Ensure Buildifier passes on all Starlark code
