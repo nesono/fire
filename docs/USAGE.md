@@ -30,31 +30,44 @@ load("@fire//fire/starlark:parameters_inline.bzl", "parameter_library", "cc_para
 
 ## Quick Start Example
 
-### Define Parameters in BUILD.bazel
+### Define Parameters
 
+Parameters can be defined inline in BUILD.bazel or in separate .bzl files.
+
+**Option 1: Separate .bzl file (recommended for larger parameter sets)**
+
+`vehicle_params.bzl`:
+```python
+"""Vehicle parameter definitions."""
+
+VEHICLE_PARAMS = [
+    {
+        "name": "max_velocity",
+        "type": "float",
+        "unit": "m/s",
+        "value": 55.0,
+        "description": "Maximum vehicle velocity",
+    },
+    {
+        "name": "wheel_count",
+        "type": "integer",
+        "value": 4,
+        "description": "Number of wheels",
+    },
+]
+```
+
+`BUILD.bazel`:
 ```python
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("@fire//fire/starlark:parameters_inline.bzl", "parameter_library", "cc_parameter_library")
+load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
-# Define parameters inline (validated at load time!)
+# Define parameters (validated at load time!)
 parameter_library(
     name = "vehicle_params_header",
     namespace = "vehicle.dynamics",
-    parameters = [
-        {
-            "name": "max_velocity",
-            "type": "float",
-            "unit": "m/s",
-            "value": 55.0,
-            "description": "Maximum vehicle velocity",
-        },
-        {
-            "name": "wheel_count",
-            "type": "integer",
-            "value": 4,
-            "description": "Number of wheels",
-        },
-    ],
+    parameters = VEHICLE_PARAMS,
 )
 
 # Create C++ library from parameters
@@ -69,6 +82,21 @@ cc_library(
     srcs = ["controller.cc"],
     hdrs = ["controller.h"],
     deps = [":vehicle_params"],
+)
+```
+
+**Option 2: Inline (good for small parameter sets)**
+
+```python
+load("@fire//fire/starlark:parameters_inline.bzl", "parameter_library", "cc_parameter_library")
+
+parameter_library(
+    name = "vehicle_params_header",
+    namespace = "vehicle.dynamics",
+    parameters = [
+        {"name": "max_velocity", "type": "float", "value": 55.0, ...},
+        {"name": "wheel_count", "type": "integer", "value": 4, ...},
+    ],
 )
 ```
 
