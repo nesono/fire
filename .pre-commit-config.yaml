@@ -9,61 +9,14 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        args: ['--unsafe']  # Allow custom YAML tags if needed
+        args: ['--unsafe']  # Allow custom YAML tags in requirement frontmatter
       - id: check-added-large-files
         args: ['--maxkb=1000']
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: mixed-line-ending
 
-  # Python code formatting with Black
-  - repo: https://github.com/psf/black
-    rev: 24.1.1
-    hooks:
-      - id: black
-        args: ['--line-length=88']
-
-  # Python import sorting with isort
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ['--profile=black']
-
-  # Python linting with flake8
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        args: [
-          '--max-line-length=88',
-          '--extend-ignore=E203,W503',  # Conflicts with Black
-          '--exclude=bazel-*'
-        ]
-
-  # Python type checking with mypy
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        additional_dependencies: [types-PyYAML]
-        args: [
-          '--ignore-missing-imports',
-          '--exclude=bazel-*'
-        ]
-
-  # Check Python docstrings
-  - repo: https://github.com/PyCQA/pydocstyle
-    rev: 6.3.0
-    hooks:
-      - id: pydocstyle
-        args: [
-          '--convention=google',
-          '--add-ignore=D100,D104,D105,D107',  # Allow missing docstrings in some places
-        ]
-        exclude: '_test\.py$'  # Don't require docstrings in test files
-
-  # Buildifier for Bazel files
+  # Buildifier for Bazel and Starlark files
   - repo: https://github.com/keith/pre-commit-buildifier
     rev: 6.4.0
     hooks:
