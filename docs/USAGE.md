@@ -25,7 +25,7 @@ local_path_override(
 In your `BUILD.bazel` files where you want to use Fire:
 
 ```python
-load("@fire//fire/starlark:parameters_inline.bzl", "parameter_library", "cc_parameter_library")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
 ```
 
 ## Quick Start Example
@@ -60,7 +60,7 @@ VEHICLE_PARAMS = [
 `BUILD.bazel`:
 ```python
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
-load("@fire//fire/starlark:parameters_inline.bzl", "parameter_library", "cc_parameter_library")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
 load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
 # Define parameters (validated at load time!)
@@ -88,7 +88,7 @@ cc_library(
 **Option 2: Inline (good for small parameter sets)**
 
 ```python
-load("@fire//fire/starlark:parameters_inline.bzl", "parameter_library", "cc_parameter_library")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
 
 parameter_library(
     name = "vehicle_params_header",
@@ -144,7 +144,7 @@ my_vehicle_project/
 ### vehicle/parameters/BUILD.bazel
 
 ```python
-load("@fire//fire/starlark:parameters_inline.bzl", "parameter_library", "cc_parameter_library")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
 
 # Dynamics parameters
 parameter_library(

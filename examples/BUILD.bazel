@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
-load("//fire/starlark:parameters_inline.bzl", "cc_parameter_library", "parameter_library")
+load("//fire/starlark:parameters.bzl", "cc_parameter_library", "parameter_library")
 load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
 # Define parameters (loaded from separate .bzl file for better organization)

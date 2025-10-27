@@ -1,7 +1,7 @@
-"""Bazel rules for inline parameter definitions in pure Starlark.
+"""Bazel rules for parameter management in pure Starlark.
 
-This approach allows parameters to be defined directly in BUILD files as Starlark
-data structures, enabling true pure-Starlark validation and code generation.
+Parameters can be defined inline in BUILD files or loaded from separate .bzl files.
+Validation happens at load time, and C++ code is generated at build time.
 """
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
