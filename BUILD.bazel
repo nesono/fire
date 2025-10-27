@@ -1,0 +1,6 @@
+# Root BUILD file for Fire requirements management system
+
+exports_files([
+    "requirements.txt",
+    "requirements_lock.txt",
+])

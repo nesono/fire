@@ -1,0 +1,14 @@
+# Bazel configuration for Fire
+
+# Use Bzlmod for dependency management
+common --enable_bzlmod
+
+# Python configuration
+build --incompatible_default_to_explicit_init_py
+
+# Test output
+test --test_output=errors
+
+# C++ configuration
+build --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17

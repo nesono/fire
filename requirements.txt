@@ -1,0 +1,3 @@
+# Python dependencies for Fire requirements management system
+pyyaml==6.0.1
+jsonschema==4.21.1
