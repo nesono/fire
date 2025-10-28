@@ -108,13 +108,14 @@ def _generate_table_struct(param, struct_name):
 
     return lines
 
-def generate_go_code(_namespace, parameters, package_name = "parameters"):
+def generate_go_code(_namespace, parameters, package_name = "parameters", source_label = None):
     """Generate Go package with parameters.
 
     Args:
         _namespace: Go package namespace (not used in Go generation, kept for API consistency)
         parameters: List of parameter dictionaries
         package_name: Package name for the generated code
+        source_label: Optional Bazel label for traceability
 
     Returns:
         Go package content as string
@@ -123,6 +124,8 @@ def generate_go_code(_namespace, parameters, package_name = "parameters"):
 
     # Header
     lines.append("// This file is auto-generated. Do not edit manually.")
+    if source_label:
+        lines.append("// Generated from: {}".format(source_label))
     lines.append("package {}".format(package_name))
     lines.append("")
 

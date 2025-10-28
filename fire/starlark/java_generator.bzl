@@ -128,13 +128,14 @@ def _generate_table_class(param, class_name, indent = "    "):
 
     return lines
 
-def generate_java_code(namespace, parameters, class_name = "Parameters"):
+def generate_java_code(namespace, parameters, class_name = "Parameters", source_label = None):
     """Generate Java class with parameters.
 
     Args:
         namespace: Java package namespace (e.g., "com.example.vehicle")
         parameters: List of parameter dictionaries
         class_name: Name of the generated class
+        source_label: Optional Bazel label for traceability
 
     Returns:
         Java class content as string
@@ -143,6 +144,8 @@ def generate_java_code(namespace, parameters, class_name = "Parameters"):
 
     # Header
     lines.append("// This file is auto-generated. Do not edit manually.")
+    if source_label:
+        lines.append("// Generated from: {}".format(source_label))
     lines.append("package {};".format(namespace.replace(".", ".").replace("::", ".")))
     lines.append("")
     lines.append("/**")

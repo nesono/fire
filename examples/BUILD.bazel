@@ -11,9 +11,9 @@ load("//fire/starlark:requirements.bzl", "requirement_library")
 load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
 # Define parameters (loaded from separate .bzl file for better organization)
+# Namespace is auto-derived from package path: examples -> examples
 parameter_library(
     name = "vehicle_params_header",
-    namespace = "vehicle.dynamics",
     parameters = VEHICLE_PARAMS,
 )
 
@@ -24,25 +24,25 @@ cc_parameter_library(
 )
 
 # Generate Python parameters
+# Auto-derived: examples -> examples (Python module)
 python_parameter_library(
     name = "vehicle_params_py",
-    namespace = "vehicle.dynamics",
     parameters = VEHICLE_PARAMS,
 )
 
 # Generate Java parameters
+# Auto-derived: examples -> examples.examples (with prefix)
 java_parameter_library(
     name = "vehicle_params_java",
     class_name = "VehicleParams",
-    namespace = "com.example.vehicle.dynamics",
+    package_prefix = "com.example",  # Results in: com.example.examples
     parameters = VEHICLE_PARAMS,
 )
 
 # Generate Go parameters
+# Auto-derived: examples -> package examples
 go_parameter_library(
     name = "vehicle_params_go",
-    package_name = "dynamics",
-    namespace = "vehicle.dynamics",  # Namespace for validation (dots are allowed)
     parameters = VEHICLE_PARAMS,
 )
 
