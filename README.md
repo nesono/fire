@@ -98,7 +98,7 @@ VEHICLE_PARAMS = [
 
 ### 2. Create Bazel Targets
 
-In your `BUILD.bazel` file:
+In your `BUILD.bazel` file (e.g., in `vehicle/dynamics/`):
 
 ```python
 load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
@@ -106,11 +106,18 @@ load("@rules_cc//cc:defs.bzl", "cc_test")
 load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
 # Validate parameters and generate header
+# Namespace auto-derived from package path: vehicle/dynamics -> vehicle::dynamics
 parameter_library(
     name = "vehicle_params_header",
-    namespace = "vehicle.dynamics",
     parameters = VEHICLE_PARAMS,
 )
+
+# Or explicitly specify namespace if needed
+# parameter_library(
+#     name = "vehicle_params_header",
+#     namespace = "vehicle.dynamics",
+#     parameters = VEHICLE_PARAMS,
+# )
 
 # Create C++ library from parameters
 cc_parameter_library(
@@ -154,7 +161,7 @@ int main() {
 
 ### 4. Multi-Language Support
 
-Generate parameters for Python, Java, and Go tests:
+Generate parameters for Python, Java, and Go tests (in `vehicle/dynamics/`):
 
 ```python
 load(
@@ -165,25 +172,25 @@ load(
 )
 
 # Generate Python parameters
+# Namespace auto-derived: vehicle/dynamics -> vehicle.dynamics
 python_parameter_library(
     name = "vehicle_params_py",
-    namespace = "vehicle.dynamics",
     parameters = VEHICLE_PARAMS,
 )
 
-# Generate Java parameters
+# Generate Java parameters with package prefix
+# Namespace auto-derived: vehicle/dynamics -> com.example.vehicle.dynamics
 java_parameter_library(
     name = "vehicle_params_java",
-    namespace = "com.example.vehicle.dynamics",
+    package_prefix = "com.example",  # Optional prefix for Java packages
     class_name = "VehicleParams",
     parameters = VEHICLE_PARAMS,
 )
 
 # Generate Go parameters
+# Package name auto-derived: vehicle/dynamics -> package dynamics
 go_parameter_library(
     name = "vehicle_params_go",
-    namespace = "vehicle.dynamics",
-    package_name = "dynamics",
     parameters = VEHICLE_PARAMS,
 )
 ```
@@ -302,13 +309,13 @@ requirement_library(
 
 ### Namespace
 
-When defining a `parameter_library`, specify the C++ namespace (supports nested namespaces):
+Namespaces are **auto-derived from the Bazel package path** for consistency with your build structure:
 
 ```python
+# In package vehicle/dynamics/braking/BUILD.bazel
 parameter_library(
     name = "my_params_header",
-    namespace = "vehicle.dynamics.braking",
-    parameters = [...],
+    parameters = [...],  # Namespace auto-derived as vehicle::dynamics::braking
 )
 ```
 
@@ -322,6 +329,16 @@ namespace braking {
 }
 }
 }
+```
+
+You can also **explicitly specify** a namespace if needed:
+
+```python
+parameter_library(
+    name = "my_params_header",
+    namespace = "custom.namespace",
+    parameters = [...],
+)
 ```
 
 ### Simple Parameters
@@ -477,13 +494,22 @@ Validates parameters and generates a C++ header file.
 **Attributes:**
 
 - `name`: Name of the target (generates `<name>.h`)
-- `namespace`: C++ namespace for parameters (required)
+- `namespace`: C++ namespace for parameters (optional, auto-derived from package path if not provided)
 - `parameters`: List of parameter dictionaries (required)
 - `schema_version`: Schema version (optional, defaults to "1.0")
 
 **Example:**
 
 ```python
+# Namespace auto-derived from package path
+parameter_library(
+    name = "my_params_header",
+    parameters = [
+        {"name": "value1", "type": "float", "value": 1.0, "description": "..."},
+    ],
+)
+
+# Or explicitly specify namespace
 parameter_library(
     name = "my_params_header",
     namespace = "my.namespace",
@@ -519,13 +545,20 @@ Generates a Python module with parameters.
 **Attributes:**
 
 - `name`: Name of the generated module (creates `name.py`)
-- `namespace`: Python module namespace
+- `namespace`: Python module namespace (optional, auto-derived from package path if not provided)
 - `parameters`: List of parameter dictionaries
 - `schema_version`: Schema version (optional, defaults to "1.0")
 
 **Example:**
 
 ```python
+# Namespace auto-derived from package path
+python_parameter_library(
+    name = "vehicle_params_py",
+    parameters = VEHICLE_PARAMS,
+)
+
+# Or explicitly specify namespace
 python_parameter_library(
     name = "vehicle_params_py",
     namespace = "vehicle.dynamics",
@@ -540,14 +573,24 @@ Generates a Java class with parameters.
 **Attributes:**
 
 - `name`: Name of the generated class file
-- `namespace`: Java package namespace (e.g., "com.example.vehicle")
-- `parameters`: List of parameter dictionaries
+- `namespace`: Java package namespace (optional, auto-derived from package path if not provided)
+- `package_prefix`: Optional prefix for Java packages (e.g., "com.example")
 - `class_name`: Name of the generated class (optional, defaults to "Parameters")
+- `parameters`: List of parameter dictionaries
 - `schema_version`: Schema version (optional, defaults to "1.0")
 
 **Example:**
 
 ```python
+# Namespace auto-derived from package path with prefix
+java_parameter_library(
+    name = "vehicle_params_java",
+    package_prefix = "com.example",  # Results in: com.example.<package_path>
+    class_name = "VehicleParams",
+    parameters = VEHICLE_PARAMS,
+)
+
+# Or explicitly specify full namespace
 java_parameter_library(
     name = "vehicle_params_java",
     namespace = "com.example.vehicle.dynamics",
@@ -563,17 +606,23 @@ Generates a Go package with parameters.
 **Attributes:**
 
 - `name`: Name of the generated Go file (creates `name.go`)
-- `namespace`: Go package path
+- `namespace`: Go package path (optional, auto-derived from package path if not provided)
+- `package_name`: Go package name (optional, auto-derived from last component of namespace if not provided)
 - `parameters`: List of parameter dictionaries
-- `package_name`: Go package name (optional, defaults to "parameters")
 - `schema_version`: Schema version (optional, defaults to "1.0")
 
 **Example:**
 
 ```python
+# Package name auto-derived from package path
 go_parameter_library(
     name = "vehicle_params_go",
-    namespace = "vehicle.dynamics",
+    parameters = VEHICLE_PARAMS,  # vehicle/dynamics -> package dynamics
+)
+
+# Or explicitly specify package name
+go_parameter_library(
+    name = "vehicle_params_go",
     package_name = "dynamics",
     parameters = VEHICLE_PARAMS,
 )

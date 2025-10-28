@@ -106,12 +106,13 @@ def _to_pascal_case(snake_str):
     components = snake_str.split("_")
     return "".join([c.capitalize() for c in components])
 
-def generate_python_code(_namespace, parameters):
+def generate_python_code(_namespace, parameters, source_label = None):
     """Generate Python module with parameters.
 
     Args:
         _namespace: Module namespace (not used in Python generation, kept for API consistency)
         parameters: List of parameter dictionaries
+        source_label: Optional Bazel label for traceability
 
     Returns:
         Python module content as string
@@ -121,6 +122,8 @@ def generate_python_code(_namespace, parameters):
     # Header
     lines.append("\"\"\"Generated parameter definitions.\"\"\"")
     lines.append("# This file is auto-generated. Do not edit manually.")
+    if source_label:
+        lines.append("# Generated from: {}".format(source_label))
     lines.append("")
     lines.append("import dataclasses")
     lines.append("import typing")

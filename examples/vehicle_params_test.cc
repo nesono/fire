@@ -6,7 +6,7 @@
 #include <iostream>
 
 int main() {
-    using namespace vehicle::dynamics;
+    using namespace examples;
 
     // Test simple float parameter
     assert(maximum_vehicle_velocity == 55.0);
