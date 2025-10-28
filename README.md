@@ -10,6 +10,7 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 
 - **Phase 1: Parameter System** ✓ Complete
 - **Phase 2: Requirements & Templates** ✓ Complete
+- **Phase 3: Cross-References & Traceability** ✓ Complete
 
 ## Features
 
@@ -31,6 +32,19 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 - **Template System**: Predefined requirement types (functional, safety, interface, etc.)
 - **Unit Tests**: Comprehensive validation tests for requirement documents
 
+### Phase 3: Cross-References & Traceability
+
+- **Cross-References**: Link requirements to parameters, other requirements, tests, and standards
+- **Reference Validation**: Validate reference formats and integrity
+- **Markdown Link Support**: Use proper markdown links that render in web UIs
+- **Parameter References**: `[@parameter_name](path/file.bzl#parameter_name)` syntax
+- **Requirement References**: `[REQ-ID](REQ-ID.md)` syntax
+- **Test References**: `[test_name](BUILD.bazel#test_name)` syntax
+- **Bi-directional Validation**: Body markdown references must match frontmatter declarations
+- **Traceability Matrix**: Generate matrices showing requirement relationships
+- **Coverage Reports**: Track which requirements have parameter/test coverage
+- **Unit Tests**: Comprehensive tests for reference validation and markdown parsing
+
 ### General
 
 - **No Dependencies**: Zero runtime dependencies
@@ -42,6 +56,7 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 Parameters are defined in Starlark (either inline in BUILD files or in separate .bzl files):
 
 **vehicle_params.bzl**:
+
 ```python
 """Vehicle parameter definitions."""
 
@@ -138,6 +153,7 @@ int main() {
 Requirements are written in Markdown with YAML frontmatter:
 
 **requirements/REQ-VEL-001.md**:
+
 ```markdown
 ---
 id: REQ-VEL-001
@@ -147,21 +163,34 @@ status: approved
 priority: critical
 owner: safety-team
 tags: [velocity, safety, ASIL-D]
+references:
+  parameters:
+    - maximum_vehicle_velocity
+  requirements:
+    - REQ-BRK-001
+  standards:
+    - ISO 26262:2018, Part 3, Section 7
+  tests:
+    - //examples:vehicle_params_test
 ---
 
 # REQ-VEL-001: Maximum Vehicle Velocity
 
 ## Description
-The vehicle SHALL NOT exceed the maximum design velocity of 55.0 m/s
+
+The vehicle SHALL NOT exceed the maximum design velocity defined by
+[@maximum_vehicle_velocity](../vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s)
 under any operating conditions.
 
 ## Rationale
-This requirement is derived from ISO 26262:2018 safety analysis for
-ASIL-D classification.
 
-## References
-- Parameter: `maximum_vehicle_velocity` (55.0 m/s)
-- Standard: ISO 26262:2018, Part 3, Section 7
+This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www.iso.org/standard/68383.html)
+safety analysis for ASIL-D classification. The requirement relates to braking
+performance (see [REQ-BRK-001](REQ-BRK-001.md)).
+
+## Verification
+
+Testing is performed according to [vehicle_params_test](../BUILD.bazel#vehicle_params_test).
 ```
 
 ### 5. Validate Requirements
@@ -192,6 +221,7 @@ parameter_library(
 ```
 
 This generates:
+
 ```cpp
 namespace vehicle {
 namespace dynamics {
@@ -282,6 +312,33 @@ Requirements are Markdown documents with YAML frontmatter.
 - `priority`: One of `low`, `medium`, `high`, `critical`
 - `owner`: Team or individual responsible
 - `tags`: List of tags for categorization
+- `references`: Cross-references to other entities
+  - `parameters`: List of parameter names
+  - `requirements`: List of requirement IDs
+  - `tests`: List of Bazel test targets
+  - `standards`: List of standard references
+
+### Markdown References
+
+Requirements can use markdown links to reference parameters, other requirements, tests, and standards.
+These links render properly in web UIs (GitHub, GitLab, etc.) and are validated against frontmatter.
+
+**Reference Syntax:**
+
+- **Parameter Reference**: `[@parameter_name](path/file.bzl#parameter_name)`
+  - Uses `@` prefix to distinguish from regular links
+  - Links to the parameter definition file
+
+- **Requirement Reference**: `[REQ-ID](REQ-ID.md)`
+  - Links to the requirement markdown file
+
+- **Test Reference**: `[test_name](BUILD.bazel#test_name)`
+  - Links to the Bazel BUILD file with anchor to test target
+
+- **External Reference**: `[text](https://url)`
+  - Standard markdown links for standards, specifications, etc.
+
+**Validation**: All markdown references in the body must be declared in the frontmatter `references` section.
 
 ### Example
 
@@ -294,17 +351,29 @@ status: approved
 priority: high
 owner: dynamics-team
 tags: [braking, safety, performance]
+references:
+  parameters:
+    - braking_distance_table
+  requirements:
+    - REQ-VEL-001
+  standards:
+    - UN ECE R13-H
+  tests:
+    - //examples:vehicle_params_test
 ---
 
 # REQ-BRK-001: Emergency Braking Distance
 
 ## Description
-The vehicle SHALL achieve emergency braking according to the
-braking distance table parameters.
 
-## References
-- Parameter: `braking_distance_table`
-- Standard: UN ECE R13-H
+The vehicle SHALL achieve emergency braking according to
+[@braking_distance_table](../vehicle_params.bzl#braking_distance_table).
+This requirement relates to [REQ-VEL-001](REQ-VEL-001.md).
+
+## Verification
+
+Testing performed by [vehicle_params_test](../BUILD.bazel#vehicle_params_test).
+Compliance verified against [UN ECE R13-H](https://unece.org/r13h).
 ```
 
 ## Bazel Rules
@@ -314,12 +383,14 @@ braking distance table parameters.
 Validates parameters and generates a C++ header file.
 
 **Attributes:**
+
 - `name`: Name of the target (generates `<name>.h`)
 - `namespace`: C++ namespace for parameters (required)
 - `parameters`: List of parameter dictionaries (required)
 - `schema_version`: Schema version (optional, defaults to "1.0")
 
 **Example:**
+
 ```python
 parameter_library(
     name = "my_params_header",
@@ -335,11 +406,13 @@ parameter_library(
 Creates a `cc_library` from a parameter library for easy inclusion in C++ targets.
 
 **Attributes:**
+
 - `name`: Name of the `cc_library`
 - `parameter_library`: Label of the `parameter_library` target (the generated `.h` file)
 - Additional `cc_library` attributes supported
 
 **Example:**
+
 ```python
 cc_parameter_library(
     name = "my_params_cc",
@@ -352,10 +425,12 @@ cc_parameter_library(
 Creates a filegroup containing requirement documents.
 
 **Attributes:**
+
 - `name`: Name of the target
 - `srcs`: List of requirement Markdown files
 
 **Example:**
+
 ```python
 requirement_library(
     name = "safety_requirements",
@@ -365,7 +440,7 @@ requirement_library(
 
 ## Project Structure
 
-```
+```text
 fire/
 ├── MODULE.bazel              # Bazel module definition
 ├── BUILD.bazel               # Root build file
@@ -379,15 +454,20 @@ fire/
 │       ├── parameters.bzl    # parameter_library and cc_parameter_library rules
 │       ├── requirement_validator.bzl # Requirement validation logic
 │       ├── requirement_validator_test.bzl # Requirement validator tests
+│       ├── reference_validator.bzl # Cross-reference validation
+│       ├── reference_validator_test.bzl # Reference validator tests
+│       ├── markdown_parser.bzl # Markdown link parsing and validation
+│       ├── markdown_parser_test.bzl # Markdown parser tests
+│       ├── traceability.bzl  # Traceability matrix and coverage generation
 │       ├── requirements.bzl  # requirement_library rule
 │       └── BUILD.bazel
 └── examples/                 # Example usage
     ├── vehicle_params.bzl    # Example parameter definitions
     ├── vehicle_params_test.cc  # Integration test
     ├── requirements/         # Example requirements
-    │   ├── REQ-VEL-001.md
-    │   ├── REQ-BRK-001.md
-    │   └── REQ-WHEEL-001.md
+    │   ├── REQ-VEL-001.md    # (with cross-references)
+    │   ├── REQ-BRK-001.md    # (with cross-references)
+    │   └── REQ-WHEEL-001.md  # (with cross-references)
     └── BUILD.bazel
 ```
 
@@ -409,7 +489,9 @@ pre-commit run --all-files
 ```
 
 Pre-commit hooks include:
+
 - **Buildifier**: Bazel and Starlark file formatting
+- **Markdownlint**: Markdown linting with auto-fix
 - **General**: Trailing whitespace, EOF fixers, file checks
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
@@ -429,6 +511,8 @@ Run specific test suites:
 bazel test //fire/starlark:validator_test
 bazel test //fire/starlark:cpp_generator_test
 bazel test //fire/starlark:requirement_validator_test
+bazel test //fire/starlark:reference_validator_test
+bazel test //fire/starlark:markdown_parser_test
 
 # Integration tests
 bazel test //examples:vehicle_params_test
@@ -456,6 +540,23 @@ bazel test //examples:vehicle_params_test
 6. **Body Content**: Must be at least 10 characters
 7. **Frontmatter**: Must be valid YAML between `---` markers
 
+### Cross-Reference Validation
+
+1. **Parameter References**: Valid parameter identifiers (letters, numbers, underscores)
+2. **Requirement References**: Valid requirement IDs
+3. **Test References**: Valid Bazel labels (start with `//` or `:`)
+4. **Standard References**: Minimum 3 characters
+5. **Reference Types**: Only `parameters`, `requirements`, `tests`, `standards` allowed
+6. **Reference Format**: Must be lists of strings
+
+### Markdown Reference Validation
+
+1. **Parameter Links**: `[@parameter_name](path)` syntax with valid parameter name
+2. **Requirement Links**: `[REQ-ID](*.md)` syntax with valid requirement ID
+3. **Test Links**: `[test_name](BUILD*)` syntax
+4. **Body-Frontmatter Match**: All markdown references in body must be declared in frontmatter
+5. **Validation Timing**: Checked at build time during requirement validation
+
 ## Design Philosophy
 
 Fire follows these principles:
@@ -469,6 +570,7 @@ Fire follows these principles:
 ## Roadmap
 
 ### ✅ Phase 1: Foundation & Parameter System (Complete)
+
 - Starlark parameter validation
 - C++ code generation
 - Bazel rules integration
@@ -476,32 +578,41 @@ Fire follows these principles:
 - Comprehensive unit tests
 
 ### ✅ Phase 2: Requirements & Templates (Complete)
+
 - Markdown requirement documents with YAML frontmatter
 - Requirement validation (structure, types, mandatory fields)
 - Requirement metadata (ID, title, type, status, priority, owner, tags)
 - Template system with predefined requirement types
 - Comprehensive unit tests for requirement validation
 
-### Phase 3: Cross-References & Traceability (Planned)
-- References between requirements and parameters
-- Dependency tracking via Bazel
-- Traceability analysis
+### ✅ Phase 3: Cross-References & Traceability (Complete)
+
+- Cross-reference system linking requirements to parameters, requirements, tests, and standards
+- Reference validation with type-specific rules
+- Traceability matrix generation (Markdown format)
+- Coverage report generation
+- Bi-directional traceability support
+- Comprehensive unit tests for reference validation
 
 ### Phase 4: Multi-Language Code Generation (Planned)
+
 - Python parameter libraries
 - Additional language support
 
 ### Phase 5: Change Management & Review Tracking (Planned)
+
 - Requirement versioning
 - Change impact analysis
 - Review status tracking
 
 ### Phase 6: Reporting & Compliance (Planned)
+
 - Traceability matrices
 - Compliance reports
 - Multiple export formats
 
 ### Phase 7: Advanced Features & Polish (Planned)
+
 - IDE integration
 - Pre-commit hooks
 - Performance optimization

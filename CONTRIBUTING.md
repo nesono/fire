@@ -13,17 +13,20 @@ Thank you for your interest in contributing to Fire! This document provides guid
 ### Initial Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd fire.git
    ```
 
 2. **Install Python dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. **Install pre-commit hooks**
+
    ```bash
    pre-commit install
    ```
@@ -40,7 +43,8 @@ Fire follows strict TDD practices:
 2. **Make tests pass** - Implement the minimum code needed
 3. **Refactor** - Improve the code while keeping tests green
 4. **Colocate tests** - Keep test files next to implementation files:
-   ```
+
+   ```text
    fire/parameters/
    ├── validator.py          # Implementation
    └── validator_test.py     # Tests (same directory)
@@ -131,6 +135,7 @@ py_test(
 The following hooks are configured:
 
 ### General Checks
+
 - **trailing-whitespace**: Remove trailing whitespace
 - **end-of-file-fixer**: Ensure files end with newline
 - **check-yaml**: Validate YAML syntax
@@ -140,6 +145,7 @@ The following hooks are configured:
 - **mixed-line-ending**: Ensure consistent line endings
 
 ### Python Checks
+
 - **black**: Auto-format Python code
 - **isort**: Sort and organize imports
 - **flake8**: Lint Python code
@@ -147,6 +153,7 @@ The following hooks are configured:
 - **pydocstyle**: Check docstring style
 
 ### Bazel Checks
+
 - **buildifier**: Format Bazel files
 - **buildifier-lint**: Lint Bazel files
 
@@ -165,6 +172,7 @@ git commit --no-verify -m "Your message"
 ### Adding New Features
 
 1. **Create tests first**
+
    ```python
    # fire/parameters/new_feature_test.py
    def test_new_feature():
@@ -173,6 +181,7 @@ git commit --no-verify -m "Your message"
    ```
 
 2. **Implement the feature**
+
    ```python
    # fire/parameters/new_feature.py
    def new_feature():
@@ -181,11 +190,13 @@ git commit --no-verify -m "Your message"
    ```
 
 3. **Run tests**
+
    ```bash
    bazel test //fire/parameters:new_feature_test
    ```
 
 4. **Commit with descriptive message**
+
    ```bash
    git add fire/parameters/new_feature.py fire/parameters/new_feature_test.py
    git commit -m "Add new_feature for parameter validation"
@@ -196,6 +207,7 @@ git commit --no-verify -m "Your message"
 1. Update `requirements.txt`
 2. Update `requirements_lock.txt` if needed
 3. Test that all builds still work:
+
    ```bash
    bazel test //...
    ```
@@ -203,6 +215,7 @@ git commit --no-verify -m "Your message"
 ## Pull Request Process
 
 1. **Create a feature branch**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -210,16 +223,19 @@ git commit --no-verify -m "Your message"
 2. **Make your changes** following TDD
 
 3. **Ensure all tests pass**
+
    ```bash
    bazel test //...
    ```
 
 4. **Ensure pre-commit hooks pass**
+
    ```bash
    pre-commit run --all-files
    ```
 
 5. **Push and create PR**
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -235,6 +251,7 @@ git commit --no-verify -m "Your message"
 All pull requests must pass CI checks before merging. The CI pipeline runs:
 
 ### Pre-commit Checks
+
 - Black (Python formatting)
 - isort (import sorting)
 - flake8 (linting)
@@ -244,12 +261,14 @@ All pull requests must pass CI checks before merging. The CI pipeline runs:
 - General file checks
 
 ### Bazel Tests
+
 - Runs on both Ubuntu and macOS
 - All unit tests (`//fire/parameters:*_test`)
 - Integration tests (`//examples:vehicle_params_test`)
 - Build verification for all targets
 
 ### Integration Verification
+
 - Verifies parameter validation
 - Checks C++ code generation
 - Validates generated headers
@@ -258,7 +277,7 @@ CI workflow is defined in `.github/workflows/ci.yaml`.
 
 ## Project Structure
 
-```
+```text
 fire/
 ├── fire/
 │   ├── parameters/       # Core parameter logic
@@ -290,6 +309,7 @@ pre-commit clean
 ### Black and flake8 conflicts
 
 Our configuration is set to avoid conflicts:
+
 - Black line length: 88
 - Flake8 configured to ignore E203, W503
 

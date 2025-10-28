@@ -34,9 +34,10 @@ load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_l
 
 Parameters can be defined inline in BUILD.bazel or in separate .bzl files.
 
-**Option 1: Separate .bzl file (recommended for larger parameter sets)**
+#### Option 1: Separate .bzl file (recommended for larger parameter sets)
 
 `vehicle_params.bzl`:
+
 ```python
 """Vehicle parameter definitions."""
 
@@ -58,6 +59,7 @@ VEHICLE_PARAMS = [
 ```
 
 `BUILD.bazel`:
+
 ```python
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
@@ -85,7 +87,7 @@ cc_library(
 )
 ```
 
-**Option 2: Inline (good for small parameter sets)**
+#### Option 2: Inline (good for small parameter sets)
 
 ```python
 load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
@@ -127,7 +129,7 @@ Here's a complete example for an autonomous vehicle project:
 
 ### Project Structure
 
-```
+```text
 my_vehicle_project/
 ├── MODULE.bazel
 ├── vehicle/
@@ -436,7 +438,7 @@ IDEs show this documentation on hover!
 
 ### 1. Organize Parameters by Domain
 
-```
+```text
 parameters/
 ├── BUILD.bazel
     ├── dynamics (velocity, acceleration, etc.)
@@ -498,18 +500,23 @@ Explain **why** a parameter has its value, not just what it is.
 ## Advantages Over External Configuration Files
 
 ### Immediate Feedback
+
 Errors are caught when loading BUILD files, not during builds or at runtime.
 
 ### No File Parsing
+
 Parameters are Starlark data - no YAML/JSON parsing, no file I/O.
 
 ### IDE Support
+
 Starlark is understood by Bazel IDEs - syntax highlighting, validation, refactoring.
 
 ### Version Control Friendly
+
 Parameters are in BUILD files alongside the code that uses them.
 
 ### Bazel-Native
+
 No external tools or dependencies required.
 
 ## Building and Testing
@@ -533,6 +540,7 @@ bazel test //vehicle/control:controller_test
 ### "Parameter validation failed"
 
 Check the error message - it tells you exactly what's wrong:
+
 - Missing required fields
 - Invalid type
 - Table column mismatch
@@ -551,6 +559,7 @@ parameter_library(
 ```
 
 Include it as:
+
 ```cpp
 #include "my_params_header.h"
 ```
@@ -565,6 +574,7 @@ bazel build //your:target
 ```
 
 Or use:
+
 ```bash
 bazel build //your:target --expunge
 ```
@@ -578,6 +588,7 @@ bazel build //your:target --expunge
 ## Example Repository
 
 See the `examples/` directory for a complete working example with:
+
 - Multiple parameter types (float, integer, string, boolean, table)
 - Nested namespaces
 - C++ test demonstrating usage

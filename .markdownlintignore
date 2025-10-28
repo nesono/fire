@@ -1,0 +1,4 @@
+# Ignore generated files and vendored dependencies
+node_modules/
+bazel-*
+.git/

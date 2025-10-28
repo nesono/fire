@@ -1,0 +1,51 @@
+# Markdownlint configuration for Fire project
+# See https://github.com/DavidAnson/markdownlint for rule details
+
+# Default state for all rules
+default: true
+
+# MD013/line-length - Line length
+MD013:
+  # Allow longer lines for technical documentation
+  line_length: 200
+  code_blocks: false
+  tables: false
+
+# MD024/no-duplicate-heading - Multiple headings with the same content
+MD024:
+  # Allow duplicate headings in different sections
+  siblings_only: true
+
+# MD025/single-title/single-h1 - Multiple top-level headings
+MD025: false  # Requirement files intentionally have multiple H1s (frontmatter + body)
+
+# MD033/no-inline-html - Inline HTML
+MD033:
+  # Allow inline HTML for advanced formatting if needed
+  allowed_elements: []
+
+# MD034/no-bare-urls - Bare URL used
+MD034: false
+
+# MD036/no-emphasis-as-heading - Emphasis used instead of a heading
+MD036:
+  # Allow emphasis for non-heading purposes
+  punctuation: ".,;:!?。，；：！？"
+
+# MD041/first-line-heading - First line in file should be a top level heading
+MD041: false
+
+# MD046/code-block-style - Code block style
+MD046:
+  # Prefer fenced code blocks
+  style: fenced
+
+# MD049/emphasis-style - Emphasis style
+MD049:
+  # Use asterisks for emphasis
+  style: asterisk
+
+# MD050/strong-style - Strong style
+MD050:
+  # Use asterisks for strong
+  style: asterisk
