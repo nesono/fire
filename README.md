@@ -6,11 +6,14 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 
 **Pure Starlark implementation** - no runtime dependencies, validation at load time, type-safe code generation.
 
-## Status: Phase 1 - Parameter System ✓
+## Status
 
-Phase 1 is complete and provides parameter management with code generation capabilities.
+- **Phase 1: Parameter System** ✓ Complete
+- **Phase 2: Requirements & Templates** ✓ Complete
 
-## Features (Phase 1)
+## Features
+
+### Phase 1: Parameter System
 
 - **Load-Time Validation**: Parameters validated when BUILD files load
 - **Type System**: Support for `float`, `integer`, `string`, `boolean`, and `table` types
@@ -19,6 +22,17 @@ Phase 1 is complete and provides parameter management with code generation capab
 - **C++ Code Generation**: Generate type-safe `constexpr` C++ headers from parameters
 - **Bazel Integration**: Native Starlark rules for seamless integration
 - **Unit Tests**: Comprehensive Starlark unit tests using Skylib's unittest framework
+
+### Phase 2: Requirements & Templates
+
+- **Markdown Requirements**: Requirements documents with YAML frontmatter
+- **Requirement Validation**: Enforce structure, types, and mandatory fields
+- **Requirement Metadata**: ID, title, type, status, priority, owner, tags
+- **Template System**: Predefined requirement types (functional, safety, interface, etc.)
+- **Unit Tests**: Comprehensive validation tests for requirement documents
+
+### General
+
 - **No Dependencies**: Zero runtime dependencies
 
 ## Quick Start
@@ -119,6 +133,50 @@ int main() {
 }
 ```
 
+### 4. Define Requirements
+
+Requirements are written in Markdown with YAML frontmatter:
+
+**requirements/REQ-VEL-001.md**:
+```markdown
+---
+id: REQ-VEL-001
+title: Maximum Vehicle Velocity
+type: safety
+status: approved
+priority: critical
+owner: safety-team
+tags: [velocity, safety, ASIL-D]
+---
+
+# REQ-VEL-001: Maximum Vehicle Velocity
+
+## Description
+The vehicle SHALL NOT exceed the maximum design velocity of 55.0 m/s
+under any operating conditions.
+
+## Rationale
+This requirement is derived from ISO 26262:2018 safety analysis for
+ASIL-D classification.
+
+## References
+- Parameter: `maximum_vehicle_velocity` (55.0 m/s)
+- Standard: ISO 26262:2018, Part 3, Section 7
+```
+
+### 5. Validate Requirements
+
+In your `BUILD.bazel`:
+
+```python
+load("@fire//fire/starlark:requirements.bzl", "requirement_library")
+
+requirement_library(
+    name = "safety_requirements",
+    srcs = glob(["requirements/*.md"]),
+)
+```
+
 ## Parameter Format
 
 ### Namespace
@@ -208,6 +266,47 @@ constexpr GearRatiosRow gear_ratios[] = {
 constexpr size_t gear_ratios_size = 4;
 ```
 
+## Requirement Format
+
+Requirements are Markdown documents with YAML frontmatter.
+
+### Required Fields
+
+- `id`: Unique identifier (letters, numbers, hyphens, underscores)
+- `title`: Human-readable title
+- `type`: One of `functional`, `non-functional`, `safety`, `interface`, `constraint`, `performance`
+- `status`: One of `draft`, `proposed`, `approved`, `implemented`, `verified`, `deprecated`
+
+### Optional Fields
+
+- `priority`: One of `low`, `medium`, `high`, `critical`
+- `owner`: Team or individual responsible
+- `tags`: List of tags for categorization
+
+### Example
+
+```markdown
+---
+id: REQ-BRK-001
+title: Emergency Braking Distance
+type: functional
+status: approved
+priority: high
+owner: dynamics-team
+tags: [braking, safety, performance]
+---
+
+# REQ-BRK-001: Emergency Braking Distance
+
+## Description
+The vehicle SHALL achieve emergency braking according to the
+braking distance table parameters.
+
+## References
+- Parameter: `braking_distance_table`
+- Standard: UN ECE R13-H
+```
+
 ## Bazel Rules
 
 ### `parameter_library()`
@@ -248,6 +347,22 @@ cc_parameter_library(
 )
 ```
 
+### `requirement_library()`
+
+Creates a filegroup containing requirement documents.
+
+**Attributes:**
+- `name`: Name of the target
+- `srcs`: List of requirement Markdown files
+
+**Example:**
+```python
+requirement_library(
+    name = "safety_requirements",
+    srcs = glob(["requirements/safety/*.md"]),
+)
+```
+
 ## Project Structure
 
 ```
@@ -262,10 +377,17 @@ fire/
 │       ├── cpp_generator.bzl # C++ code generation
 │       ├── cpp_generator_test.bzl # Generator unit tests
 │       ├── parameters.bzl    # parameter_library and cc_parameter_library rules
+│       ├── requirement_validator.bzl # Requirement validation logic
+│       ├── requirement_validator_test.bzl # Requirement validator tests
+│       ├── requirements.bzl  # requirement_library rule
 │       └── BUILD.bazel
 └── examples/                 # Example usage
     ├── vehicle_params.bzl    # Example parameter definitions
     ├── vehicle_params_test.cc  # Integration test
+    ├── requirements/         # Example requirements
+    │   ├── REQ-VEL-001.md
+    │   ├── REQ-BRK-001.md
+    │   └── REQ-WHEEL-001.md
     └── BUILD.bazel
 ```
 
@@ -306,6 +428,7 @@ Run specific test suites:
 # Starlark unit tests
 bazel test //fire/starlark:validator_test
 bazel test //fire/starlark:cpp_generator_test
+bazel test //fire/starlark:requirement_validator_test
 
 # Integration tests
 bazel test //examples:vehicle_params_test
@@ -313,7 +436,7 @@ bazel test //examples:vehicle_params_test
 
 ## Validation Rules
 
-The parameter validator enforces:
+### Parameter Validation
 
 1. **Required Fields**: `namespace` and `parameters` in `parameter_library()`
 2. **Namespace Format**: Must be dot-separated identifiers (e.g., `vehicle.dynamics`)
@@ -322,6 +445,16 @@ The parameter validator enforces:
 5. **Table Consistency**: All rows must have the same number of columns as defined
 6. **Unique Names**: Parameter names must be unique
 7. **Required Parameter Fields**: Each parameter needs `name`, `type`, `description`
+
+### Requirement Validation
+
+1. **Required Fields**: `id`, `title`, `type`, `status` in frontmatter
+2. **ID Format**: Letters, numbers, hyphens, underscores; must start with letter/underscore
+3. **Type Values**: `functional`, `non-functional`, `safety`, `interface`, `constraint`, `performance`
+4. **Status Values**: `draft`, `proposed`, `approved`, `implemented`, `verified`, `deprecated`
+5. **Priority Values** (optional): `low`, `medium`, `high`, `critical`
+6. **Body Content**: Must be at least 10 characters
+7. **Frontmatter**: Must be valid YAML between `---` markers
 
 ## Design Philosophy
 
@@ -342,10 +475,12 @@ Fire follows these principles:
 - Load-time validation
 - Comprehensive unit tests
 
-### Phase 2: Requirements & Templates (Planned)
-- Markdown requirement documents
-- Template validation
-- Requirement metadata
+### ✅ Phase 2: Requirements & Templates (Complete)
+- Markdown requirement documents with YAML frontmatter
+- Requirement validation (structure, types, mandatory fields)
+- Requirement metadata (ID, title, type, status, priority, owner, tags)
+- Template system with predefined requirement types
+- Comprehensive unit tests for requirement validation
 
 ### Phase 3: Cross-References & Traceability (Planned)
 - References between requirements and parameters

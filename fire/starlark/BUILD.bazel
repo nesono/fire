@@ -1,10 +1,13 @@
 load(":cpp_generator_test.bzl", "cpp_generator_test_suite")
+load(":requirement_validator_test.bzl", "requirement_validator_test_suite")
 load(":validator_test.bzl", "validator_test_suite")
 
 exports_files([
     "validator.bzl",
     "cpp_generator.bzl",
     "parameters.bzl",
+    "requirement_validator.bzl",
+    "requirements.bzl",
 ])
 
 # Unit tests for validator
@@ -12,3 +15,6 @@ validator_test_suite(name = "validator_test")
 
 # Unit tests for cpp_generator
 cpp_generator_test_suite(name = "cpp_generator_test")
+
+# Unit tests for requirement_validator
+requirement_validator_test_suite(name = "requirement_validator_test")

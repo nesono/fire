@@ -1,5 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
 load("//fire/starlark:parameters.bzl", "cc_parameter_library", "parameter_library")
+load("//fire/starlark:requirements.bzl", "requirement_library")
 load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
 # Define parameters (loaded from separate .bzl file for better organization)
@@ -20,4 +21,10 @@ cc_test(
     name = "vehicle_params_test",
     srcs = ["vehicle_params_test.cc"],
     deps = [":vehicle_params_cc"],
+)
+
+# Validate requirement documents
+requirement_library(
+    name = "vehicle_requirements",
+    srcs = glob(["requirements/*.md"]),
 )
