@@ -1,5 +1,8 @@
 """Requirement validation logic."""
 
+load(":markdown_parser.bzl", "markdown_parser")
+load(":reference_validator.bzl", "reference_validator")
+
 def _parse_frontmatter(content):
     """Parse YAML frontmatter from markdown content.
 
@@ -226,6 +229,17 @@ def validate_requirement(content):
 
     # Validate frontmatter
     err = _validate_frontmatter(frontmatter)
+    if err:
+        return err
+
+    # Validate references
+    err = reference_validator.validate(frontmatter)
+    if err:
+        return err
+
+    # Validate markdown references in body
+    frontmatter_refs = frontmatter.get("references", None)
+    err = markdown_parser.validate_references(body, frontmatter_refs)
     if err:
         return err
 
