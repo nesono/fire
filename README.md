@@ -20,7 +20,11 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 - **Type System**: Support for `float`, `integer`, `string`, `boolean`, and `table` types
 - **Units**: Associate physical units with parameters
 - **Tables**: Define multi-column tabular data with typed columns
-- **C++ Code Generation**: Generate type-safe `constexpr` C++ headers from parameters
+- **Multi-Language Code Generation**: Generate type-safe code for C++, Python, Java, and Go
+- **C++ Generation**: `constexpr` headers with strong typing
+- **Python Generation**: Dataclasses with type hints
+- **Java Generation**: Records with immutable data
+- **Go Generation**: Constants and structs with type safety
 - **Bazel Integration**: Native Starlark rules for seamless integration
 - **Unit Tests**: Comprehensive Starlark unit tests using Skylib's unittest framework
 
@@ -148,7 +152,95 @@ int main() {
 }
 ```
 
-### 4. Define Requirements
+### 4. Multi-Language Support
+
+Generate parameters for Python, Java, and Go tests:
+
+```python
+load(
+    "//fire/starlark:parameters.bzl",
+    "python_parameter_library",
+    "java_parameter_library",
+    "go_parameter_library",
+)
+
+# Generate Python parameters
+python_parameter_library(
+    name = "vehicle_params_py",
+    namespace = "vehicle.dynamics",
+    parameters = VEHICLE_PARAMS,
+)
+
+# Generate Java parameters
+java_parameter_library(
+    name = "vehicle_params_java",
+    namespace = "com.example.vehicle.dynamics",
+    class_name = "VehicleParams",
+    parameters = VEHICLE_PARAMS,
+)
+
+# Generate Go parameters
+go_parameter_library(
+    name = "vehicle_params_go",
+    namespace = "vehicle.dynamics",
+    package_name = "dynamics",
+    parameters = VEHICLE_PARAMS,
+)
+```
+
+**Python usage:**
+
+```python
+from vehicle_params_py import (
+    MAXIMUM_VEHICLE_VELOCITY,
+    WHEEL_COUNT,
+    BRAKING_DISTANCE_TABLE_DATA,
+    BrakingDistanceTableRow,
+)
+
+def test_parameters():
+    assert MAXIMUM_VEHICLE_VELOCITY == 55.0
+    assert WHEEL_COUNT == 4
+
+    for row in BRAKING_DISTANCE_TABLE_DATA:
+        print(f"v={row.velocity}, μ={row.friction_coefficient}, d={row.braking_distance}")
+```
+
+**Java usage:**
+
+```java
+import com.example.vehicle.dynamics.VehicleParams;
+
+public class DynamicsTest {
+    @Test
+    public void testParameters() {
+        assertEquals(55.0, VehicleParams.MAXIMUM_VEHICLE_VELOCITY);
+        assertEquals(4, VehicleParams.WHEEL_COUNT);
+
+        for (var row : VehicleParams.BRAKING_DISTANCE_TABLE) {
+            // Access row.velocity(), row.frictionCoefficient(), row.brakingDistance()
+        }
+    }
+}
+```
+
+**Go usage:**
+
+```go
+import dynamics "yourproject/vehicle/dynamics"
+
+func TestParameters(t *testing.T) {
+    if dynamics.MaximumVehicleVelocity != 55.0 {
+        t.Error("Unexpected velocity")
+    }
+
+    for _, row := range dynamics.BrakingDistanceTable {
+        // Access row.Velocity, row.FrictionCoefficient, row.BrakingDistance
+    }
+}
+```
+
+### 5. Define Requirements
 
 Requirements are written in Markdown with YAML frontmatter:
 
@@ -420,6 +512,73 @@ cc_parameter_library(
 )
 ```
 
+### `python_parameter_library()`
+
+Generates a Python module with parameters.
+
+**Attributes:**
+
+- `name`: Name of the generated module (creates `name.py`)
+- `namespace`: Python module namespace
+- `parameters`: List of parameter dictionaries
+- `schema_version`: Schema version (optional, defaults to "1.0")
+
+**Example:**
+
+```python
+python_parameter_library(
+    name = "vehicle_params_py",
+    namespace = "vehicle.dynamics",
+    parameters = VEHICLE_PARAMS,
+)
+```
+
+### `java_parameter_library()`
+
+Generates a Java class with parameters.
+
+**Attributes:**
+
+- `name`: Name of the generated class file
+- `namespace`: Java package namespace (e.g., "com.example.vehicle")
+- `parameters`: List of parameter dictionaries
+- `class_name`: Name of the generated class (optional, defaults to "Parameters")
+- `schema_version`: Schema version (optional, defaults to "1.0")
+
+**Example:**
+
+```python
+java_parameter_library(
+    name = "vehicle_params_java",
+    namespace = "com.example.vehicle.dynamics",
+    class_name = "VehicleParams",
+    parameters = VEHICLE_PARAMS,
+)
+```
+
+### `go_parameter_library()`
+
+Generates a Go package with parameters.
+
+**Attributes:**
+
+- `name`: Name of the generated Go file (creates `name.go`)
+- `namespace`: Go package path
+- `parameters`: List of parameter dictionaries
+- `package_name`: Go package name (optional, defaults to "parameters")
+- `schema_version`: Schema version (optional, defaults to "1.0")
+
+**Example:**
+
+```python
+go_parameter_library(
+    name = "vehicle_params_go",
+    namespace = "vehicle.dynamics",
+    package_name = "dynamics",
+    parameters = VEHICLE_PARAMS,
+)
+```
+
 ### `requirement_library()`
 
 Creates a filegroup containing requirement documents.
@@ -450,8 +609,11 @@ fire/
 │       ├── validator.bzl     # Parameter validation logic
 │       ├── validator_test.bzl # Validator unit tests
 │       ├── cpp_generator.bzl # C++ code generation
+│       ├── python_generator.bzl # Python code generation
+│       ├── java_generator.bzl # Java code generation
+│       ├── go_generator.bzl  # Go code generation
 │       ├── cpp_generator_test.bzl # Generator unit tests
-│       ├── parameters.bzl    # parameter_library and cc_parameter_library rules
+│       ├── parameters.bzl    # Multi-language parameter library rules
 │       ├── requirement_validator.bzl # Requirement validation logic
 │       ├── requirement_validator_test.bzl # Requirement validator tests
 │       ├── reference_validator.bzl # Cross-reference validation
@@ -594,10 +756,13 @@ Fire follows these principles:
 - Bi-directional traceability support
 - Comprehensive unit tests for reference validation
 
-### Phase 4: Multi-Language Code Generation (Planned)
+### ✅ Phase 4: Multi-Language Code Generation (Complete)
 
-- Python parameter libraries
-- Additional language support
+- Python parameter libraries with dataclasses and type hints
+- Java parameter libraries with records (immutable)
+- Go parameter libraries with constants and structs
+- Example tests in all supported languages
+- Unified parameter validation across languages
 
 ### Phase 5: Change Management & Review Tracking (Planned)
 

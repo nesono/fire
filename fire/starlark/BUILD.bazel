@@ -7,6 +7,9 @@ load(":validator_test.bzl", "validator_test_suite")
 exports_files([
     "validator.bzl",
     "cpp_generator.bzl",
+    "python_generator.bzl",
+    "java_generator.bzl",
+    "go_generator.bzl",
     "parameters.bzl",
     "requirement_validator.bzl",
     "reference_validator.bzl",
