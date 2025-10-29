@@ -170,7 +170,16 @@ def validate_markdown_references(body, frontmatter_refs):
 
     # Check requirements
     body_reqs = body_refs.get("requirements", [])
-    fm_reqs = frontmatter_refs.get("requirements", []) if frontmatter_refs else []
+    fm_reqs_raw = frontmatter_refs.get("requirements", []) if frontmatter_refs else []
+
+    # Extract requirement IDs from frontmatter (support both string and dict formats)
+    fm_reqs = []
+    for ref in fm_reqs_raw:
+        if type(ref) == "string":
+            fm_reqs.append(ref)
+        elif type(ref) == "dict" and "id" in ref:
+            fm_reqs.append(ref["id"])
+
     for req in body_reqs:
         if req not in fm_reqs:
             return "markdown references requirement '{}' not declared in frontmatter".format(req)

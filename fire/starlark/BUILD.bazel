@@ -3,6 +3,7 @@ load(":markdown_parser_test.bzl", "markdown_parser_test_suite")
 load(":reference_validator_test.bzl", "reference_validator_test_suite")
 load(":requirement_validator_test.bzl", "requirement_validator_test_suite")
 load(":validator_test.bzl", "validator_test_suite")
+load(":version_validator_test.bzl", "version_validator_test_suite")
 
 exports_files([
     "validator.bzl",
@@ -13,6 +14,7 @@ exports_files([
     "parameters.bzl",
     "requirement_validator.bzl",
     "reference_validator.bzl",
+    "version_validator.bzl",
     "markdown_parser.bzl",
     "traceability.bzl",
     "requirements.bzl",
@@ -32,3 +34,6 @@ reference_validator_test_suite(name = "reference_validator_test")
 
 # Unit tests for markdown_parser
 markdown_parser_test_suite(name = "markdown_parser_test")
+
+# Unit tests for version_validator
+version_validator_test_suite(name = "version_validator_test")

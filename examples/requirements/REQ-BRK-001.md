@@ -6,11 +6,13 @@ status: approved
 priority: high
 owner: dynamics-team
 tags: [braking, safety, performance]
+version: 1
 references:
   parameters:
     - braking_distance_table
   requirements:
-    - REQ-VEL-001
+    - id: REQ-VEL-001
+      version: 2
   standards:
     - UN ECE R13-H
   tests:

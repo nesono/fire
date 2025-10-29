@@ -11,6 +11,8 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 - **Phase 1: Parameter System** ✓ Complete
 - **Phase 2: Requirements & Templates** ✓ Complete
 - **Phase 3: Cross-References & Traceability** ✓ Complete
+- **Phase 4: Multi-Language Code Generation** ✓ Complete
+- **Phase 5: Change Management & Review Tracking** ✓ Complete
 
 ## Features
 
@@ -48,6 +50,27 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 - **Traceability Matrix**: Generate matrices showing requirement relationships
 - **Coverage Reports**: Track which requirements have parameter/test coverage
 - **Unit Tests**: Comprehensive tests for reference validation and markdown parsing
+
+### Phase 4: Multi-Language Code Generation
+
+- **Python Code Generation**: Dataclasses with type hints and frozen immutability
+- **Java Code Generation**: Records with immutable data structures
+- **Go Code Generation**: Constants and structs with type safety
+- **Auto-derived Namespaces**: Namespaces automatically derived from Bazel package paths
+- **Java Package Prefix**: Optional package prefix for Java reverse-domain naming
+- **Source Label Traceability**: All generated files include Bazel source labels
+- **Unified Validation**: Single parameter source validated for all target languages
+- **Example Tests**: Test examples in all supported languages
+
+### Phase 5: Parent Requirement Version Tracking
+
+- **Simple Integer Versioning**: Requirements track version with simple positive integers (1, 2, 3, ...)
+- **Parent Version Tracking**: Derived requirements track which version of parent they're based on
+- **Stale Requirement Detection**: Immediately identify when parent requirement changes
+- **Flexible Reference Format**: Support both string refs (`"REQ-ID"`) and version-tracked refs (`{id: "REQ-ID", version: 2}`)
+- **Backward Compatible**: Old string-only format still supported
+- **Git for History**: Full change history tracked in Git (no duplication)
+- **Unit Tests**: 12 focused tests for integer versioning and parent tracking
 
 ### General
 
@@ -421,9 +444,10 @@ Requirements are Markdown documents with YAML frontmatter.
 - `priority`: One of `low`, `medium`, `high`, `critical`
 - `owner`: Team or individual responsible
 - `tags`: List of tags for categorization
+- `version`: Simple integer version number (1, 2, 3, ...)
 - `references`: Cross-references to other entities
   - `parameters`: List of parameter names
-  - `requirements`: List of requirement IDs
+  - `requirements`: List of requirement IDs (string) or dicts with `{id, version}`
   - `tests`: List of Bazel test targets
   - `standards`: List of standard references
 
@@ -448,6 +472,62 @@ These links render properly in web UIs (GitHub, GitLab, etc.) and are validated 
   - Standard markdown links for standards, specifications, etc.
 
 **Validation**: All markdown references in the body must be declared in the frontmatter `references` section.
+
+### Parent Requirement Version Tracking
+
+When a requirement is derived from a parent requirement, track the parent's version to detect when the parent changes.
+
+**Simple Integer Versioning**:
+
+```yaml
+version: 2  # Just increment when requirement changes
+```
+
+**Track Parent Versions** (derived requirements):
+
+```yaml
+references:
+  requirements:
+    # Old format (still supported, no version tracking)
+    - REQ-PARENT-001
+
+    # New format (tracks parent version)
+    - id: REQ-VEL-001
+      version: 2  # This requirement was derived from version 2 of REQ-VEL-001
+```
+
+**Detecting Stale Requirements**:
+
+When `REQ-VEL-001` changes to version 3, any child requirement still referencing version 2 is flagged as potentially needing review.
+
+**Why Simple Integers**:
+
+- Easy to understand and maintain
+- Git already tracks full history
+- Just need to know "did parent change?"
+- No complex versioning rules
+
+**Example**:
+
+Parent requirement `REQ-VEL-001.md`:
+
+```yaml
+id: REQ-VEL-001
+version: 2  # Incremented when requirement changed
+```
+
+Derived requirement `REQ-BRK-001.md`:
+
+```yaml
+id: REQ-BRK-001
+version: 1
+references:
+  requirements:
+    - id: REQ-VEL-001
+      version: 2  # Tracks which parent version this was derived from
+```
+
+If `REQ-VEL-001` changes to version 3, you can immediately identify that `REQ-BRK-001` needs review.
 
 ### Example
 
@@ -667,6 +747,8 @@ fire/
 │       ├── requirement_validator_test.bzl # Requirement validator tests
 │       ├── reference_validator.bzl # Cross-reference validation
 │       ├── reference_validator_test.bzl # Reference validator tests
+│       ├── version_validator.bzl # Versioning and change management validation
+│       ├── version_validator_test.bzl # Version validator tests
 │       ├── markdown_parser.bzl # Markdown link parsing and validation
 │       ├── markdown_parser_test.bzl # Markdown parser tests
 │       ├── traceability.bzl  # Traceability matrix and coverage generation
@@ -676,8 +758,8 @@ fire/
     ├── vehicle_params.bzl    # Example parameter definitions
     ├── vehicle_params_test.cc  # Integration test
     ├── requirements/         # Example requirements
-    │   ├── REQ-VEL-001.md    # (with cross-references)
-    │   ├── REQ-BRK-001.md    # (with cross-references)
+    │   ├── REQ-VEL-001.md    # (parent requirement with version)
+    │   ├── REQ-BRK-001.md    # (derived requirement tracking parent version)
     │   └── REQ-WHEEL-001.md  # (with cross-references)
     └── BUILD.bazel
 ```
@@ -723,6 +805,7 @@ bazel test //fire/starlark:validator_test
 bazel test //fire/starlark:cpp_generator_test
 bazel test //fire/starlark:requirement_validator_test
 bazel test //fire/starlark:reference_validator_test
+bazel test //fire/starlark:version_validator_test
 bazel test //fire/starlark:markdown_parser_test
 
 # Integration tests
@@ -768,6 +851,14 @@ bazel test //examples:vehicle_params_test
 4. **Body-Frontmatter Match**: All markdown references in body must be declared in frontmatter
 5. **Validation Timing**: Checked at build time during requirement validation
 
+### Version Tracking Validation
+
+1. **Integer Version**: Must be positive integer (>= 1)
+2. **Requirement Reference Formats**: Supports both string (`"REQ-ID"`) and dict (`{id: "REQ-ID", version: 2}`)
+3. **Version Field**: Optional - only needed if tracking parent versions
+4. **Parent Version**: When tracking parent, version must be positive integer
+5. **Backward Compatibility**: All versioning fields are optional
+
 ## Design Philosophy
 
 Fire follows these principles:
@@ -810,20 +901,29 @@ Fire follows these principles:
 - Python parameter libraries with dataclasses and type hints
 - Java parameter libraries with records (immutable)
 - Go parameter libraries with constants and structs
+- Auto-derived namespaces from Bazel package paths
+- Source label traceability in generated code
 - Example tests in all supported languages
 - Unified parameter validation across languages
 
-### Phase 5: Change Management & Review Tracking (Planned)
+### ✅ Phase 5: Parent Requirement Version Tracking (Complete)
 
-- Requirement versioning
-- Change impact analysis
-- Review status tracking
+- Simple integer versioning (1, 2, 3, ...)
+- Parent version tracking in requirement references
+- Support for both string and dict reference formats
+- Backward compatible with existing requirements
+- Stale requirement detection when parents change
+- Git-based history (no duplication)
+- 12 focused unit tests
+- Minimal complexity, maximum utility
 
 ### Phase 6: Reporting & Compliance (Planned)
 
-- Traceability matrices
-- Compliance reports
-- Multiple export formats
+- Enhanced traceability matrices with version history
+- Compliance reports (DO-178C, ISO 26262, etc.)
+- Change impact visualization
+- Requirement coverage dashboards
+- Multiple export formats (PDF, HTML, CSV)
 
 ### Phase 7: Advanced Features & Polish (Planned)
 

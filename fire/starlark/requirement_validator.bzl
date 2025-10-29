@@ -2,6 +2,7 @@
 
 load(":markdown_parser.bzl", "markdown_parser")
 load(":reference_validator.bzl", "reference_validator")
+load(":version_validator.bzl", "version_validator")
 
 def _parse_frontmatter(content):
     """Parse YAML frontmatter from markdown content.
@@ -234,6 +235,11 @@ def validate_requirement(content):
 
     # Validate references
     err = reference_validator.validate(frontmatter)
+    if err:
+        return err
+
+    # Validate versioning and change management
+    err = version_validator.validate(frontmatter)
     if err:
         return err
 
