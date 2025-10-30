@@ -26,21 +26,34 @@ def _validate_requirement_reference(req_ref):
     """Validate a requirement reference.
 
     Args:
-        req_ref: Requirement reference string
+        req_ref: Requirement reference (string or dict with 'id' and optional 'version')
 
     Returns:
         None if valid, error message if invalid
     """
-    if not req_ref:
+
+    # Support both string and dict formats
+    if type(req_ref) == "string":
+        req_id = req_ref
+    elif type(req_ref) == "dict":
+        if "id" not in req_ref:
+            return "requirement reference dict must have 'id' field"
+        req_id = req_ref["id"]
+        if type(req_id) != "string":
+            return "requirement reference 'id' must be a string"
+    else:
+        return "requirement reference must be string or dict, got {}".format(type(req_ref))
+
+    if not req_id:
         return "requirement reference cannot be empty"
 
     # Requirement ID format (same as requirement ID validation)
-    if not req_ref[0].isalpha() and req_ref[0] != "_":
-        return "requirement reference '{}' must start with letter or underscore".format(req_ref)
+    if not req_id[0].isalpha() and req_id[0] != "_":
+        return "requirement reference '{}' must start with letter or underscore".format(req_id)
 
-    for c in req_ref.elems():
+    for c in req_id.elems():
         if not (c.isalnum() or c in ["_", "-"]):
-            return "requirement reference '{}' contains invalid character '{}'".format(req_ref, c)
+            return "requirement reference '{}' contains invalid character '{}'".format(req_id, c)
 
     return None
 

@@ -6,6 +6,12 @@ status: approved
 priority: critical
 owner: safety-team
 tags: [velocity, safety, ASIL-D]
+version: 2
+changelog:
+  - version: 2
+    description: Added parent requirement version tracking support
+  - version: 1
+    description: Initial maximum velocity requirement definition
 references:
   parameters:
     - maximum_vehicle_velocity
@@ -40,6 +46,8 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 - Track testing with instrumentation (see [vehicle_params_test](../BUILD.bazel#vehicle_params_test))
 
 ## Notes
+
+Version 2: Updated to track parent requirement versions
 
 Last reviewed: 2024-01-15
 Review period: Quarterly
