@@ -26,7 +26,7 @@ references:
 
 ## Description
 
-The vehicle SHALL be capable of performing emergency braking from any velocity up to maximum design velocity (see [REQ-VEL-001](REQ-VEL-001.md)), achieving deceleration
+The vehicle SHALL be capable of performing emergency braking from any velocity up to maximum design velocity (see [REQ-VEL-001](examples/requirements/REQ-VEL-001.md)), achieving deceleration
 according to the [@braking_distance_table](../vehicle_params.bzl#braking_distance_table) parameters.
 
 ## Rationale

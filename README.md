@@ -464,7 +464,9 @@ These links render properly in web UIs (GitHub, GitLab, etc.) and are validated 
   - Uses `@` prefix to distinguish from regular links
   - Links to the parameter definition file
 
-- **Requirement Reference**: `[REQ-ID](REQ-ID.md)`
+- **Requirement Reference**: `[REQ-ID](path/from/repo/root/REQ-ID.md)`
+  - Uses repository-root relative path for clickable links in GitHub/GitLab
+  - Example: `[REQ-BRK-001](examples/requirements/REQ-BRK-001.md)`
   - Links to the requirement markdown file
 
 - **Test Reference**: `[test_name](BUILD.bazel#test_name)`
