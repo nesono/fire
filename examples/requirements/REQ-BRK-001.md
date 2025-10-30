@@ -7,6 +7,9 @@ priority: high
 owner: dynamics-team
 tags: [braking, safety, performance]
 version: 1
+changelog:
+  - version: 1
+    description: Initial emergency braking requirement, derived from REQ-VEL-001 v2
 references:
   parameters:
     - braking_distance_table

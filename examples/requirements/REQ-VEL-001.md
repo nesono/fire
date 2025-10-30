@@ -7,6 +7,11 @@ priority: critical
 owner: safety-team
 tags: [velocity, safety, ASIL-D]
 version: 2
+changelog:
+  - version: 2
+    description: Added parent requirement version tracking support
+  - version: 1
+    description: Initial maximum velocity requirement definition
 references:
   parameters:
     - maximum_vehicle_velocity

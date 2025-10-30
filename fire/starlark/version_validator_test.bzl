@@ -146,6 +146,73 @@ def _test_no_version_fields(ctx):
     asserts.equals(env, None, version_validator.validate(frontmatter))
     return unittest.end(env)
 
+def _test_changelog_valid(ctx):
+    env = unittest.begin(ctx)
+    frontmatter = {
+        "changelog": [
+            {"description": "Added new feature", "version": 3},
+            {"description": "Updated validation", "version": 2},
+            {"description": "Initial version", "version": 1},
+        ],
+        "id": "REQ-TEST-001",
+        "version": 3,
+    }
+    asserts.equals(env, None, version_validator.validate(frontmatter))
+    return unittest.end(env)
+
+def _test_changelog_invalid_order(ctx):
+    env = unittest.begin(ctx)
+    frontmatter = {
+        "changelog": [
+            {"description": "Initial", "version": 1},
+            {"description": "Updated", "version": 2},
+        ],
+        "id": "REQ-TEST-001",
+    }
+    result = version_validator.validate(frontmatter)
+    asserts.true(env, result != None)
+    asserts.true(env, "descending order" in result)
+    return unittest.end(env)
+
+def _test_changelog_missing_fields(ctx):
+    env = unittest.begin(ctx)
+    frontmatter = {
+        "changelog": [
+            {"version": 1},  # Missing description
+        ],
+        "id": "REQ-TEST-001",
+    }
+    result = version_validator.validate(frontmatter)
+    asserts.true(env, result != None)
+    asserts.true(env, "missing required field" in result)
+    return unittest.end(env)
+
+def _test_changelog_version_mismatch(ctx):
+    env = unittest.begin(ctx)
+    frontmatter = {
+        "changelog": [
+            {"description": "Latest", "version": 3},
+        ],
+        "id": "REQ-TEST-001",
+        "version": 5,
+    }
+    result = version_validator.validate(frontmatter)
+    asserts.true(env, result != None)
+    asserts.true(env, "does not match latest changelog entry" in result)
+    return unittest.end(env)
+
+def _test_changelog_without_top_level_version(ctx):
+    env = unittest.begin(ctx)
+    frontmatter = {
+        "changelog": [
+            {"description": "Updated", "version": 2},
+            {"description": "Initial", "version": 1},
+        ],
+        "id": "REQ-TEST-001",
+    }
+    asserts.equals(env, None, version_validator.validate(frontmatter))
+    return unittest.end(env)
+
 validate_version_valid_test = unittest.make(_test_validate_version_valid)
 validate_version_invalid_test = unittest.make(_test_validate_version_invalid)
 simple_version_in_frontmatter_test = unittest.make(_test_simple_version_in_frontmatter)
@@ -158,6 +225,11 @@ requirement_reference_missing_id_test = unittest.make(_test_requirement_referenc
 requirement_reference_invalid_version_test = unittest.make(_test_requirement_reference_invalid_version)
 complete_example_test = unittest.make(_test_complete_example)
 no_version_fields_test = unittest.make(_test_no_version_fields)
+changelog_valid_test = unittest.make(_test_changelog_valid)
+changelog_invalid_order_test = unittest.make(_test_changelog_invalid_order)
+changelog_missing_fields_test = unittest.make(_test_changelog_missing_fields)
+changelog_version_mismatch_test = unittest.make(_test_changelog_version_mismatch)
+changelog_without_top_level_version_test = unittest.make(_test_changelog_without_top_level_version)
 
 def version_validator_test_suite(name):
     """Create test suite for version_validator."""
@@ -175,4 +247,9 @@ def version_validator_test_suite(name):
         requirement_reference_invalid_version_test,
         complete_example_test,
         no_version_fields_test,
+        changelog_valid_test,
+        changelog_invalid_order_test,
+        changelog_missing_fields_test,
+        changelog_version_mismatch_test,
+        changelog_without_top_level_version_test,
     )

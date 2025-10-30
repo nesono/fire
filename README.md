@@ -65,12 +65,13 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 ### Phase 5: Parent Requirement Version Tracking
 
 - **Simple Integer Versioning**: Requirements track version with simple positive integers (1, 2, 3, ...)
+- **Simple Changelog**: Track version changes with integer + description (no dates, Git has that)
 - **Parent Version Tracking**: Derived requirements track which version of parent they're based on
 - **Stale Requirement Detection**: Immediately identify when parent requirement changes
 - **Flexible Reference Format**: Support both string refs (`"REQ-ID"`) and version-tracked refs (`{id: "REQ-ID", version: 2}`)
-- **Backward Compatible**: Old string-only format still supported
-- **Git for History**: Full change history tracked in Git (no duplication)
-- **Unit Tests**: 12 focused tests for integer versioning and parent tracking
+- **Backward Compatible**: Old string-only format still supported, changelog optional
+- **Git for Full History**: Complete change history in Git (changelog just summarizes versions)
+- **Unit Tests**: 17 focused tests for versioning, changelog, and parent tracking
 
 ### General
 
@@ -445,6 +446,7 @@ Requirements are Markdown documents with YAML frontmatter.
 - `owner`: Team or individual responsible
 - `tags`: List of tags for categorization
 - `version`: Simple integer version number (1, 2, 3, ...)
+- `changelog`: List of version changes with `{version, description}` (optional)
 - `references`: Cross-references to other entities
   - `parameters`: List of parameter names
   - `requirements`: List of requirement IDs (string) or dicts with `{id, version}`
@@ -483,6 +485,16 @@ When a requirement is derived from a parent requirement, track the parent's vers
 version: 2  # Just increment when requirement changes
 ```
 
+**Optional Changelog** (no dates needed - Git has those):
+
+```yaml
+changelog:
+  - version: 2
+    description: Added new safety constraint
+  - version: 1
+    description: Initial requirement definition
+```
+
 **Track Parent Versions** (derived requirements):
 
 ```yaml
@@ -503,9 +515,10 @@ When `REQ-VEL-001` changes to version 3, any child requirement still referencing
 **Why Simple Integers**:
 
 - Easy to understand and maintain
-- Git already tracks full history
+- Git already tracks full history (who, when, why)
 - Just need to know "did parent change?"
 - No complex versioning rules
+- Changelog optional for quick summary
 
 **Example**:
 
@@ -513,7 +526,12 @@ Parent requirement `REQ-VEL-001.md`:
 
 ```yaml
 id: REQ-VEL-001
-version: 2  # Incremented when requirement changed
+version: 2
+changelog:
+  - version: 2
+    description: Added parent requirement version tracking support
+  - version: 1
+    description: Initial maximum velocity requirement definition
 ```
 
 Derived requirement `REQ-BRK-001.md`:
@@ -521,6 +539,9 @@ Derived requirement `REQ-BRK-001.md`:
 ```yaml
 id: REQ-BRK-001
 version: 1
+changelog:
+  - version: 1
+    description: Initial emergency braking requirement, derived from REQ-VEL-001 v2
 references:
   requirements:
     - id: REQ-VEL-001
@@ -854,10 +875,13 @@ bazel test //examples:vehicle_params_test
 ### Version Tracking Validation
 
 1. **Integer Version**: Must be positive integer (>= 1)
-2. **Requirement Reference Formats**: Supports both string (`"REQ-ID"`) and dict (`{id: "REQ-ID", version: 2}`)
-3. **Version Field**: Optional - only needed if tracking parent versions
-4. **Parent Version**: When tracking parent, version must be positive integer
-5. **Backward Compatibility**: All versioning fields are optional
+2. **Changelog Format**: List of `{version, description}` in descending order (newest first)
+3. **Version Consistency**: If both `version` and `changelog` present, version must match latest changelog entry
+4. **Requirement Reference Formats**: Supports both string (`"REQ-ID"`) and dict (`{id: "REQ-ID", version: 2}`)
+5. **Version Field**: Optional - only needed if tracking parent versions or using changelog
+6. **Changelog Field**: Optional - use for quick summary of changes
+7. **Parent Version**: When tracking parent, version must be positive integer
+8. **Backward Compatibility**: All versioning and changelog fields are optional
 
 ## Design Philosophy
 
@@ -909,12 +933,13 @@ Fire follows these principles:
 ### ✅ Phase 5: Parent Requirement Version Tracking (Complete)
 
 - Simple integer versioning (1, 2, 3, ...)
+- Optional changelog with version + description (no dates)
 - Parent version tracking in requirement references
 - Support for both string and dict reference formats
 - Backward compatible with existing requirements
 - Stale requirement detection when parents change
-- Git-based history (no duplication)
-- 12 focused unit tests
+- Git-based full history (changelog just summarizes)
+- 17 focused unit tests
 - Minimal complexity, maximum utility
 
 ### Phase 6: Reporting & Compliance (Planned)

@@ -17,6 +17,73 @@ def _validate_version(version):
 
     return None
 
+def _validate_changelog_entry(entry, index):
+    """Validate a single changelog entry.
+
+    Args:
+        entry: Dictionary containing changelog entry fields
+        index: Index of the entry (for error messages)
+
+    Returns:
+        None if valid, error message if invalid
+    """
+    if type(entry) != "dict":
+        return "changelog entry {} must be a dictionary".format(index)
+
+    # Required fields
+    required = ["version", "description"]
+    for field in required:
+        if field not in entry:
+            return "changelog entry {} missing required field: {}".format(index, field)
+
+    # Validate version
+    err = _validate_version(entry["version"])
+    if err:
+        return "changelog entry {}: {}".format(index, err)
+
+    # Validate description is not empty
+    if type(entry["description"]) != "string":
+        return "changelog entry {}: description must be a string".format(index)
+
+    if not entry["description"]:
+        return "changelog entry {}: description cannot be empty".format(index)
+
+    return None
+
+def _validate_changelog(changelog):
+    """Validate changelog.
+
+    Args:
+        changelog: List of changelog entry dictionaries
+
+    Returns:
+        None if valid, error message if invalid
+    """
+    if type(changelog) != "list":
+        return "changelog must be a list"
+
+    if len(changelog) == 0:
+        return "changelog cannot be empty"
+
+    # Validate each entry
+    for i, entry in enumerate(changelog):
+        err = _validate_changelog_entry(entry, i)
+        if err:
+            return err
+
+    # Check versions are in descending order (newest first)
+    for i in range(len(changelog) - 1):
+        curr_version = changelog[i]["version"]
+        next_version = changelog[i + 1]["version"]
+
+        if curr_version <= next_version:
+            return "changelog versions must be in descending order (newest first), but {} comes before {}".format(
+                curr_version,
+                next_version,
+            )
+
+    return None
+
 def _validate_requirement_reference_with_version(ref):
     """Validate a requirement reference that may include version tracking.
 
@@ -74,6 +141,20 @@ def validate_versioning(frontmatter):
         err = _validate_version(frontmatter["version"])
         if err:
             return err
+
+    # Validate changelog if present
+    if "changelog" in frontmatter:
+        err = _validate_changelog(frontmatter["changelog"])
+        if err:
+            return err
+
+        # If both version and changelog are present, version must match the first changelog entry
+        if "version" in frontmatter:
+            if frontmatter["version"] != frontmatter["changelog"][0]["version"]:
+                return "version {} does not match latest changelog entry version {}".format(
+                    frontmatter["version"],
+                    frontmatter["changelog"][0]["version"],
+                )
 
     # Validate requirement references with version tracking
     if "references" in frontmatter:
