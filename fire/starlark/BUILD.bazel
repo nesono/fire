@@ -2,6 +2,7 @@ load(":cpp_generator_test.bzl", "cpp_generator_test_suite")
 load(":markdown_parser_test.bzl", "markdown_parser_test_suite")
 load(":reference_validator_test.bzl", "reference_validator_test_suite")
 load(":requirement_validator_test.bzl", "requirement_validator_test_suite")
+load(":traceability_test.bzl", "traceability_test_suite")
 load(":validator_test.bzl", "validator_test_suite")
 load(":version_validator_test.bzl", "version_validator_test_suite")
 
@@ -37,3 +38,6 @@ markdown_parser_test_suite(name = "markdown_parser_test")
 
 # Unit tests for version_validator
 version_validator_test_suite(name = "version_validator_test")
+
+# Unit tests for traceability
+traceability_test_suite(name = "traceability_test")
