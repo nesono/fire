@@ -7,6 +7,7 @@ load(
     "parameter_library",
     "python_parameter_library",
 )
+load("//fire/starlark:reports.bzl", "generate_report")
 load("//fire/starlark:requirements.bzl", "requirement_library")
 load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
@@ -57,4 +58,37 @@ cc_test(
 requirement_library(
     name = "vehicle_requirements",
     srcs = glob(["requirements/*.md"]),
+)
+
+# Generate traceability matrix report
+generate_report(
+    name = "traceability_matrix",
+    srcs = glob(["requirements/*.md"]),
+    out = "TRACEABILITY_MATRIX.md",
+    report_type = "traceability",
+)
+
+# Generate coverage report
+generate_report(
+    name = "coverage_report",
+    srcs = glob(["requirements/*.md"]),
+    out = "COVERAGE_REPORT.md",
+    report_type = "coverage",
+)
+
+# Generate change impact analysis
+generate_report(
+    name = "change_impact_report",
+    srcs = glob(["requirements/*.md"]),
+    out = "CHANGE_IMPACT.md",
+    report_type = "change_impact",
+)
+
+# Generate ISO 26262 compliance report
+generate_report(
+    name = "compliance_report",
+    srcs = glob(["requirements/*.md"]),
+    out = "COMPLIANCE_ISO26262.md",
+    report_type = "compliance",
+    standard = "ISO 26262",
 )
