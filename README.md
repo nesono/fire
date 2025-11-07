@@ -552,6 +552,76 @@ references:
 
 If `REQ-VEL-001` changes to version 3, you can immediately identify that `REQ-BRK-001` needs review.
 
+## Reporting & Compliance
+
+Fire provides built-in reporting functions in `traceability.bzl` to generate compliance and analysis reports.
+
+### Traceability Matrix
+
+Generate comprehensive traceability matrices with version information:
+
+```python
+load("@fire//fire/starlark:traceability.bzl", "traceability")
+
+# In your Starlark code
+requirements_data = [
+    ("REQ-VEL-001", frontmatter_dict),
+    ("REQ-BRK-001", frontmatter_dict),
+]
+
+matrix = traceability.generate_matrix_markdown(requirements_data)
+# Generates markdown with Requirements → Parameters, Requirements → Requirements (with versions),
+# Requirements → Tests, and Requirements → Standards sections
+```
+
+### Change Impact Analysis
+
+Identify requirements that need review due to parent changes:
+
+```python
+impact_report = traceability.generate_change_impact_markdown(requirements_data)
+# Shows which requirements have stale parent version references
+# Example output:
+# ⚠️ Requirements with Stale Parent References
+# REQ-BRK-001 (v1): Tracking REQ-VEL-001 v2, but current version is v3
+```
+
+### Compliance Reports
+
+Generate compliance reports for safety standards (ISO 26262, DO-178C, etc.):
+
+```python
+compliance_report = traceability.generate_compliance_markdown(requirements_data, "ISO 26262")
+# Includes:
+# - Summary statistics (safety reqs, functional reqs, coverage percentages)
+# - Requirements by status (draft, approved, verified, etc.)
+# - Safety requirements with test/standard coverage
+# - Compliance gaps (safety reqs without tests or standard references)
+# - Unverified requirements
+```
+
+### Coverage Dashboard
+
+Generate coverage reports showing traceability completeness:
+
+```python
+coverage_report = traceability.generate_coverage_markdown(requirements_data)
+# Shows percentage of requirements with:
+# - Parameter coverage
+# - Test coverage
+# - Standard references
+# Lists requirements missing coverage in each category
+```
+
+**Available Functions**:
+
+- `traceability.generate_matrix_markdown(requirements_data)` - Full traceability matrix
+- `traceability.generate_change_impact_markdown(requirements_data)` - Stale requirement detection
+- `traceability.generate_compliance_markdown(requirements_data, standard_name)` - Compliance report
+- `traceability.generate_coverage_markdown(requirements_data)` - Coverage metrics
+
+All reports are generated in Markdown format for easy viewing in GitHub/GitLab and integration into documentation pipelines.
+
 ### Example
 
 ```markdown
@@ -771,10 +841,11 @@ fire/
 │       ├── reference_validator.bzl # Cross-reference validation
 │       ├── reference_validator_test.bzl # Reference validator tests
 │       ├── version_validator.bzl # Versioning and change management validation
-│       ├── version_validator_test.bzl # Version validator tests
+│       ├── version_validator_test.bzl # Version validator tests (17 tests)
 │       ├── markdown_parser.bzl # Markdown link parsing and validation
-│       ├── markdown_parser_test.bzl # Markdown parser tests
-│       ├── traceability.bzl  # Traceability matrix and coverage generation
+│       ├── markdown_parser_test.bzl # Markdown parser tests (15 tests)
+│       ├── traceability.bzl  # Traceability, compliance, and reporting
+│       ├── traceability_test.bzl # Traceability tests (10 tests)
 │       ├── requirements.bzl  # requirement_library rule
 │       └── BUILD.bazel
 └── examples/                 # Example usage
@@ -830,6 +901,7 @@ bazel test //fire/starlark:requirement_validator_test
 bazel test //fire/starlark:reference_validator_test
 bazel test //fire/starlark:version_validator_test
 bazel test //fire/starlark:markdown_parser_test
+bazel test //fire/starlark:traceability_test
 
 # Integration tests
 bazel test //examples:vehicle_params_test
@@ -944,13 +1016,17 @@ Fire follows these principles:
 - 17 focused unit tests
 - Minimal complexity, maximum utility
 
-### Phase 6: Reporting & Compliance (Planned)
+### ✅ Phase 6: Reporting & Compliance (Complete)
 
 - Enhanced traceability matrices with version history
-- Compliance reports (DO-178C, ISO 26262, etc.)
-- Change impact visualization
-- Requirement coverage dashboards
-- Multiple export formats (PDF, HTML, CSV)
+- Change impact analysis (identifies stale parent references)
+- Compliance reports (ISO 26262, DO-178C, etc.)
+- Coverage dashboards with metrics and gap analysis
+- Requirement status tracking and reporting
+- Safety requirement validation and gap detection
+- Markdown export format for all reports
+- 10 comprehensive unit tests
+- Actionable compliance insights
 
 ### Phase 7: Advanced Features & Polish (Planned)
 
