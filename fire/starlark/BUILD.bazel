@@ -19,6 +19,8 @@ exports_files([
     "markdown_parser.bzl",
     "traceability.bzl",
     "requirements.bzl",
+    "reports.bzl",
+    "generate_report.py",
 ])
 
 # Unit tests for validator

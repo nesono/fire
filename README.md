@@ -622,6 +622,67 @@ coverage_report = traceability.generate_coverage_markdown(requirements_data)
 
 All reports are generated in Markdown format for easy viewing in GitHub/GitLab and integration into documentation pipelines.
 
+### Generating Reports with Bazel
+
+Fire provides a `generate_report` Bazel rule to create reports at build time:
+
+```python
+load("//fire/starlark:reports.bzl", "generate_report")
+
+# Generate traceability matrix
+generate_report(
+    name = "traceability_matrix",
+    srcs = glob(["requirements/*.md"]),
+    report_type = "traceability",
+    out = "TRACEABILITY_MATRIX.md",
+)
+
+# Generate coverage report
+generate_report(
+    name = "coverage_report",
+    srcs = glob(["requirements/*.md"]),
+    report_type = "coverage",
+    out = "COVERAGE_REPORT.md",
+)
+
+# Generate change impact analysis
+generate_report(
+    name = "change_impact_report",
+    srcs = glob(["requirements/*.md"]),
+    report_type = "change_impact",
+    out = "CHANGE_IMPACT.md",
+)
+
+# Generate compliance report
+generate_report(
+    name = "compliance_report",
+    srcs = glob(["requirements/*.md"]),
+    report_type = "compliance",
+    standard = "ISO 26262",
+    out = "COMPLIANCE_ISO26262.md",
+)
+```
+
+Build reports:
+
+```bash
+# Build specific report
+bazel build //path/to:traceability_matrix
+
+# View generated report
+cat bazel-bin/path/to/TRACEABILITY_MATRIX.md
+
+# Build all reports
+bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:change_impact_report //path/to:compliance_report
+```
+
+**Available Report Types**:
+
+- `traceability`: Full traceability matrix with Requirements → Parameters, Requirements → Requirements (with versions), Requirements → Tests, Requirements → Standards
+- `coverage`: Coverage metrics showing percentage of requirements with parameter/test/standard coverage
+- `change_impact`: Identifies requirements with stale parent version references
+- `compliance`: Compliance report for a specific standard (specify with `standard` attribute)
+
 ### Example
 
 ```markdown
