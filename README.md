@@ -288,9 +288,10 @@ owner: safety-team
 tags: [velocity, safety, ASIL-D]
 references:
   parameters:
-    - maximum_vehicle_velocity
+    - examples/vehicle_params.bzl#maximum_vehicle_velocity
   requirements:
-    - REQ-BRK-001
+    - path: examples/requirements/REQ-BRK-001.md
+      version: 1
   standards:
     - ISO 26262:2018, Part 3, Section 7
   tests:
@@ -476,7 +477,9 @@ These links render properly in web UIs (GitHub, GitLab, etc.) and are validated 
 - **External Reference**: `[text](https://url)`
   - Standard markdown links for standards, specifications, etc.
 
-**Validation**: All markdown references in the body must be declared in the frontmatter `references` section.
+**Validation**: All markdown references in the body must be declared in the frontmatter `references` section using the same
+repository-relative format. Bi-directional validation ensures frontmatter and body stay in sync. References must be sorted
+alphabetically within each section.
 
 ### Parent Requirement Version Tracking
 
@@ -503,11 +506,8 @@ changelog:
 ```yaml
 references:
   requirements:
-    # Old format (still supported, no version tracking)
-    - REQ-PARENT-001
-
-    # New format (tracks parent version)
-    - id: REQ-VEL-001
+    # Required format (tracks parent version)
+    - path: examples/requirements/REQ-VEL-001.md
       version: 2  # This requirement was derived from version 2 of REQ-VEL-001
 ```
 
@@ -547,7 +547,7 @@ changelog:
     description: Initial emergency braking requirement, derived from REQ-VEL-001 v2
 references:
   requirements:
-    - id: REQ-VEL-001
+    - path: examples/requirements/REQ-VEL-001.md
       version: 2  # Tracks which parent version this was derived from
 ```
 
@@ -713,9 +713,10 @@ owner: dynamics-team
 tags: [braking, safety, performance]
 references:
   parameters:
-    - braking_distance_table
+    - examples/vehicle_params.bzl#braking_distance_table
   requirements:
-    - REQ-VEL-001
+    - path: examples/requirements/REQ-VEL-001.md
+      version: 2
   standards:
     - UN ECE R13-H
   tests:
@@ -1021,19 +1022,22 @@ bazel test //examples:vehicle_params_test
 1. **Parameter Links**: `[@parameter_name](repo/relative/path/file.bzl#parameter_name)` syntax with repository-relative path
 2. **Requirement Links**: `[REQ-ID](repo/relative/path/REQ-ID.md)` syntax with repository-relative path
 3. **Test Links**: `[test_name](//package:target)` syntax using Bazel labels
-4. **Body-Frontmatter Match**: All markdown references in body must be declared in frontmatter
-5. **Validation Timing**: Checked at build time during requirement validation
+4. **Body-Frontmatter Match**: Bi-directional validation ensures all body references are declared in frontmatter, and all frontmatter references are used in body
+5. **Frontmatter Format**: Frontmatter references use the same repository-relative paths as body references
+6. **Link Text Match**: Link text must match the actual reference name (no typos allowed)
+7. **Lexicographic Sorting**: References within each frontmatter section (parameters, requirements, tests, standards) must be sorted alphabetically
+8. **Validation Timing**: Checked at build time during requirement validation
 
 ### Version Tracking Validation
 
 1. **Integer Version**: Must be positive integer (>= 1)
 2. **Changelog Format**: List of `{version, description}` in descending order (newest first)
 3. **Version Consistency**: If both `version` and `changelog` present, version must match latest changelog entry
-4. **Requirement Reference Formats**: Supports both string (`"REQ-ID"`) and dict (`{id: "REQ-ID", version: 2}`)
-5. **Version Field**: Optional - only needed if tracking parent versions or using changelog
+4. **Requirement Reference Format**: MUST use dict format with both `path` and `version` keys (e.g., `{path: "examples/requirements/REQ-VEL-001.md", version: 2}`)
+5. **Version Field**: Optional for the requirement itself - only needed if tracking changes or using changelog
 6. **Changelog Field**: Optional - use for quick summary of changes
-7. **Parent Version**: When tracking parent, version must be positive integer
-8. **Backward Compatibility**: All versioning and changelog fields are optional
+7. **Parent Version**: When referencing parent requirements, version must be positive integer
+8. **Backward Compatibility**: All versioning and changelog fields for the requirement itself are optional, but requirement references MUST always include version
 
 ## Design Philosophy
 
