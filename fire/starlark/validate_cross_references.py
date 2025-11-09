@@ -273,6 +273,49 @@ def validate_requirement_file(file_path, workspace_root):
     # Extract frontmatter references
     fm_refs = frontmatter.get('references', {})
 
+    # Check lexicographic sorting of frontmatter references
+    for ref_type in ['parameters', 'tests', 'standards']:
+        ref_list = fm_refs.get(ref_type, [])
+        if not ref_list:
+            continue
+
+        # Extract sortable values (skip dict items)
+        sortable_items = []
+        for item in ref_list:
+            if isinstance(item, dict):
+                # For dict items, use the 'path' key if available, otherwise skip
+                if 'path' in item:
+                    sortable_items.append(item['path'])
+            else:
+                sortable_items.append(item)
+
+        # Check if sorted
+        sorted_items = sorted(sortable_items)
+        if sortable_items != sorted_items:
+            errors.append(
+                f"{file_path}: Frontmatter '{ref_type}' references are not sorted lexicographically.\n"
+                f"  Current order: {sortable_items}\n"
+                f"  Expected order: {sorted_items}"
+            )
+
+    # Check requirements separately (can be strings or dicts with 'path' key)
+    req_list = fm_refs.get('requirements', [])
+    if req_list:
+        sortable_reqs = []
+        for req_ref in req_list:
+            if isinstance(req_ref, dict):
+                sortable_reqs.append(req_ref.get('path', ''))
+            else:
+                sortable_reqs.append(req_ref)
+
+        sorted_reqs = sorted(sortable_reqs)
+        if sortable_reqs != sorted_reqs:
+            errors.append(
+                f"{file_path}: Frontmatter 'requirements' references are not sorted lexicographically.\n"
+                f"  Current order: {sortable_reqs}\n"
+                f"  Expected order: {sorted_reqs}"
+            )
+
     # Extract parameters (handle both string and dict formats)
     fm_params = set()
     for param_ref in fm_refs.get('parameters', []):
