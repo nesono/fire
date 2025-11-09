@@ -46,28 +46,48 @@ def parse_frontmatter(content):
         if stripped.startswith("-"):
             rest = stripped[1:].strip()
 
-            # Check if next line (if exists) is indented more - indicates a dict item
-            is_dict_item = False
+            # Check if next line (if exists) is indented more - indicates a multi-line dict item
+            is_multiline_dict = False
             if i + 1 < end_idx:
                 next_line = lines[i + 1]
                 next_stripped = next_line.strip()
                 if next_stripped and not next_stripped.startswith("-"):
                     next_indent = len(next_line) - len(next_line.lstrip())
                     if next_indent > indent and ":" in next_stripped:
-                        is_dict_item = True
+                        is_multiline_dict = True
 
-            # Check if this is a dict item in a list
-            if is_dict_item and ":" in rest:
+            # Check if this is a dict item (either multi-line or single-line)
+            # Dict items have format "- key: value" where key is a dict-like key (path, version, etc.)
+            # NOT Bazel labels (//...:...) or ISO standards (ISO ...:...)
+            is_dict_item = False
+            if ":" in rest and not rest.startswith("//") and not rest.startswith("ISO "):
+                # Check if this looks like a dict key (starts with alphanumeric word followed by colon)
+                parts = rest.split(":", 1)
+                potential_key = parts[0].strip()
+                # Common dict keys we expect: path, version, description, etc.
+                if potential_key.replace("_", "").replace("-", "").isalnum():
+                    is_dict_item = True
+
+            if is_dict_item:
                 parts = rest.split(":", 1)
                 dict_key = parts[0].strip()
                 dict_value = parts[1].strip() if len(parts) > 1 else ""
 
-                # Start a new dict item
-                current_dict_item = {dict_key: dict_value}
-                if current_key and current_list and isinstance(frontmatter[current_key], dict):
-                    if current_list not in frontmatter[current_key]:
-                        frontmatter[current_key][current_list] = []
-                    frontmatter[current_key][current_list].append(current_dict_item)
+                # Start a new dict item (or continue multi-line dict)
+                if is_multiline_dict:
+                    current_dict_item = {dict_key: dict_value}
+                    if current_key and current_list and isinstance(frontmatter[current_key], dict):
+                        if current_list not in frontmatter[current_key]:
+                            frontmatter[current_key][current_list] = []
+                        frontmatter[current_key][current_list].append(current_dict_item)
+                else:
+                    # Single-line dict item
+                    single_dict = {dict_key: dict_value}
+                    if current_key and current_list and isinstance(frontmatter[current_key], dict):
+                        if current_list not in frontmatter[current_key]:
+                            frontmatter[current_key][current_list] = []
+                        frontmatter[current_key][current_list].append(single_dict)
+                    current_dict_item = None  # Don't expect continuation
             else:
                 # Simple string item (even if it contains ':')
                 if current_key and current_list and isinstance(frontmatter[current_key], dict):
@@ -298,14 +318,26 @@ def validate_requirement_file(file_path, workspace_root):
                 f"  Expected order: {sorted_items}"
             )
 
-    # Check requirements separately (can be strings or dicts with 'path' key)
+    # Check requirements separately (must be dicts with 'path' and 'version' keys)
     req_list = fm_refs.get('requirements', [])
     if req_list:
         sortable_reqs = []
-        for req_ref in req_list:
+        for i, req_ref in enumerate(req_list):
             if isinstance(req_ref, dict):
+                # Require both 'path' and 'version'
+                if 'path' not in req_ref:
+                    errors.append(f"{file_path}: Requirement reference #{i+1} missing 'path' key")
+                if 'version' not in req_ref:
+                    errors.append(f"{file_path}: Requirement reference #{i+1} missing 'version' key (path: {req_ref.get('path', 'unknown')})")
                 sortable_reqs.append(req_ref.get('path', ''))
             else:
+                # Requirement references must be dicts with path and version
+                errors.append(
+                    f"{file_path}: Requirement reference '{req_ref}' must use dict format with 'path' and 'version' keys.\n"
+                    f"  Example format:\n"
+                    f"    - path: {req_ref}\n"
+                    f"      version: 1"
+                )
                 sortable_reqs.append(req_ref)
 
         sorted_reqs = sorted(sortable_reqs)
