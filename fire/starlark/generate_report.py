@@ -481,12 +481,11 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
         critical_reqs = reqs_by_type[critical_type]
         lines.append(f"## {critical_type.capitalize()} Requirements Detail")
         lines.append("")
-        lines.append("| Requirement | Title | Priority | Status | Linked Tests | Standard Reference |")
-        lines.append("|-------------|-------|----------|--------|--------------|-------------------|")
+        lines.append("| Requirement | Title | Status | Linked Tests | Standard Reference |")
+        lines.append("|-------------|-------|--------|--------------|-------------------|")
 
         for req_id, frontmatter in critical_reqs:
             title = frontmatter.get("title", "")
-            priority = frontmatter.get("priority", "-")
             status = frontmatter.get("status", "-")
 
             has_tests = "✅"
@@ -507,7 +506,7 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
                             has_standard = "✅"
                             break
 
-            lines.append(f"| {req_id} | {title} | {priority} | {status} | {has_tests} | {has_standard} |")
+            lines.append(f"| {req_id} | {title} | {status} | {has_tests} | {has_standard} |")
         lines.append("")
 
     # Compliance gaps
