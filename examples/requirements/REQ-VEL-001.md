@@ -27,7 +27,7 @@ references:
 
 ## Description
 
-The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](../vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
+The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](examples/vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
 
 ## Rationale
 
@@ -43,7 +43,7 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 - Static analysis of control algorithms
 - Hardware-in-the-loop testing with velocity limiting scenarios
 - Vehicle dynamics simulation at boundary conditions
-- Track testing with instrumentation (see [vehicle_params_test](../BUILD.bazel#vehicle_params_test))
+- Track testing with instrumentation (see [vehicle_params_test](//examples:vehicle_params_test))
 
 ## Notes
 

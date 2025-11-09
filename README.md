@@ -43,9 +43,9 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 - **Cross-References**: Link requirements to parameters, other requirements, tests, and standards
 - **Reference Validation**: Validate reference formats and integrity
 - **Markdown Link Support**: Use proper markdown links that render in web UIs
-- **Parameter References**: `[@parameter_name](path/file.bzl#parameter_name)` syntax
-- **Requirement References**: `[REQ-ID](REQ-ID.md)` syntax
-- **Test References**: `[test_name](BUILD.bazel#test_name)` syntax
+- **Parameter References**: `[@parameter_name](repo/relative/path/file.bzl#parameter_name)` syntax
+- **Requirement References**: `[REQ-ID](repo/relative/path/REQ-ID.md)` syntax
+- **Test References**: `[test_name](//package:target)` syntax (Bazel labels)
 - **Bi-directional Validation**: Body markdown references must match frontmatter declarations
 - **Traceability Matrix**: Generate matrices showing requirement relationships
 - **Coverage Reports**: Track which requirements have parameter references, linked tests, and standard references
@@ -302,18 +302,18 @@ references:
 ## Description
 
 The vehicle SHALL NOT exceed the maximum design velocity defined by
-[@maximum_vehicle_velocity](../vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s)
+[@maximum_vehicle_velocity](examples/vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s)
 under any operating conditions.
 
 ## Rationale
 
 This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www.iso.org/standard/68383.html)
 safety analysis for ASIL-D classification. The requirement relates to braking
-performance (see [REQ-BRK-001](REQ-BRK-001.md)).
+performance (see [REQ-BRK-001](examples/requirements/REQ-BRK-001.md)).
 
 ## Verification
 
-Testing is performed according to [vehicle_params_test](../BUILD.bazel#vehicle_params_test).
+Testing is performed according to [vehicle_params_test](//examples:vehicle_params_test).
 ```
 
 ### 5. Validate Requirements
@@ -460,17 +460,18 @@ These links render properly in web UIs (GitHub, GitLab, etc.) and are validated 
 
 **Reference Syntax:**
 
-- **Parameter Reference**: `[@parameter_name](path/file.bzl#parameter_name)`
+- **Parameter Reference**: `[@parameter_name](repo/relative/path/file.bzl#parameter_name)`
   - Uses `@` prefix to distinguish from regular links
-  - Links to the parameter definition file
+  - Uses repository-relative path for clickable links
+  - Example: `[@maximum_vehicle_velocity](examples/vehicle_params.bzl#maximum_vehicle_velocity)`
 
-- **Requirement Reference**: `[REQ-ID](path/from/repo/root/REQ-ID.md)`
-  - Uses repository-root relative path for clickable links in GitHub/GitLab
+- **Requirement Reference**: `[REQ-ID](repo/relative/path/REQ-ID.md)`
+  - Uses repository-relative path for clickable links in GitHub/GitLab
   - Example: `[REQ-BRK-001](examples/requirements/REQ-BRK-001.md)`
-  - Links to the requirement markdown file
 
-- **Test Reference**: `[test_name](BUILD.bazel#test_name)`
-  - Links to the Bazel BUILD file with anchor to test target
+- **Test Reference**: `[test_name](//package:target)`
+  - Uses Bazel label format for test references
+  - Example: `[vehicle_params_test](//examples:vehicle_params_test)`
 
 - **External Reference**: `[text](https://url)`
   - Standard markdown links for standards, specifications, etc.
@@ -726,12 +727,12 @@ references:
 ## Description
 
 The vehicle SHALL achieve emergency braking according to
-[@braking_distance_table](../vehicle_params.bzl#braking_distance_table).
-This requirement relates to [REQ-VEL-001](REQ-VEL-001.md).
+[@braking_distance_table](examples/vehicle_params.bzl#braking_distance_table).
+This requirement relates to [REQ-VEL-001](examples/requirements/REQ-VEL-001.md).
 
 ## Verification
 
-Testing performed by [vehicle_params_test](../BUILD.bazel#vehicle_params_test).
+Testing performed by [vehicle_params_test](//examples:vehicle_params_test).
 Compliance verified against [UN ECE R13-H](https://unece.org/r13h).
 ```
 
@@ -1017,9 +1018,9 @@ bazel test //examples:vehicle_params_test
 
 ### Markdown Reference Validation
 
-1. **Parameter Links**: `[@parameter_name](path)` syntax with valid parameter name
-2. **Requirement Links**: `[REQ-ID](*.md)` syntax with valid requirement ID
-3. **Test Links**: `[test_name](BUILD*)` syntax
+1. **Parameter Links**: `[@parameter_name](repo/relative/path/file.bzl#parameter_name)` syntax with repository-relative path
+2. **Requirement Links**: `[REQ-ID](repo/relative/path/REQ-ID.md)` syntax with repository-relative path
+3. **Test Links**: `[test_name](//package:target)` syntax using Bazel labels
 4. **Body-Frontmatter Match**: All markdown references in body must be declared in frontmatter
 5. **Validation Timing**: Checked at build time during requirement validation
 
