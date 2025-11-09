@@ -249,6 +249,9 @@ def generate_coverage_report(requirements_data):
     lines = []
     lines.append("# Traceability Coverage Report")
     lines.append("")
+    lines.append("This report shows which requirements have references to parameters, tests, and standards.")
+    lines.append("Note: 'Linked Tests' indicates requirements with test references in frontmatter, not verified test execution.")
+    lines.append("")
 
     total_reqs = len(requirements_data)
     reqs_with_params = 0
@@ -271,16 +274,16 @@ def generate_coverage_report(requirements_data):
 
     lines.append("## Summary")
     lines.append("")
-    lines.append("| Metric | Count | Coverage |")
-    lines.append("|--------|-------|----------|")
+    lines.append("| Metric | Count | Percentage |")
+    lines.append("|--------|-------|------------|")
     lines.append(f"| Total Requirements | {total_reqs} | 100% |")
-    lines.append(f"| Requirements with Parameters | {reqs_with_params} | {param_coverage}% |")
-    lines.append(f"| Requirements with Tests | {reqs_with_tests} | {test_coverage}% |")
-    lines.append(f"| Requirements with Standards | {reqs_with_standards} | {standard_coverage}% |")
+    lines.append(f"| Requirements with Parameter References | {reqs_with_params} | {param_coverage}% |")
+    lines.append(f"| Requirements with Linked Tests | {reqs_with_tests} | {test_coverage}% |")
+    lines.append(f"| Requirements with Standard References | {reqs_with_standards} | {standard_coverage}% |")
     lines.append("")
 
-    # Requirements without parameter coverage
-    lines.append("## Requirements without Parameter Coverage")
+    # Requirements without parameter references
+    lines.append("## Requirements without Parameter References")
     lines.append("")
     missing_params = []
     for req_id, frontmatter in requirements_data:
@@ -295,12 +298,12 @@ def generate_coverage_report(requirements_data):
         for req_id, title in missing_params:
             lines.append(f"- **{req_id}**: {title}")
     else:
-        lines.append("*All requirements have parameter coverage*")
+        lines.append("*All requirements have parameter references*")
 
     lines.append("")
 
-    # Requirements without test coverage
-    lines.append("## Requirements without Test Coverage")
+    # Requirements without linked tests
+    lines.append("## Requirements without Linked Tests")
     lines.append("")
     missing_tests = []
     for req_id, frontmatter in requirements_data:
@@ -315,7 +318,7 @@ def generate_coverage_report(requirements_data):
         for req_id, title in missing_tests:
             lines.append(f"- **{req_id}**: {title}")
     else:
-        lines.append("*All requirements have test coverage*")
+        lines.append("*All requirements have linked tests*")
 
     return "\n".join(lines)
 
@@ -394,27 +397,29 @@ def generate_change_impact(requirements_data):
     return "\n".join(lines)
 
 
-def generate_compliance_report(requirements_data, standard_name):
+def generate_compliance_report(requirements_data, standard_name, critical_type=None):
     """Generate compliance report in markdown."""
     lines = []
     lines.append(f"# Compliance Report: {standard_name}")
     lines.append("")
-    lines.append(f"This report summarizes compliance coverage for {standard_name}.")
+    lines.append(f"This report summarizes compliance status for requirements referencing {standard_name}.")
+    lines.append("Note: 'Linked Tests' refers to test references in frontmatter, not verified test execution.")
     lines.append("")
 
-    # Categorize requirements
-    safety_reqs = []
-    functional_reqs = []
+    # Categorize requirements by type
+    type_counts = {}
+    reqs_by_type = {}
     reqs_with_standard = []
     reqs_with_tests = []
 
     for req_id, frontmatter in requirements_data:
-        req_type = frontmatter.get("type", "")
+        req_type = frontmatter.get("type", "unspecified")
 
-        if req_type == "safety":
-            safety_reqs.append((req_id, frontmatter))
-        elif req_type == "functional":
-            functional_reqs.append((req_id, frontmatter))
+        # Count by type
+        type_counts[req_type] = type_counts.get(req_type, 0) + 1
+        if req_type not in reqs_by_type:
+            reqs_by_type[req_type] = []
+        reqs_by_type[req_type].append((req_id, frontmatter))
 
         # Check standard reference
         if "references" in frontmatter and isinstance(frontmatter["references"], dict):
@@ -425,21 +430,30 @@ def generate_compliance_report(requirements_data, standard_name):
                         reqs_with_standard.append((req_id, frontmatter))
                         break
 
-        # Check test coverage
+        # Check linked tests
         if "references" in frontmatter and isinstance(frontmatter["references"], dict):
             if "tests" in frontmatter["references"] and frontmatter["references"]["tests"]:
                 reqs_with_tests.append((req_id, frontmatter))
 
     total_reqs = len(requirements_data)
+
+    # Summary
     lines.append("## Summary")
     lines.append("")
     lines.append("| Metric | Count | Percentage |")
     lines.append("|--------|-------|------------|")
     lines.append(f"| Total Requirements | {total_reqs} | 100% |")
-    lines.append(f"| Safety Requirements | {len(safety_reqs)} | {(len(safety_reqs) * 100) // total_reqs if total_reqs > 0 else 0}% |")
-    lines.append(f"| Functional Requirements | {len(functional_reqs)} | {(len(functional_reqs) * 100) // total_reqs if total_reqs > 0 else 0}% |")
+
+    # Show breakdown by type
+    for req_type in sorted(type_counts.keys()):
+        count = type_counts[req_type]
+        percentage = (count * 100) // total_reqs if total_reqs > 0 else 0
+        type_label = req_type.capitalize() if req_type != "unspecified" else "Unspecified Type"
+        marker = " ⚠️" if critical_type and req_type == critical_type else ""
+        lines.append(f"| {type_label} Requirements{marker} | {count} | {percentage}% |")
+
     lines.append(f"| Requirements Referencing {standard_name} | {len(reqs_with_standard)} | {(len(reqs_with_standard) * 100) // total_reqs if total_reqs > 0 else 0}% |")
-    lines.append(f"| Requirements with Test Coverage | {len(reqs_with_tests)} | {(len(reqs_with_tests) * 100) // total_reqs if total_reqs > 0 else 0}% |")
+    lines.append(f"| Requirements with Linked Tests | {len(reqs_with_tests)} | {(len(reqs_with_tests) * 100) // total_reqs if total_reqs > 0 else 0}% |")
     lines.append("")
 
     # Requirements by status
@@ -456,16 +470,21 @@ def generate_compliance_report(requirements_data, standard_name):
         count = status_counts.get(status, 0)
         if count > 0:
             lines.append(f"| {status.capitalize()} | {count} |")
+    # Show any other statuses
+    for status, count in sorted(status_counts.items()):
+        if status not in ["draft", "proposed", "approved", "implemented", "verified", "deprecated"]:
+            lines.append(f"| {status.capitalize()} | {count} |")
     lines.append("")
 
-    # Safety requirements detail
-    if safety_reqs:
-        lines.append("## Safety Requirements (ASIL Classification)")
+    # Critical type requirements detail (if specified)
+    if critical_type and critical_type in reqs_by_type:
+        critical_reqs = reqs_by_type[critical_type]
+        lines.append(f"## {critical_type.capitalize()} Requirements Detail")
         lines.append("")
-        lines.append("| Requirement | Title | Priority | Status | Test Coverage | Standard Reference |")
-        lines.append("|-------------|-------|----------|--------|---------------|-------------------|")
+        lines.append("| Requirement | Title | Priority | Status | Linked Tests | Standard Reference |")
+        lines.append("|-------------|-------|----------|--------|--------------|-------------------|")
 
-        for req_id, frontmatter in safety_reqs:
+        for req_id, frontmatter in critical_reqs:
             title = frontmatter.get("title", "")
             priority = frontmatter.get("priority", "-")
             status = frontmatter.get("status", "-")
@@ -495,24 +514,66 @@ def generate_compliance_report(requirements_data, standard_name):
     lines.append("## Compliance Gaps")
     lines.append("")
 
-    # Safety requirements without test coverage
-    safety_without_tests = []
-    for req_id, frontmatter in safety_reqs:
-        has_tests = False
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if "tests" in frontmatter["references"] and frontmatter["references"]["tests"]:
-                has_tests = True
-        if not has_tests:
-            safety_without_tests.append((req_id, frontmatter.get("title", "")))
+    # Critical type requirements without linked tests (if critical_type specified)
+    if critical_type and critical_type in reqs_by_type:
+        critical_reqs = reqs_by_type[critical_type]
+        critical_without_tests = []
+        for req_id, frontmatter in critical_reqs:
+            has_tests = False
+            if "references" in frontmatter and isinstance(frontmatter["references"], dict):
+                if "tests" in frontmatter["references"] and frontmatter["references"]["tests"]:
+                    has_tests = True
+            if not has_tests:
+                critical_without_tests.append((req_id, frontmatter.get("title", "")))
 
-    if safety_without_tests:
-        lines.append(f"### ⚠️ Safety Requirements without Test Coverage")
+        if critical_without_tests:
+            lines.append(f"### ⚠️ {critical_type.capitalize()} Requirements without Linked Tests")
+            lines.append("")
+            for req_id, title in critical_without_tests:
+                lines.append(f"- **{req_id}**: {title}")
+            lines.append("")
+        else:
+            lines.append(f"### ✅ All {critical_type.capitalize()} Requirements have Linked Tests")
+            lines.append("")
+
+        # Critical type requirements without standard reference
+        critical_without_standard = []
+        for req_id, frontmatter in critical_reqs:
+            has_standard = False
+            if "references" in frontmatter and isinstance(frontmatter["references"], dict):
+                if "standards" in frontmatter["references"]:
+                    standards = frontmatter["references"]["standards"]
+                    for std in standards:
+                        if standard_name.lower() in std.lower():
+                            has_standard = True
+                            break
+            if not has_standard:
+                critical_without_standard.append((req_id, frontmatter.get("title", "")))
+
+        if critical_without_standard:
+            lines.append(f"### ⚠️ {critical_type.capitalize()} Requirements without {standard_name} Reference")
+            lines.append("")
+            for req_id, title in critical_without_standard:
+                lines.append(f"- **{req_id}**: {title}")
+            lines.append("")
+        else:
+            lines.append(f"### ✅ All {critical_type.capitalize()} Requirements reference {standard_name}")
+            lines.append("")
+
+    # General gaps (all requirements)
+    unverified = []
+    for req_id, frontmatter in requirements_data:
+        status = frontmatter.get("status", "")
+        if status not in ["verified", "deprecated"]:
+            unverified.append((req_id, frontmatter.get("title", ""), status, frontmatter.get("type", "unspecified")))
+
+    if unverified:
+        lines.append("### Requirements Not Yet Verified")
         lines.append("")
-        for req_id, title in safety_without_tests:
-            lines.append(f"- **{req_id}**: {title}")
-        lines.append("")
-    else:
-        lines.append("### ✅ All Safety Requirements have Test Coverage")
+        lines.append("| Requirement | Title | Type | Current Status |")
+        lines.append("|-------------|-------|------|----------------|")
+        for req_id, title, status, req_type in unverified:
+            lines.append(f"| {req_id} | {title} | {req_type} | {status} |")
         lines.append("")
 
     return "\n".join(lines)
@@ -520,17 +581,20 @@ def generate_compliance_report(requirements_data, standard_name):
 
 def main():
     if len(sys.argv) < 4:
-        print("Usage: generate_report.py <report_type> <output_file> <input_files...> [--standard=NAME]")
+        print("Usage: generate_report.py <report_type> <output_file> <input_files...> [--standard=NAME] [--critical-type=TYPE]")
         sys.exit(1)
 
     report_type = sys.argv[1]
     output_file = sys.argv[2]
     input_files = []
     standard = "ISO 26262"
+    critical_type = None
 
     for arg in sys.argv[3:]:
         if arg.startswith("--standard="):
             standard = arg.split("=", 1)[1]
+        elif arg.startswith("--critical-type="):
+            critical_type = arg.split("=", 1)[1]
         else:
             input_files.append(arg)
 
@@ -549,7 +613,7 @@ def main():
     elif report_type == "change_impact":
         report = generate_change_impact(requirements_data)
     elif report_type == "compliance":
-        report = generate_compliance_report(requirements_data, standard)
+        report = generate_compliance_report(requirements_data, standard, critical_type)
     else:
         print(f"Unknown report type: {report_type}")
         sys.exit(1)
