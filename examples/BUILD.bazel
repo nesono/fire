@@ -89,6 +89,7 @@ generate_report(
     name = "compliance_report",
     srcs = glob(["requirements/*.md"]),
     out = "COMPLIANCE_ISO26262.md",
+    critical_type = "safety",  # Highlight safety requirements
     report_type = "compliance",
     standard = "ISO 26262",
 )

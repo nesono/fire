@@ -48,7 +48,7 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 - **Test References**: `[test_name](BUILD.bazel#test_name)` syntax
 - **Bi-directional Validation**: Body markdown references must match frontmatter declarations
 - **Traceability Matrix**: Generate matrices showing requirement relationships
-- **Coverage Reports**: Track which requirements have parameter/test coverage
+- **Coverage Reports**: Track which requirements have parameter references, linked tests, and standard references
 - **Unit Tests**: Comprehensive tests for reference validation and markdown parsing
 
 ### Phase 4: Multi-Language Code Generation
@@ -588,17 +588,27 @@ impact_report = traceability.generate_change_impact_markdown(requirements_data)
 
 ### Compliance Reports
 
-Generate compliance reports for safety standards (ISO 26262, DO-178C, etc.):
+Generate compliance reports for safety standards (ISO 26262, IEC 61508, etc.):
 
 ```python
+# Standard-agnostic compliance report
 compliance_report = traceability.generate_compliance_markdown(requirements_data, "ISO 26262")
+
+# With critical requirement type highlighting
+compliance_report = traceability.generate_compliance_markdown(
+    requirements_data,
+    "ISO 26262",
+    critical_type="safety"  # or "security", "regulatory", etc.
+)
 # Includes:
-# - Summary statistics (safety reqs, functional reqs, coverage percentages)
+# - Summary statistics (breakdown by requirement type, standard references, linked tests)
 # - Requirements by status (draft, approved, verified, etc.)
-# - Safety requirements with test/standard coverage
-# - Compliance gaps (safety reqs without tests or standard references)
+# - Critical type requirements detail (if specified)
+# - Compliance gaps (critical reqs without linked tests or standard references)
 # - Unverified requirements
 ```
+
+**Note**: Reports show "Linked Tests" not "Test Coverage" - this refers to requirements with test references in their frontmatter, not verified test execution.
 
 ### Coverage Dashboard
 
@@ -658,7 +668,8 @@ generate_report(
     name = "compliance_report",
     srcs = glob(["requirements/*.md"]),
     report_type = "compliance",
-    standard = "ISO 26262",
+    standard = "ISO 26262",  # or "IEC 61508", etc.
+    critical_type = "safety",  # Optional: highlight critical requirements
     out = "COMPLIANCE_ISO26262.md",
 )
 ```
@@ -679,9 +690,14 @@ bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:ch
 **Available Report Types**:
 
 - `traceability`: Full traceability matrix with Requirements → Parameters, Requirements → Requirements (with versions), Requirements → Tests, Requirements → Standards
-- `coverage`: Coverage metrics showing percentage of requirements with parameter/test/standard coverage
+- `coverage`: Metrics showing percentage of requirements with parameter references, linked tests, and standard references
 - `change_impact`: Identifies requirements with stale parent version references
-- `compliance`: Compliance report for a specific standard (specify with `standard` attribute)
+- `compliance`: Compliance report for a specific standard
+  - Attributes: `standard` (required, e.g., "ISO 26262", "IEC 61508"), `critical_type` (optional, e.g., "safety", "security")
+  - Shows breakdown by requirement type, status distribution, and compliance gaps
+  - Highlights critical requirement type if specified
+
+**Note**: "Linked Tests" refers to requirements with test references in frontmatter, not verified test execution.
 
 ### Example
 

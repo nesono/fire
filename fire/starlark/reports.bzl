@@ -19,6 +19,10 @@ def _generate_report_impl(ctx):
     if ctx.attr.standard:
         args.add("--standard=" + ctx.attr.standard)
 
+    # Add critical_type if specified
+    if ctx.attr.critical_type:
+        args.add("--critical-type=" + ctx.attr.critical_type)
+
     # Run the Python script
     ctx.actions.run(
         inputs = ctx.files.srcs + [script],
@@ -34,6 +38,9 @@ def _generate_report_impl(ctx):
 generate_report = rule(
     implementation = _generate_report_impl,
     attrs = {
+        "critical_type": attr.string(
+            doc = "Requirement type to highlight in compliance reports (e.g., 'safety', 'security')",
+        ),
         "out": attr.output(
             mandatory = True,
             doc = "Output markdown file",
@@ -49,7 +56,7 @@ generate_report = rule(
             doc = "List of requirement markdown files to include in the report",
         ),
         "standard": attr.string(
-            doc = "Standard name for compliance reports (e.g., 'ISO 26262', 'DO-178C')",
+            doc = "Standard name for compliance reports (e.g., 'ISO 26262', 'IEC 61508')",
         ),
         "_script": attr.label(
             default = Label("//fire/starlark:generate_report.py"),
