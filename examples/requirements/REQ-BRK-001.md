@@ -27,7 +27,7 @@ references:
 ## Description
 
 The vehicle SHALL be capable of performing emergency braking from any velocity up to maximum design velocity (see [REQ-VEL-001](examples/requirements/REQ-VEL-001.md)), achieving deceleration
-according to the [@braking_distance_table](../vehicle_params.bzl#braking_distance_table) parameters.
+according to the [@braking_distance_table](examples/vehicle_params.bzl#braking_distance_table) parameters.
 
 ## Rationale
 
@@ -41,7 +41,7 @@ Compliance with [UN ECE R13-H](https://unece.org/transport/documents/2021/03/sta
 
 ## Acceptance Criteria
 
-For each velocity and friction coefficient pair in [@braking_distance_table](../vehicle_params.bzl#braking_distance_table):
+For each velocity and friction coefficient pair in [@braking_distance_table](examples/vehicle_params.bzl#braking_distance_table):
 
 1. Vehicle SHALL achieve full stop within specified distance ±5%
 2. Deceleration SHALL be smooth and controlled (no wheel lock)
@@ -49,7 +49,7 @@ For each velocity and friction coefficient pair in [@braking_distance_table](../
 
 ## Verification
 
-Testing is performed according to [vehicle_params_test](../BUILD.bazel#vehicle_params_test):
+Testing is performed according to [vehicle_params_test](//examples:vehicle_params_test):
 
 - Brake dynamometer testing
 - Proving ground testing on various surfaces (dry, wet, low friction)
