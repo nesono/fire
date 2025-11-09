@@ -288,9 +288,9 @@ owner: safety-team
 tags: [velocity, safety, ASIL-D]
 references:
   parameters:
-    - maximum_vehicle_velocity
+    - examples/vehicle_params.bzl#maximum_vehicle_velocity
   requirements:
-    - REQ-BRK-001
+    - examples/requirements/REQ-BRK-001.md
   standards:
     - ISO 26262:2018, Part 3, Section 7
   tests:
@@ -476,7 +476,8 @@ These links render properly in web UIs (GitHub, GitLab, etc.) and are validated 
 - **External Reference**: `[text](https://url)`
   - Standard markdown links for standards, specifications, etc.
 
-**Validation**: All markdown references in the body must be declared in the frontmatter `references` section.
+**Validation**: All markdown references in the body must be declared in the frontmatter `references` section using the same
+repository-relative format. Bi-directional validation ensures frontmatter and body stay in sync.
 
 ### Parent Requirement Version Tracking
 
@@ -1021,8 +1022,10 @@ bazel test //examples:vehicle_params_test
 1. **Parameter Links**: `[@parameter_name](repo/relative/path/file.bzl#parameter_name)` syntax with repository-relative path
 2. **Requirement Links**: `[REQ-ID](repo/relative/path/REQ-ID.md)` syntax with repository-relative path
 3. **Test Links**: `[test_name](//package:target)` syntax using Bazel labels
-4. **Body-Frontmatter Match**: All markdown references in body must be declared in frontmatter
-5. **Validation Timing**: Checked at build time during requirement validation
+4. **Body-Frontmatter Match**: Bi-directional validation ensures all body references are declared in frontmatter, and all frontmatter references are used in body
+5. **Frontmatter Format**: Frontmatter references use the same repository-relative paths as body references
+6. **Link Text Match**: Link text must match the actual reference name (no typos allowed)
+7. **Validation Timing**: Checked at build time during requirement validation
 
 ### Version Tracking Validation
 

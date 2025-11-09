@@ -29,7 +29,8 @@ def parse_frontmatter(content):
     frontmatter = {}
     current_key = None
     current_list = None
-    indent_level = 0
+    current_dict_item = None
+    base_indent = 0
 
     for i in range(1, end_idx):
         line = lines[i]
@@ -41,22 +42,62 @@ def parse_frontmatter(content):
         # Calculate indentation
         indent = len(line) - len(line.lstrip())
 
-        # Top-level key
-        if ":" in stripped and not stripped.startswith("-"):
+        # List item
+        if stripped.startswith("-"):
+            rest = stripped[1:].strip()
+
+            # Check if next line (if exists) is indented more - indicates a dict item
+            is_dict_item = False
+            if i + 1 < end_idx:
+                next_line = lines[i + 1]
+                next_stripped = next_line.strip()
+                if next_stripped and not next_stripped.startswith("-"):
+                    next_indent = len(next_line) - len(next_line.lstrip())
+                    if next_indent > indent and ":" in next_stripped:
+                        is_dict_item = True
+
+            # Check if this is a dict item in a list
+            if is_dict_item and ":" in rest:
+                parts = rest.split(":", 1)
+                dict_key = parts[0].strip()
+                dict_value = parts[1].strip() if len(parts) > 1 else ""
+
+                # Start a new dict item
+                current_dict_item = {dict_key: dict_value}
+                if current_key and current_list and isinstance(frontmatter[current_key], dict):
+                    if current_list not in frontmatter[current_key]:
+                        frontmatter[current_key][current_list] = []
+                    frontmatter[current_key][current_list].append(current_dict_item)
+            else:
+                # Simple string item (even if it contains ':')
+                if current_key and current_list and isinstance(frontmatter[current_key], dict):
+                    if current_list not in frontmatter[current_key]:
+                        frontmatter[current_key][current_list] = []
+                    frontmatter[current_key][current_list].append(rest)
+                    current_dict_item = None
+
+        # Key-value pair
+        elif ":" in stripped:
             parts = stripped.split(":", 1)
             key = parts[0].strip()
             value = parts[1].strip() if len(parts) > 1 else ""
 
-            if indent == 0:
+            if indent == 0 or indent == base_indent:
+                # Top-level key (or back to base level)
                 current_key = key
                 if value:
                     frontmatter[key] = value
                 else:
                     frontmatter[key] = {}
                     current_list = None
-                indent_level = indent
-            elif current_key and indent > indent_level:
+                base_indent = indent
+                current_dict_item = None
+            elif current_dict_item is not None and indent > base_indent + 2:
+                # Additional key in the current dict item (must be indented beyond list level)
+                current_dict_item[key] = value
+            elif current_key and indent > base_indent:
                 # Nested key under current_key
+                current_dict_item = None  # Exit dict mode when we see a new nested key
                 if value:
                     if isinstance(frontmatter[current_key], dict):
                         frontmatter[current_key][key] = value
@@ -64,14 +105,6 @@ def parse_frontmatter(content):
                     if isinstance(frontmatter[current_key], dict):
                         frontmatter[current_key][key] = []
                         current_list = key
-
-        # List item
-        elif stripped.startswith("-"):
-            item = stripped[1:].strip()
-            if current_key and current_list and isinstance(frontmatter[current_key], dict):
-                if current_list not in frontmatter[current_key]:
-                    frontmatter[current_key][current_list] = []
-                frontmatter[current_key][current_list].append(item)
 
     body = "\n".join(lines[end_idx + 1:])
     return frontmatter, body
@@ -237,19 +270,79 @@ def validate_requirement_file(file_path, workspace_root):
     # Extract references from markdown body
     param_refs, req_refs, test_refs = extract_markdown_references(body)
 
-    # Validate parameter references
+    # Extract frontmatter references
+    fm_refs = frontmatter.get('references', {})
+
+    # Extract parameters (handle both string and dict formats)
+    fm_params = set()
+    for param_ref in fm_refs.get('parameters', []):
+        if isinstance(param_ref, dict):
+            # Skip dict items for now (shouldn't happen for parameters)
+            continue
+        else:
+            fm_params.add(param_ref)
+
+    # Extract requirement paths from frontmatter (handle both string and dict formats)
+    fm_reqs = set()
+    for req_ref in fm_refs.get('requirements', []):
+        if isinstance(req_ref, dict):
+            fm_reqs.add(req_ref.get('path', ''))
+        else:
+            fm_reqs.add(req_ref)
+
+    # Extract tests (handle both string and dict formats)
+    fm_tests = set()
+    for test_ref in fm_refs.get('tests', []):
+        if isinstance(test_ref, dict):
+            # Skip dict items for now (shouldn't happen for tests)
+            continue
+        else:
+            fm_tests.add(test_ref)
+
+    # Build sets of body references
+    body_params = set(param_path for _, param_path in param_refs)
+    body_reqs = set(req_path for _, req_path in req_refs)
+    body_tests = set(test_label for _, test_label in test_refs)
+
+    # Check bi-directional consistency: all body refs must be in frontmatter
+    for param_path in body_params:
+        if param_path not in fm_params:
+            errors.append(f"{file_path}: Body references parameter '{param_path}' not declared in frontmatter")
+
+    for req_path in body_reqs:
+        if req_path not in fm_reqs:
+            errors.append(f"{file_path}: Body references requirement '{req_path}' not declared in frontmatter")
+
+    for test_label in body_tests:
+        if test_label not in fm_tests:
+            errors.append(f"{file_path}: Body references test '{test_label}' not declared in frontmatter")
+
+    # Check reverse: all frontmatter refs must be used in body
+    for param_path in fm_params:
+        if param_path not in body_params:
+            errors.append(f"{file_path}: Frontmatter declares parameter '{param_path}' but it's not used in body")
+
+    for req_path in fm_reqs:
+        if req_path and req_path not in body_reqs:
+            errors.append(f"{file_path}: Frontmatter declares requirement '{req_path}' but it's not used in body")
+
+    for test_label in fm_tests:
+        if test_label not in body_tests:
+            errors.append(f"{file_path}: Frontmatter declares test '{test_label}' but it's not used in body")
+
+    # Validate parameter references exist
     for param_name, param_path in param_refs:
         valid, error = validate_parameter_reference(param_name, param_path, workspace_root)
         if not valid:
             errors.append(f"{file_path}: {error}")
 
-    # Validate requirement references
+    # Validate requirement references exist
     for req_id, req_path in req_refs:
         valid, error = validate_requirement_reference(req_id, req_path, workspace_root)
         if not valid:
             errors.append(f"{file_path}: {error}")
 
-    # Validate test references
+    # Validate test references exist
     for test_name, test_label in test_refs:
         valid, error = validate_test_reference(test_name, test_label, workspace_root)
         if not valid:

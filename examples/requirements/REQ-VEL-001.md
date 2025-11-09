@@ -14,9 +14,9 @@ changelog:
     description: Initial maximum velocity requirement definition
 references:
   parameters:
-    - maximum_vehicle_velocity
+    - examples/vehicle_params.bzl#maximum_vehicle_velocity
   requirements:
-    - REQ-BRK-001
+    - examples/requirements/REQ-BRK-001.md
   standards:
     - ISO 26262:2018, Part 3, Section 7
   tests:

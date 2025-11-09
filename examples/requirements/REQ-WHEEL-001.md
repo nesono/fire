@@ -8,7 +8,7 @@ owner: platform-team
 tags: [configuration, hardware]
 references:
   parameters:
-    - wheel_count
+    - examples/vehicle_params.bzl#wheel_count
   tests:
     - //examples:vehicle_params_test
 ---
