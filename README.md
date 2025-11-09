@@ -1063,11 +1063,3 @@ This project follows Test-Driven Development practices:
 2. Implement functionality to make tests pass
 3. Refactor while keeping tests green
 4. Ensure Buildifier passes on all Starlark code
-
-## License
-
-TBD
-
-## Contact
-
-TBD
