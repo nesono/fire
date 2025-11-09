@@ -57,43 +57,28 @@ def _classify_reference(text, url):
         url: Link URL
 
     Returns:
-        Tuple of (type, id) where type is one of:
-        - "parameter": Parameter reference (starts with @)
-        - "requirement": Requirement reference (.md file)
-        - "test": Test reference (BUILD file)
-        - "external": External link
-        - "unknown": Unknown reference type
+        Tuple of (type, data) where:
+        - type is "parameter", "requirement", "test", "external", or "unknown"
+        - data is (text, url) for validation
     """
 
-    # Parameter reference: [@param_name](path)
+    # Parameter reference: [@param_name](path/file.bzl#param_name)
     if text.startswith("@"):
-        param_name = text[1:]  # Remove @ prefix
-        return ("parameter", param_name)
+        return ("parameter", (text[1:], url))
 
-    # Requirement reference: [REQ-ID](REQ-ID.md)
+    # Requirement reference: [REQ-ID](path/to/REQ-ID.md)
     if url.endswith(".md"):
-        # Extract requirement ID from URL
-        # Handle both "REQ-ID.md" and "path/to/REQ-ID.md"
-        parts = url.split("/")
-        filename = parts[-1]
-        if filename.endswith(".md"):
-            req_id = filename[:-3]  # Remove .md extension
-            return ("requirement", req_id)
+        return ("requirement", (text, url))
 
-    # Test reference: [test](BUILD.bazel#target)
-    if "BUILD.bazel" in url or "BUILD" in url:
-        # Extract test name from anchor if present
-        if "#" in url:
-            parts = url.split("#")
-            test_name = parts[-1]
-            return ("test", test_name)
-        return ("test", text)
+    # Test reference: [test_name](//package:target)
+    if url.startswith("//") and ":" in url:
+        return ("test", (text, url))
 
     # External or unknown
     if url.startswith("http://") or url.startswith("https://"):
-        return ("external", url)
+        return ("external", (text, url))
 
-    return ("unknown", url)
+    return ("unknown", (text, url))
 
 def parse_markdown_references(body):
     """Parse all markdown references from requirement body.
@@ -103,10 +88,10 @@ def parse_markdown_references(body):
 
     Returns:
         Dictionary with keys:
-        - "parameters": List of parameter names
-        - "requirements": List of requirement IDs
-        - "tests": List of test names
-        - "external": List of external URLs
+        - "parameters": List of (param_name, param_path) tuples
+        - "requirements": List of (req_id, req_path) tuples
+        - "tests": List of (test_name, test_label) tuples
+        - "external": List of (text, url) tuples
     """
     refs = {
         "external": [],
@@ -122,24 +107,26 @@ def parse_markdown_references(body):
     for line in lines:
         links = _parse_markdown_link(line)
         for text, url in links:
-            ref_type, ref_id = _classify_reference(text, url)
+            ref_type, ref_data = _classify_reference(text, url)
 
             if ref_type == "parameter":
-                refs["parameters"].append(ref_id)
+                refs["parameters"].append(ref_data)
             elif ref_type == "requirement":
-                refs["requirements"].append(ref_id)
+                refs["requirements"].append(ref_data)
             elif ref_type == "test":
-                refs["tests"].append(ref_id)
+                refs["tests"].append(ref_data)
             elif ref_type == "external":
-                refs["external"].append(ref_id)
+                refs["external"].append(ref_data)
 
     return refs
 
 def validate_markdown_references(body, frontmatter_refs):
-    """Validate markdown references against frontmatter.
+    """Validate markdown references against frontmatter with bi-directional checks.
 
-    Checks that all markdown references in the body are also declared
-    in the frontmatter references section.
+    Validates:
+    1. Link text matches reference name (no typos)
+    2. All body references are declared in frontmatter
+    3. All frontmatter references are used in body
 
     Args:
         body: Markdown body content
@@ -160,43 +147,80 @@ def validate_markdown_references(body, frontmatter_refs):
                       len(body_refs.get("tests", [])))
         if total_refs > 0:
             return "markdown body contains references but frontmatter has no references section"
+        return None
 
-    # Check parameters
-    body_params = body_refs.get("parameters", [])
-    fm_params = frontmatter_refs.get("parameters", []) if frontmatter_refs else []
-    for param in body_params:
-        if param not in fm_params:
-            return "markdown references parameter '{}' not declared in frontmatter".format(param)
+    # Validate link text matches reference names
+    for param_name, param_path in body_refs.get("parameters", []):
+        if "#" in param_path:
+            anchor = param_path.split("#")[1]
+            if param_name != anchor:
+                return "parameter link text '{}' does not match anchor '{}' in {}".format(
+                    param_name,
+                    anchor,
+                    param_path,
+                )
 
-    # Check requirements
-    body_reqs = body_refs.get("requirements", [])
-    fm_reqs_raw = frontmatter_refs.get("requirements", []) if frontmatter_refs else []
+    for req_id, req_path in body_refs.get("requirements", []):
+        filename = req_path.split("/")[-1] if "/" in req_path else req_path
+        expected = req_id + ".md"
+        if filename != expected:
+            return "requirement link text '{}' does not match filename '{}' (expected '{}')".format(
+                req_id,
+                filename,
+                expected,
+            )
 
-    # Extract requirement IDs from frontmatter (support both string and dict formats)
-    fm_reqs = []
-    for ref in fm_reqs_raw:
-        if type(ref) == "string":
-            fm_reqs.append(ref)
-        elif type(ref) == "dict" and "id" in ref:
-            fm_reqs.append(ref["id"])
+    for test_name, test_label in body_refs.get("tests", []):
+        if ":" in test_label:
+            target = test_label.split(":")[1]
+            if test_name != target:
+                return "test link text '{}' does not match target '{}' in {}".format(
+                    test_name,
+                    target,
+                    test_label,
+                )
 
-    for req in body_reqs:
-        if req not in fm_reqs:
-            return "markdown references requirement '{}' not declared in frontmatter".format(req)
+    # Build sets for bi-directional validation
+    # Frontmatter sets
+    fm_params = set(frontmatter_refs.get("parameters", []))
 
-    # Check tests
-    body_tests = body_refs.get("tests", [])
-    fm_tests = frontmatter_refs.get("tests", []) if frontmatter_refs else []
-    for test in body_tests:
-        # Test references can be target names or full labels
-        # Match if the test name appears in any frontmatter test reference
-        found = False
-        for fm_test in fm_tests:
-            if test in fm_test or fm_test.endswith(":" + test):
-                found = True
-                break
-        if not found:
-            return "markdown references test '{}' not declared in frontmatter".format(test)
+    fm_reqs = set()
+    for req_ref in frontmatter_refs.get("requirements", []):
+        if type(req_ref) == "dict" and "path" in req_ref:
+            fm_reqs.add(req_ref["path"])
+
+    fm_tests = set(frontmatter_refs.get("tests", []))
+
+    # Body sets
+    body_params = set([path for _, path in body_refs.get("parameters", [])])
+    body_reqs = set([path for _, path in body_refs.get("requirements", [])])
+    body_tests = set([label for _, label in body_refs.get("tests", [])])
+
+    # Check body references are in frontmatter
+    for param_path in body_params:
+        if param_path not in fm_params:
+            return "body references parameter '{}' not declared in frontmatter".format(param_path)
+
+    for req_path in body_reqs:
+        if req_path not in fm_reqs:
+            return "body references requirement '{}' not declared in frontmatter".format(req_path)
+
+    for test_label in body_tests:
+        if test_label not in fm_tests:
+            return "body references test '{}' not declared in frontmatter".format(test_label)
+
+    # Check frontmatter references are used in body
+    for param_path in fm_params:
+        if param_path not in body_params:
+            return "frontmatter declares parameter '{}' not used in body".format(param_path)
+
+    for req_path in fm_reqs:
+        if req_path not in body_reqs:
+            return "frontmatter declares requirement '{}' not used in body".format(req_path)
+
+    for test_label in fm_tests:
+        if test_label not in body_tests:
+            return "frontmatter declares test '{}' not used in body".format(test_label)
 
     return None
 

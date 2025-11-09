@@ -27,9 +27,9 @@ def _test_valid_parameter_references(ctx):
         "id": "REQ-001",
         "references": {
             "parameters": [
-                "maximum_vehicle_velocity",
-                "wheel_count",
-                "braking_distance_table",
+                "examples/vehicle_params.bzl#braking_distance_table",
+                "examples/vehicle_params.bzl#maximum_vehicle_velocity",
+                "examples/vehicle_params.bzl#wheel_count",
             ],
         },
         "status": "draft",
@@ -86,9 +86,9 @@ def _test_valid_requirement_references(ctx):
         "id": "REQ-001",
         "references": {
             "requirements": [
-                "REQ-002",
-                "REQ-VEL-001",
-                "REQ_BRAKE_001",
+                {"path": "examples/requirements/REQ-002.md", "version": 1},
+                {"path": "examples/requirements/REQ-VEL-001.md", "version": 2},
+                {"path": "examples/requirements/REQ_BRAKE_001.md", "version": 1},
             ],
         },
     }
@@ -181,7 +181,7 @@ def _test_invalid_test_reference(ctx):
     return unittest.end(env)
 
 def _test_valid_standard_references(ctx):
-    """Test valid standard references."""
+    """Test valid standard references (must be sorted)."""
     env = unittest.begin(ctx)
 
     frontmatter = {
@@ -189,8 +189,8 @@ def _test_valid_standard_references(ctx):
         "references": {
             "standards": [
                 "ISO 26262:2018, Part 3, Section 7",
-                "UN ECE R13-H",
                 "MISRA C:2012",
+                "UN ECE R13-H",
             ],
         },
     }
@@ -233,8 +233,8 @@ def _test_multiple_reference_types(ctx):
     frontmatter = {
         "id": "REQ-VEL-001",
         "references": {
-            "parameters": ["maximum_vehicle_velocity"],
-            "requirements": ["REQ-BRK-001"],
+            "parameters": ["examples/vehicle_params.bzl#maximum_vehicle_velocity"],
+            "requirements": [{"path": "examples/requirements/REQ-BRK-001.md", "version": 1}],
             "standards": ["ISO 26262:2018"],
             "tests": ["//examples:vehicle_params_test"],
         },

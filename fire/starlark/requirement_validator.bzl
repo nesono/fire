@@ -4,8 +4,19 @@ load(":markdown_parser.bzl", "markdown_parser")
 load(":reference_validator.bzl", "reference_validator")
 load(":version_validator.bzl", "version_validator")
 
+def _is_valid_yaml_key(s):
+    """Check if string is valid YAML dict key (alphanumeric with _ or -)."""
+    if not s:
+        return False
+    for c in s.elems():
+        if not (c.isalnum() or c in "_-"):
+            return False
+    return True
+
 def _parse_frontmatter(content):
     """Parse YAML frontmatter from markdown content.
+
+    Handles complex YAML including dicts in lists.
 
     Args:
         content: Full markdown file content as string
@@ -16,11 +27,11 @@ def _parse_frontmatter(content):
     if not content.startswith("---"):
         return (None, content)
 
-    # Find the closing ---
     lines = content.split("\n")
     if len(lines) < 3:
         return (None, content)
 
+    # Find closing ---
     end_idx = -1
     for i in range(1, len(lines)):
         if lines[i].strip() == "---":
@@ -30,31 +41,116 @@ def _parse_frontmatter(content):
     if end_idx == -1:
         return (None, content)
 
-    # Parse frontmatter (simple key: value parsing)
+    # Parse frontmatter with support for nested structures
     frontmatter = {}
+    current_key = None
+    current_list_key = None
+    current_dict = None
+    base_indent = 0
+
     for i in range(1, end_idx):
-        line = lines[i].strip()
-        if not line or line.startswith("#"):
+        line = lines[i]
+        stripped = line.strip()
+
+        # Skip empty lines and comments
+        if not stripped or stripped.startswith("#"):
             continue
 
-        if ":" not in line:
-            continue
+        # Calculate indentation
+        indent = len(line) - len(line.lstrip())
 
-        parts = line.split(":", 1)
-        key = parts[0].strip()
-        value = parts[1].strip()
+        # List item (starts with -)
+        if stripped.startswith("-"):
+            rest = stripped[1:].strip()
 
-        # Handle lists [item1, item2]
-        if value.startswith("[") and value.endswith("]"):
-            value = value[1:-1]
-            items = [item.strip() for item in value.split(",")]
-            frontmatter[key] = items
-        else:
-            frontmatter[key] = value
+            # Check if this is a dict item (has key: value after -)
+            is_dict_item = False
+            if ":" in rest:
+                # Check it's not a Bazel label (//...:...) or ISO standard
+                if not rest.startswith("//") and not rest.startswith("ISO "):
+                    parts = rest.split(":", 1)
+                    key_part = parts[0].strip()
 
-    # Body is everything after the closing ---
+                    # Check if it looks like a dict key (alphanumeric with _ or -)
+                    if _is_valid_yaml_key(key_part):
+                        is_dict_item = True
+
+            if is_dict_item:
+                # Dict item in list
+                parts = rest.split(":", 1)
+                dict_key = parts[0].strip()
+                dict_value = parts[1].strip() if len(parts) > 1 else ""
+
+                # Convert dict_value to int if it looks like a number
+                if dict_value and dict_value.isdigit():
+                    dict_value = int(dict_value)
+
+                # Start new dict
+                current_dict = {dict_key: dict_value}
+                if current_key and current_list_key:
+                    if current_list_key not in frontmatter[current_key]:
+                        frontmatter[current_key][current_list_key] = []
+                    frontmatter[current_key][current_list_key].append(current_dict)
+            else:
+                # Simple string item or inline list [a, b, c]
+                if rest.startswith("[") and rest.endswith("]"):
+                    # Inline list
+                    rest = rest[1:-1]
+                    items = [item.strip() for item in rest.split(",")]
+                    if current_key and type(frontmatter.get(current_key)) == "string":
+                        frontmatter[current_key] = items
+                else:
+                    # Single item
+                    if current_key and current_list_key:
+                        if current_list_key not in frontmatter[current_key]:
+                            frontmatter[current_key][current_list_key] = []
+                        frontmatter[current_key][current_list_key].append(rest)
+                current_dict = None
+
+            # Key-value pair
+        elif ":" in stripped:
+            parts = stripped.split(":", 1)
+            key = parts[0].strip()
+            value = parts[1].strip() if len(parts) > 1 else ""
+
+            if indent == 0 or indent == base_indent:
+                # Top-level key
+                current_key = key
+                if value:
+                    # Try to convert to int if it looks like a number
+                    if value.isdigit():
+                        frontmatter[key] = int(value)
+                        # Handle inline lists [a, b, c]
+
+                    elif value.startswith("[") and value.endswith("]"):
+                        value = value[1:-1]
+                        frontmatter[key] = [item.strip() for item in value.split(",")]
+                    else:
+                        frontmatter[key] = value
+                else:
+                    frontmatter[key] = {}
+                    current_list_key = None
+                base_indent = indent
+                current_dict = None
+            elif current_dict and indent > base_indent + 2:
+                # Additional key in current dict item
+                if value.isdigit():
+                    current_dict[key] = int(value)
+                else:
+                    current_dict[key] = value
+            elif current_key and indent > base_indent:
+                # Nested key under current_key
+                current_dict = None
+                if value:
+                    if value.isdigit():
+                        frontmatter[current_key][key] = int(value)
+                    else:
+                        frontmatter[current_key][key] = value
+                else:
+                    frontmatter[current_key][key] = []
+                    current_list_key = key
+
     body = "\n".join(lines[end_idx + 1:])
-
     return (frontmatter, body)
 
 def _validate_requirement_id(req_id):
