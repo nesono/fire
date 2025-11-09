@@ -21,6 +21,7 @@ exports_files([
     "requirements.bzl",
     "reports.bzl",
     "generate_report.py",
+    "validate_cross_references.py",
 ])
 
 # Unit tests for validator
