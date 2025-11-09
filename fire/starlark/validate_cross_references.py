@@ -116,6 +116,10 @@ def validate_parameter_reference(param_name, param_path, workspace_root):
         file_path = param_path
         anchor = param_name
 
+    # Check that link text matches anchor
+    if param_name != anchor:
+        return False, f"Parameter link text '{param_name}' does not match anchor '{anchor}' in {param_path}"
+
     # Convert to absolute path
     abs_path = os.path.join(workspace_root, file_path)
 
@@ -141,6 +145,12 @@ def validate_parameter_reference(param_name, param_path, workspace_root):
 
 def validate_requirement_reference(req_id, req_path, workspace_root):
     """Validate that a requirement reference exists."""
+    # Check that link text matches filename
+    filename = os.path.basename(req_path)
+    expected_filename = f"{req_id}.md"
+    if filename != expected_filename:
+        return False, f"Requirement link text '{req_id}' does not match filename '{filename}' (expected '{expected_filename}')"
+
     # Convert to absolute path
     abs_path = os.path.join(workspace_root, req_path)
 
@@ -177,6 +187,10 @@ def validate_test_reference(test_name, test_label, workspace_root):
 
         package_path = label_parts[0]
         target_name = label_parts[1]
+
+        # Check that link text matches target name
+        if test_name != target_name:
+            return False, f"Test link text '{test_name}' does not match target name '{target_name}' in {test_label}"
 
         # Check if BUILD.bazel or BUILD file exists in the package
         build_file = None
