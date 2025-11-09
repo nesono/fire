@@ -6,76 +6,73 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 
 **Pure Starlark implementation** - no runtime dependencies, validation at load time, type-safe code generation.
 
-## Status
-
-- **Phase 1: Parameter System** ✓ Complete
-- **Phase 2: Requirements & Templates** ✓ Complete
-- **Phase 3: Cross-References & Traceability** ✓ Complete
-- **Phase 4: Multi-Language Code Generation** ✓ Complete
-- **Phase 5: Change Management & Review Tracking** ✓ Complete
-
 ## Features
 
-### Phase 1: Parameter System
+### Parameter System
 
 - **Load-Time Validation**: Parameters validated when BUILD files load
 - **Type System**: Support for `float`, `integer`, `string`, `boolean`, and `table` types
 - **Units**: Associate physical units with parameters
 - **Tables**: Define multi-column tabular data with typed columns
-- **Multi-Language Code Generation**: Generate type-safe code for C++, Python, Java, and Go
-- **C++ Generation**: `constexpr` headers with strong typing
-- **Python Generation**: Dataclasses with type hints
-- **Java Generation**: Records with immutable data
-- **Go Generation**: Constants and structs with type safety
 - **Bazel Integration**: Native Starlark rules for seamless integration
-- **Unit Tests**: Comprehensive Starlark unit tests using Skylib's unittest framework
+- **No Dependencies**: Zero runtime dependencies
 
-### Phase 2: Requirements & Templates
+### Requirements Management
 
 - **Markdown Requirements**: Requirements documents with YAML frontmatter
-- **Requirement Validation**: Enforce structure, types, and mandatory fields
+- **Requirement Validation**: Enforce structure, types, and mandatory fields at build time
 - **Requirement Metadata**: ID, title, type, status, priority, owner, tags
 - **Template System**: Predefined requirement types (functional, safety, interface, etc.)
-- **Unit Tests**: Comprehensive validation tests for requirement documents
+- **Pure Starlark Validation**: All validation logic in Starlark (testable and reusable)
 
-### Phase 3: Cross-References & Traceability
+### Cross-References & Traceability
 
 - **Cross-References**: Link requirements to parameters, other requirements, tests, and standards
-- **Reference Validation**: Validate reference formats and integrity
-- **Markdown Link Support**: Use proper markdown links that render in web UIs
-- **Parameter References**: `[@parameter_name](repo/relative/path/file.bzl#parameter_name)` syntax
-- **Requirement References**: `[REQ-ID](repo/relative/path/REQ-ID.md)` syntax
+- **Repository-Relative Paths**: Explicit paths that work across the repository
+- **Parameter References**: `[@parameter_name](path/to/file.bzl#parameter_name)` syntax
+- **Requirement References**: `[REQ-ID](path/to/REQ-ID.md)` with mandatory version tracking
 - **Test References**: `[test_name](//package:target)` syntax (Bazel labels)
+- **Reference Validation**: Format validation, existence checking, and link text matching
 - **Bi-directional Validation**: Body markdown references must match frontmatter declarations
+- **Lexicographic Sorting**: References sorted alphabetically for consistency
 - **Traceability Matrix**: Generate matrices showing requirement relationships
 - **Coverage Reports**: Track which requirements have parameter references, linked tests, and standard references
-- **Unit Tests**: Comprehensive tests for reference validation and markdown parsing
 
-### Phase 4: Multi-Language Code Generation
+### Version Tracking & Change Management
 
-- **Python Code Generation**: Dataclasses with type hints and frozen immutability
-- **Java Code Generation**: Records with immutable data structures
-- **Go Code Generation**: Constants and structs with type safety
+- **Simple Integer Versioning**: Requirements track version with positive integers (1, 2, 3, ...)
+- **Optional Changelog**: Track version changes with integer + description
+- **Parent Version Tracking**: Derived requirements must track parent requirement version
+- **Stale Requirement Detection**: Immediately identify when parent requirement changes
+- **Mandatory Version References**: All requirement references must include version
+- **Git for Full History**: Complete change history in Git (changelog just summarizes versions)
+
+### Multi-Language Code Generation
+
+- **C++ Generation**: `constexpr` headers with strong typing
+- **Python Generation**: Dataclasses with type hints and frozen immutability
+- **Java Generation**: Records with immutable data structures
+- **Go Generation**: Constants and structs with type safety
 - **Auto-derived Namespaces**: Namespaces automatically derived from Bazel package paths
 - **Java Package Prefix**: Optional package prefix for Java reverse-domain naming
 - **Source Label Traceability**: All generated files include Bazel source labels
 - **Unified Validation**: Single parameter source validated for all target languages
-- **Example Tests**: Test examples in all supported languages
 
-### Phase 5: Parent Requirement Version Tracking
+### Reporting & Compliance
 
-- **Simple Integer Versioning**: Requirements track version with simple positive integers (1, 2, 3, ...)
-- **Simple Changelog**: Track version changes with integer + description (no dates, Git has that)
-- **Parent Version Tracking**: Derived requirements track which version of parent they're based on
-- **Stale Requirement Detection**: Immediately identify when parent requirement changes
-- **Flexible Reference Format**: Support both string refs (`"REQ-ID"`) and version-tracked refs (`{id: "REQ-ID", version: 2}`)
-- **Backward Compatible**: Old string-only format still supported, changelog optional
-- **Git for Full History**: Complete change history in Git (changelog just summarizes versions)
-- **Unit Tests**: 17 focused tests for versioning, changelog, and parent tracking
+- **Compliance Reports**: Standard-agnostic reports (ISO 26262, IEC 61508, DO-178C, etc.)
+- **Critical Type Highlighting**: Configurable highlighting for safety, security, regulatory requirements
+- **Coverage Reports**: Linked tests and standard references for each requirement
+- **Change Impact Analysis**: Identifies requirements with stale parent version references
+- **Requirements Not Yet Verified**: Table showing all non-verified requirements
+- **Compliance Gap Analysis**: Critical requirements without tests or standards
 
-### General
+### Testing
 
-- **No Dependencies**: Zero runtime dependencies
+- **93 Unit Tests**: Comprehensive Starlark unit tests using Skylib's unittest framework
+- **Validation Tests**: Tests for parameters, requirements, references, versions, and markdown parsing
+- **Code Generation Tests**: Test examples in all supported languages (C++, Python, Java, Go)
+- **Traceability Tests**: Verify matrix generation and reporting functionality
 
 ## Quick Start
 
@@ -1049,72 +1046,12 @@ Fire follows these principles:
 - **Validation First**: Catch errors at build time, not runtime
 - **Clear Separation**: Implementation and test files colocated for clarity
 
-## Roadmap
+## Future Work
 
-### ✅ Phase 1: Foundation & Parameter System (Complete)
-
-- Starlark parameter validation
-- C++ code generation
-- Bazel rules integration
-- Load-time validation
-- Comprehensive unit tests
-
-### ✅ Phase 2: Requirements & Templates (Complete)
-
-- Markdown requirement documents with YAML frontmatter
-- Requirement validation (structure, types, mandatory fields)
-- Requirement metadata (ID, title, type, status, priority, owner, tags)
-- Template system with predefined requirement types
-- Comprehensive unit tests for requirement validation
-
-### ✅ Phase 3: Cross-References & Traceability (Complete)
-
-- Cross-reference system linking requirements to parameters, requirements, tests, and standards
-- Reference validation with type-specific rules
-- Traceability matrix generation (Markdown format)
-- Coverage report generation
-- Bi-directional traceability support
-- Comprehensive unit tests for reference validation
-
-### ✅ Phase 4: Multi-Language Code Generation (Complete)
-
-- Python parameter libraries with dataclasses and type hints
-- Java parameter libraries with records (immutable)
-- Go parameter libraries with constants and structs
-- Auto-derived namespaces from Bazel package paths
-- Source label traceability in generated code
-- Example tests in all supported languages
-- Unified parameter validation across languages
-
-### ✅ Phase 5: Parent Requirement Version Tracking (Complete)
-
-- Simple integer versioning (1, 2, 3, ...)
-- Optional changelog with version + description (no dates)
-- Parent version tracking in requirement references
-- Support for both string and dict reference formats
-- Backward compatible with existing requirements
-- Stale requirement detection when parents change
-- Git-based full history (changelog just summarizes)
-- 17 focused unit tests
-- Minimal complexity, maximum utility
-
-### ✅ Phase 6: Reporting & Compliance (Complete)
-
-- Enhanced traceability matrices with version history
-- Change impact analysis (identifies stale parent references)
-- Compliance reports (ISO 26262, DO-178C, etc.)
-- Coverage dashboards with metrics and gap analysis
-- Requirement status tracking and reporting
-- Safety requirement validation and gap detection
-- Markdown export format for all reports
-- 10 comprehensive unit tests
-- Actionable compliance insights
-
-### Phase 7: Advanced Features & Polish (Planned)
-
-- IDE integration
-- Pre-commit hooks
-- Performance optimization
+- IDE integration for enhanced developer experience
+- Additional language targets (Rust, TypeScript, etc.)
+- Performance optimization for large requirement sets
+- Interactive compliance dashboards
 
 ## Contributing
 
