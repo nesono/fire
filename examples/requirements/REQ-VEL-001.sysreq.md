@@ -17,7 +17,7 @@ references:
   parameters:
     - examples/vehicle_params.bzl#maximum_vehicle_velocity
   requirements:
-    - path: examples/requirements/REQ-BRK-001.md
+    - path: examples/requirements/REQ-BRK-001.sysreq.md
       version: 1
   standards:
     - ISO 26262:2018, Part 3, Section 7
@@ -37,7 +37,7 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 
 - Mechanical stress limits on drivetrain components
 - Tire rating specifications
-- Braking system performance envelope (see [REQ-BRK-001](examples/requirements/REQ-BRK-001.md))
+- Braking system performance envelope (see [REQ-BRK-001](examples/requirements/REQ-BRK-001.sysreq.md))
 - Control system response time requirements
 
 ## Verification

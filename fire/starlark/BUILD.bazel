@@ -2,6 +2,7 @@ load(":cpp_generator_test.bzl", "cpp_generator_test_suite")
 load(":markdown_parser_test.bzl", "markdown_parser_test_suite")
 load(":reference_validator_test.bzl", "reference_validator_test_suite")
 load(":requirement_validator_test.bzl", "requirement_validator_test_suite")
+load(":swreq_validator_test.bzl", "swreq_validator_test_suite")
 load(":traceability_test.bzl", "traceability_test_suite")
 load(":validator_test.bzl", "validator_test_suite")
 load(":version_validator_test.bzl", "version_validator_test_suite")
@@ -17,6 +18,8 @@ exports_files([
     "reference_validator.bzl",
     "version_validator.bzl",
     "markdown_parser.bzl",
+    "swreq_parser.bzl",
+    "swreq_validator.bzl",
     "traceability.bzl",
     "requirements.bzl",
     "reports.bzl",
@@ -44,3 +47,6 @@ version_validator_test_suite(name = "version_validator_test")
 
 # Unit tests for traceability
 traceability_test_suite(name = "traceability_test")
+
+# Unit tests for swreq_validator
+swreq_validator_test_suite(name = "swreq_validator_test")
