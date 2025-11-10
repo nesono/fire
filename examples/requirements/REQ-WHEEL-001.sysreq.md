@@ -1,10 +1,6 @@
 ---
 id: REQ-WHEEL-001
-title: Wheel Count Configuration
-type: constraint
 status: approved
-priority: medium
-tags: [configuration, hardware]
 references:
   parameters:
     - examples/vehicle_params.bzl#wheel_count

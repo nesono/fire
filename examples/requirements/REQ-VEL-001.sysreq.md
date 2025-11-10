@@ -1,12 +1,8 @@
 ---
 id: REQ-VEL-001
-title: Maximum Vehicle Velocity
-type: safety
 status: approved
-priority: critical
 sil: ASIL-D
 security_related: false
-tags: [velocity, safety, ASIL-D]
 version: 2
 changelog:
   - version: 2

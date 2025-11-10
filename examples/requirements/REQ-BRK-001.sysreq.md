@@ -1,12 +1,8 @@
 ---
 id: REQ-BRK-001
-title: Emergency Braking Distance
-type: functional
 status: approved
-priority: high
 sil: ASIL-C
 security_related: true
-tags: [braking, safety, performance]
 version: 1
 changelog:
   - version: 1
