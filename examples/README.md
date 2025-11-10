@@ -6,29 +6,17 @@ This directory contains example files demonstrating the complete traceability ch
 
 ```text
 examples/
-├── README.md                          # This file
-├── requirements/                      # System requirements
-│   ├── REQ-VEL-001.sysreq.md         # Maximum velocity requirement
-│   ├── REQ-BRK-001.sysreq.md         # Braking distance requirement
-│   └── REQ-WHEEL-001.sysreq.md       # Wheel count requirement
-├── system_functions/                  # System function specifications
-│   └── braking_control.sysarch.md    # Braking system DFD and architecture
-├── brake_control/                     # Brake controller software component
-│   └── doc/
-│       ├── brake_controller.techspec.md   # Technical specification
-│       └── brake_controller.swreq.md      # Software requirements (8 reqs)
-├── vehicle_status/                    # Vehicle status software component
-│   └── doc/
-│       ├── vehicle_status.techspec.md     # Technical specification
-│       └── vehicle_status.swreq.md        # Software requirements (5 reqs)
-├── brake_actuator/                    # Brake actuator software component
-│   └── doc/
-│       ├── brake_actuator.techspec.md     # Technical specification
-│       └── brake_actuator.swreq.md        # Software requirements (5 reqs)
-├── vehicle_params.bzl                 # Parameter definitions
-├── vehicle_params_test.cc             # Parameter integration test
-└── BUILD.bazel                        # Build configuration
+├── requirements/          # System requirements (.sysreq.md)
+├── system_functions/      # System function specifications with DFDs (.sysarch.md)
+├── brake_control/doc/     # Brake controller techspec and software requirements
+├── vehicle_status/doc/    # Vehicle status techspec and software requirements
+└── brake_actuator/doc/    # Brake actuator techspec and software requirements
 ```
+
+Each software component directory contains:
+
+- `.techspec.md` - Technical specification with architecture and algorithms
+- `.swreq.md` - Software requirements derived from system requirements
 
 ## Traceability Chain Example
 
