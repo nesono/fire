@@ -24,7 +24,7 @@ def _test_simple_float_parameter(ctx):
     asserts.true(env, "#ifndef TEST_PARAMS_H" in result, "Should have header guard")
     asserts.true(env, "namespace test {" in result, "Should have namespace")
     asserts.true(env, "/// Maximum velocity - Unit: m/s" in result, "Should have comment")
-    asserts.true(env, "constexpr double max_velocity = 55.0;" in result, "Should have float declaration")
+    asserts.true(env, "constexpr double MAX_VELOCITY = 55.0;" in result, "Should have float declaration with UPPER_CASE")
 
     return unittest.end(env)
 
@@ -45,7 +45,7 @@ def _test_simple_integer_parameter(ctx):
         "schema_version": "1.0",
     })
 
-    asserts.true(env, "constexpr int wheel_count = 4;" in result, "Should have integer declaration")
+    asserts.true(env, "constexpr int WHEEL_COUNT = 4;" in result, "Should have integer declaration with UPPER_CASE")
 
     return unittest.end(env)
 
@@ -66,7 +66,7 @@ def _test_simple_string_parameter(ctx):
         "schema_version": "1.0",
     })
 
-    asserts.true(env, 'constexpr const char* vehicle_model = "Model X";' in result, "Should have string declaration")
+    asserts.true(env, 'constexpr const char* VEHICLE_MODEL = "Model X";' in result, "Should have string declaration with UPPER_CASE")
 
     return unittest.end(env)
 
@@ -87,7 +87,7 @@ def _test_simple_boolean_parameter(ctx):
         "schema_version": "1.0",
     })
 
-    asserts.true(env, "constexpr bool has_abs = true;" in result, "Should have boolean declaration")
+    asserts.true(env, "constexpr bool HAS_ABS = true;" in result, "Should have boolean declaration with UPPER_CASE")
 
     return unittest.end(env)
 
@@ -151,12 +151,12 @@ def _test_table_parameter(ctx):
 
     # Check array declaration
     asserts.true(env, "/// Gear ratios" in result, "Should have description comment")
-    asserts.true(env, "constexpr GearRatiosRow gear_ratios[] = {" in result, "Should have array declaration")
+    asserts.true(env, "constexpr GearRatiosRow GEAR_RATIOS[] = {" in result, "Should have array declaration with UPPER_CASE")
     asserts.true(env, "{1, 3.5, 40.0}," in result, "Should have first row")
     asserts.true(env, "{2, 2.1, 70.0}," in result, "Should have second row")
 
     # Check size constant
-    asserts.true(env, "constexpr size_t gear_ratios_size = 2;" in result, "Should have size constant")
+    asserts.true(env, "constexpr size_t GEAR_RATIOS_SIZE = 2;" in result, "Should have size constant with UPPER_CASE")
 
     return unittest.end(env)
 
@@ -177,7 +177,7 @@ def _test_string_escaping(ctx):
         "schema_version": "1.0",
     })
 
-    asserts.true(env, 'constexpr const char* message = "He said \\"hello\\""' in result, "Should escape quotes")
+    asserts.true(env, 'constexpr const char* MESSAGE = "He said \\"hello\\""' in result, "Should escape quotes and use UPPER_CASE")
 
     return unittest.end(env)
 
@@ -240,9 +240,9 @@ def _test_multiple_parameters(ctx):
         "schema_version": "1.0",
     })
 
-    asserts.true(env, "constexpr double value1 = 1.0;" in result, "Should have first parameter")
-    asserts.true(env, "constexpr int value2 = 2;" in result, "Should have second parameter")
-    asserts.true(env, "constexpr bool value3 = false;" in result, "Should have third parameter")
+    asserts.true(env, "constexpr double VALUE1 = 1.0;" in result, "Should have first parameter with UPPER_CASE")
+    asserts.true(env, "constexpr int VALUE2 = 2;" in result, "Should have second parameter with UPPER_CASE")
+    asserts.true(env, "constexpr bool VALUE3 = false;" in result, "Should have third parameter with UPPER_CASE")
 
     return unittest.end(env)
 

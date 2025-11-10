@@ -9,47 +9,47 @@ int main() {
     using namespace examples;
 
     // Test simple float parameter
-    assert(maximum_vehicle_velocity == 55.0);
-    std::cout << "✓ maximum_vehicle_velocity = " << maximum_vehicle_velocity << " m/s" << std::endl;
+    assert(MAXIMUM_VEHICLE_VELOCITY == 55.0);
+    std::cout << "✓ MAXIMUM_VEHICLE_VELOCITY = " << MAXIMUM_VEHICLE_VELOCITY << " m/s" << std::endl;
 
     // Test integer parameter
-    assert(wheel_count == 4);
-    std::cout << "✓ wheel_count = " << wheel_count << std::endl;
+    assert(WHEEL_COUNT == 4);
+    std::cout << "✓ WHEEL_COUNT = " << WHEEL_COUNT << std::endl;
 
     // Test string parameter
-    assert(std::strcmp(vehicle_name, "TestVehicle") == 0);
-    std::cout << "✓ vehicle_name = \"" << vehicle_name << "\"" << std::endl;
+    assert(std::strcmp(VEHICLE_NAME, "TestVehicle") == 0);
+    std::cout << "✓ VEHICLE_NAME = \"" << VEHICLE_NAME << "\"" << std::endl;
 
     // Test boolean parameter
-    assert(debug_mode == false);
-    std::cout << "✓ debug_mode = " << (debug_mode ? "true" : "false") << std::endl;
+    assert(DEBUG_MODE == false);
+    std::cout << "✓ DEBUG_MODE = " << (DEBUG_MODE ? "true" : "false") << std::endl;
 
     // Test table parameter
-    assert(braking_distance_table_size == 6);
-    std::cout << "✓ braking_distance_table_size = " << braking_distance_table_size << std::endl;
+    assert(BRAKING_DISTANCE_TABLE_SIZE == 6);
+    std::cout << "✓ BRAKING_DISTANCE_TABLE_SIZE = " << BRAKING_DISTANCE_TABLE_SIZE << std::endl;
 
     // Test first row of table
-    assert(braking_distance_table[0].velocity == 10.0);
-    assert(braking_distance_table[0].friction_coefficient == 0.7);
-    assert(braking_distance_table[0].braking_distance == 7.1);
-    std::cout << "✓ braking_distance_table[0] = {"
-              << braking_distance_table[0].velocity << ", "
-              << braking_distance_table[0].friction_coefficient << ", "
-              << braking_distance_table[0].braking_distance << "}" << std::endl;
+    assert(BRAKING_DISTANCE_TABLE[0].velocity == 10.0);
+    assert(BRAKING_DISTANCE_TABLE[0].friction_coefficient == 0.7);
+    assert(BRAKING_DISTANCE_TABLE[0].braking_distance == 7.1);
+    std::cout << "✓ BRAKING_DISTANCE_TABLE[0] = {"
+              << BRAKING_DISTANCE_TABLE[0].velocity << ", "
+              << BRAKING_DISTANCE_TABLE[0].friction_coefficient << ", "
+              << BRAKING_DISTANCE_TABLE[0].braking_distance << "}" << std::endl;
 
     // Test last row of table
-    assert(braking_distance_table[5].velocity == 30.0);
-    assert(braking_distance_table[5].friction_coefficient == 0.3);
-    assert(braking_distance_table[5].braking_distance == 150.0);
-    std::cout << "✓ braking_distance_table[5] = {"
-              << braking_distance_table[5].velocity << ", "
-              << braking_distance_table[5].friction_coefficient << ", "
-              << braking_distance_table[5].braking_distance << "}" << std::endl;
+    assert(BRAKING_DISTANCE_TABLE[5].velocity == 30.0);
+    assert(BRAKING_DISTANCE_TABLE[5].friction_coefficient == 0.3);
+    assert(BRAKING_DISTANCE_TABLE[5].braking_distance == 150.0);
+    std::cout << "✓ BRAKING_DISTANCE_TABLE[5] = {"
+              << BRAKING_DISTANCE_TABLE[5].velocity << ", "
+              << BRAKING_DISTANCE_TABLE[5].friction_coefficient << ", "
+              << BRAKING_DISTANCE_TABLE[5].braking_distance << "}" << std::endl;
 
     // Test iteration over table
     double total_distance = 0.0;
-    for (size_t i = 0; i < braking_distance_table_size; ++i) {
-        total_distance += braking_distance_table[i].braking_distance;
+    for (size_t i = 0; i < BRAKING_DISTANCE_TABLE_SIZE; ++i) {
+        total_distance += BRAKING_DISTANCE_TABLE[i].braking_distance;
     }
     std::cout << "✓ Total braking distance across all entries = " << total_distance << " m" << std::endl;
 
