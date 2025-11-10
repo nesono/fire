@@ -281,6 +281,8 @@ title: Maximum Vehicle Velocity
 type: safety
 status: approved
 priority: critical
+sil: ASIL-D
+security_related: false
 owner: safety-team
 tags: [velocity, safety, ASIL-D]
 references:
@@ -441,6 +443,11 @@ Requirements are Markdown documents with YAML frontmatter.
 ### Optional Fields
 
 - `priority`: One of `low`, `medium`, `high`, `critical`
+- `sil`: Safety Integrity Level (flexible string to support various standards)
+  - ISO 26262 (automotive): `ASIL-A`, `ASIL-B`, `ASIL-C`, `ASIL-D`, `QM`
+  - IEC 61508 (general): `SIL-1`, `SIL-2`, `SIL-3`, `SIL-4`
+  - DO-178C (aviation): `DAL-A`, `DAL-B`, `DAL-C`, `DAL-D`, `DAL-E`
+- `security_related`: Boolean (`true`/`false`) indicating if requirement has security implications
 - `owner`: Team or individual responsible
 - `tags`: List of tags for categorization
 - `version`: Simple integer version number (1, 2, 3, ...)
@@ -706,6 +713,8 @@ title: Emergency Braking Distance
 type: functional
 status: approved
 priority: high
+sil: ASIL-C
+security_related: true
 owner: dynamics-team
 tags: [braking, safety, performance]
 references:

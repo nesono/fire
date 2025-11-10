@@ -117,9 +117,19 @@ def _parse_frontmatter(content):
                 # Top-level key
                 current_key = key
                 if value:
+                    # Strip surrounding quotes from string values
+                    if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+                        value = value[1:-1]
+
                     # Try to convert to int if it looks like a number
                     if value.isdigit():
                         frontmatter[key] = int(value)
+                        # Handle booleans
+
+                    elif value.lower() == "true":
+                        frontmatter[key] = True
+                    elif value.lower() == "false":
+                        frontmatter[key] = False
                         # Handle inline lists [a, b, c]
 
                     elif value.startswith("[") and value.endswith("]"):
@@ -247,6 +257,45 @@ def _validate_requirement_priority(priority):
 
     return None
 
+def _validate_sil(sil):
+    """Validate Safety Integrity Level (SIL).
+
+    Args:
+        sil: Safety Integrity Level string (e.g., "ASIL-D", "SIL-3", "DAL-A")
+
+    Returns:
+        None if valid, error message if invalid
+    """
+
+    # SIL can be any non-empty string to support various standards
+    # Examples: ASIL-A/B/C/D (ISO 26262), SIL-1/2/3/4 (IEC 61508),
+    # DAL-A/B/C/D/E (DO-178C), QM (Quality Management)
+    if type(sil) != "string":
+        return "SIL must be a string, got {}".format(type(sil))
+
+    # In Starlark, empty string "" is truthy, so we need to check length
+    if len(sil) == 0:
+        return "SIL field cannot be empty"
+
+    if len(sil.strip()) == 0:
+        return "SIL cannot be whitespace only"
+
+    return None
+
+def _validate_security_related(security_related):
+    """Validate security_related flag.
+
+    Args:
+        security_related: Boolean indicating if requirement is security-related
+
+    Returns:
+        None if valid, error message if invalid
+    """
+    if type(security_related) != "bool":
+        return "security_related must be a boolean (true/false), got {}".format(type(security_related))
+
+    return None
+
 def _validate_frontmatter(frontmatter):
     """Validate requirement frontmatter.
 
@@ -283,6 +332,18 @@ def _validate_frontmatter(frontmatter):
     # Validate priority if present
     if "priority" in frontmatter:
         err = _validate_requirement_priority(frontmatter["priority"])
+        if err:
+            return err
+
+    # Validate SIL if present
+    if "sil" in frontmatter:
+        err = _validate_sil(frontmatter["sil"])
+        if err:
+            return err
+
+    # Validate security_related if present
+    if "security_related" in frontmatter:
+        err = _validate_security_related(frontmatter["security_related"])
         if err:
             return err
 

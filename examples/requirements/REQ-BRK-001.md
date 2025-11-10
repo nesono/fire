@@ -4,6 +4,8 @@ title: Emergency Braking Distance
 type: functional
 status: approved
 priority: high
+sil: ASIL-C
+security_related: true
 owner: dynamics-team
 tags: [braking, safety, performance]
 version: 1

@@ -400,6 +400,135 @@ Body content here with sufficient length for validation.
 
     return unittest.end(env)
 
+def _test_valid_sil_values(ctx):
+    """Test valid SIL (Safety Integrity Level) values."""
+    env = unittest.begin(ctx)
+
+    valid_sils = [
+        "ASIL-A",
+        "ASIL-B",
+        "ASIL-C",
+        "ASIL-D",
+        "SIL-1",
+        "SIL-2",
+        "SIL-3",
+        "SIL-4",
+        "DAL-A",
+        "DAL-B",
+        "DAL-C",
+        "DAL-D",
+        "DAL-E",
+        "QM",
+    ]
+
+    for sil in valid_sils:
+        content = """---
+id: REQ-001
+title: Test
+type: safety
+status: approved
+sil: {}
+---
+Body content here with sufficient length for validation.
+""".format(sil)
+
+        err = requirement_validator.validate(content)
+        asserts.equals(env, None, err, "SIL '{}' should be valid".format(sil))
+
+    return unittest.end(env)
+
+def _test_invalid_sil_values(ctx):
+    """Test invalid SIL values."""
+    env = unittest.begin(ctx)
+
+    # Whitespace-only SIL
+    content = """---
+id: REQ-001
+title: Test
+type: safety
+status: approved
+sil: "   "
+---
+Body content here with sufficient length for validation.
+"""
+    err = requirement_validator.validate(content)
+    asserts.true(env, err != None, "Whitespace-only SIL should fail")
+    asserts.true(env, "SIL cannot be whitespace only" in err, "Should mention whitespace")
+
+    return unittest.end(env)
+
+def _test_valid_security_related(ctx):
+    """Test valid security_related values."""
+    env = unittest.begin(ctx)
+
+    # security_related: true
+    content = """---
+id: REQ-001
+title: Test
+type: functional
+status: approved
+security_related: true
+---
+Body content here with sufficient length for validation.
+"""
+    err = requirement_validator.validate(content)
+    asserts.equals(env, None, err, "security_related: true should be valid")
+
+    # security_related: false
+    content = """---
+id: REQ-002
+title: Test
+type: functional
+status: approved
+security_related: false
+---
+Body content here with sufficient length for validation.
+"""
+    err = requirement_validator.validate(content)
+    asserts.equals(env, None, err, "security_related: false should be valid")
+
+    return unittest.end(env)
+
+def _test_invalid_security_related(ctx):
+    """Test invalid security_related values."""
+    env = unittest.begin(ctx)
+
+    # Non-boolean value (string)
+    content = """---
+id: REQ-001
+title: Test
+type: functional
+status: approved
+security_related: "yes"
+---
+Body content here with sufficient length for validation.
+"""
+    err = requirement_validator.validate(content)
+    asserts.true(env, err != None, "String security_related should fail")
+    asserts.true(env, "must be a boolean" in err, "Should mention boolean requirement")
+
+    return unittest.end(env)
+
+def _test_sil_and_security_combined(ctx):
+    """Test requirement with both SIL and security_related."""
+    env = unittest.begin(ctx)
+
+    content = """---
+id: REQ-SEC-001
+title: Security Critical Requirement
+type: safety
+status: approved
+sil: ASIL-D
+security_related: true
+priority: critical
+---
+This is a safety-critical requirement that also has security implications.
+"""
+    err = requirement_validator.validate(content)
+    asserts.equals(env, None, err, "Requirement with both SIL and security_related should be valid")
+
+    return unittest.end(env)
+
 # Test suite
 valid_requirement_test = unittest.make(_test_valid_requirement)
 minimal_valid_requirement_test = unittest.make(_test_minimal_valid_requirement)
@@ -417,6 +546,11 @@ too_short_body_test = unittest.make(_test_too_short_body)
 empty_title_test = unittest.make(_test_empty_title)
 parse_frontmatter_with_lists_test = unittest.make(_test_parse_frontmatter_with_lists)
 valid_id_formats_test = unittest.make(_test_valid_id_formats)
+valid_sil_values_test = unittest.make(_test_valid_sil_values)
+invalid_sil_values_test = unittest.make(_test_invalid_sil_values)
+valid_security_related_test = unittest.make(_test_valid_security_related)
+invalid_security_related_test = unittest.make(_test_invalid_security_related)
+sil_and_security_combined_test = unittest.make(_test_sil_and_security_combined)
 
 def requirement_validator_test_suite(name):
     """Create test suite for requirement_validator."""
@@ -438,4 +572,9 @@ def requirement_validator_test_suite(name):
         empty_title_test,
         parse_frontmatter_with_lists_test,
         valid_id_formats_test,
+        valid_sil_values_test,
+        invalid_sil_values_test,
+        valid_security_related_test,
+        invalid_security_related_test,
+        sil_and_security_combined_test,
     )
