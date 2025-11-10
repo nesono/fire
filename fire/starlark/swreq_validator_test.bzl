@@ -13,10 +13,10 @@ def _test_parse_valid_swreq(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: hazard_zone
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 system_function: sys_eng/software_architecture/hzm.sysarch.md
 ---
 
@@ -45,11 +45,8 @@ system_function: sys_eng/software_architecture/hzm.sysarch.md
 
     frontmatter, requirements = swreq_parser.parse(content)
 
-    # Check frontmatter
-    asserts.equals(env, "hazard_zone", frontmatter["component"])
-    asserts.equals(env, "1", frontmatter["version"])
-    asserts.equals(env, "SIL-2", frontmatter["sil"])
-    asserts.equals(env, True, frontmatter["security_related"])
+    # Check frontmatter (only system_function is relevant now)
+    asserts.equals(env, "sys_eng/software_architecture/hzm.sysarch.md", frontmatter["system_function"])
 
     # Check requirements
     asserts.equals(env, 2, len(requirements))
@@ -74,10 +71,10 @@ def _test_parse_multiline_description(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -109,10 +106,10 @@ def _test_parse_sil_none(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: false
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -146,10 +143,10 @@ def _test_validate_valid_swreq(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: hazard_zone
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -175,10 +172,10 @@ def _test_validate_multiple_requirements(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test_component
-version: 2
-sil: ASIL-D
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -224,10 +221,10 @@ def _test_validate_internal_references(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -263,7 +260,7 @@ security_related: true
 # ============================================================================
 
 def _test_validate_missing_frontmatter(ctx):
-    """Test validation fails without frontmatter."""
+    """Test validation succeeds without frontmatter (frontmatter now optional)."""
     env = unittest.begin(ctx)
 
     content = """# Software Requirements
@@ -278,20 +275,16 @@ def _test_validate_missing_frontmatter(ctx):
 """
 
     err = swreq_validator.validate(content)
-    asserts.true(env, err != None)
-    asserts.true(env, "frontmatter" in err)
+    asserts.equals(env, None, err)
 
     return unittest.end(env)
 
 def _test_validate_missing_required_frontmatter_field(ctx):
-    """Test validation fails with missing required frontmatter field."""
+    """Test validation succeeds with empty frontmatter (frontmatter now optional)."""
     env = unittest.begin(ctx)
 
-    # Missing 'component' field
+    # Empty frontmatter is now valid - component, version, sil, security_related are redundant
     content = """---
-version: 1
-sil: SIL-2
-security_related: true
 ---
 
 # Software Requirements
@@ -306,8 +299,7 @@ security_related: true
 """
 
     err = swreq_validator.validate(content)
-    asserts.true(env, err != None)
-    asserts.true(env, "component" in err)
+    asserts.equals(env, None, err)
 
     return unittest.end(env)
 
@@ -317,10 +309,10 @@ def _test_validate_invalid_requirement_id_format(ctx):
 
     # Lowercase in ID (doesn't start with REQ_)
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -345,10 +337,10 @@ def _test_validate_missing_req_prefix(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -374,10 +366,10 @@ def _test_validate_invalid_parent_reference(ctx):
 
     # Missing anchor
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -402,10 +394,10 @@ def _test_validate_duplicate_requirement_ids(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -441,10 +433,10 @@ def _test_validate_missing_requirement_field(ctx):
 
     # Missing Description field
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -468,10 +460,10 @@ def _test_validate_short_description(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -496,10 +488,10 @@ def _test_validate_invalid_internal_reference(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -525,10 +517,10 @@ def _test_validate_empty_document(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements
@@ -547,10 +539,10 @@ def _test_validate_invalid_sec_type(ctx):
     env = unittest.begin(ctx)
 
     content = """---
-component: test
-version: 1
-sil: SIL-2
-security_related: true
+# component field removed - redundant
+# version field removed - redundant
+# sil field removed - redundant
+# security_related field removed - redundant
 ---
 
 # Software Requirements

@@ -1,8 +1,4 @@
 ---
-component: vehicle_status
-version: 1
-sil: ASIL-D
-security_related: false
 system_function: examples/system_functions/braking_control.sysarch.md
 ---
 

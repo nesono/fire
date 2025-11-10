@@ -134,59 +134,23 @@ def _validate_description(description, req_id):
 def _validate_frontmatter(frontmatter):
     """Validate software requirements frontmatter.
 
-    Required fields:
-    - component: string
-    - version: positive integer (as string)
-    - sil: SIL level string
-    - security_related: boolean
-
     Optional fields:
     - system_function: path to system function document
 
+    Note: component, version, sil, and security_related are redundant
+    since each requirement has its own SIL/Sec fields, and component/version
+    should be tracked via directory structure and git history.
+
     Args:
-        frontmatter: Dictionary of frontmatter fields
+        frontmatter: Dictionary of frontmatter fields (can be None or empty)
 
     Returns:
         None if valid, error message if invalid
     """
+
+    # Frontmatter is optional now
     if not frontmatter:
-        return "software requirements document must have frontmatter"
-
-    # Check required fields
-    required_fields = ["component", "version", "sil", "security_related"]
-    for field in required_fields:
-        if field not in frontmatter:
-            return "missing required frontmatter field: {}".format(field)
-
-    # Validate component name
-    component = frontmatter["component"]
-    if not component or len(component.strip()) == 0:
-        return "component name cannot be empty"
-
-    # Validate version (should be positive integer as string)
-    version = frontmatter["version"]
-    if type(version) == "string":
-        if not version.isdigit():
-            return "version must be a positive integer, got '{}'".format(version)
-    elif type(version) == "int":
-        if version <= 0:
-            return "version must be a positive integer, got {}".format(version)
-    else:
-        return "version must be an integer, got {}".format(type(version))
-
-    # Validate SIL
-    sil = frontmatter["sil"]
-    if sil != None:  # Allow None for no SIL
-        if type(sil) != "string":
-            return "sil must be a string or None"
-        err = _validate_sil(sil)
-        if err:
-            return err
-
-    # Validate security_related
-    security_related = frontmatter["security_related"]
-    if type(security_related) != "bool":
-        return "security_related must be a boolean (true/false), got {}".format(type(security_related))
+        return None
 
     # Validate optional system_function if present
     if "system_function" in frontmatter:
