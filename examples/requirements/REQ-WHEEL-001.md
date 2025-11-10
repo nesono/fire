@@ -4,7 +4,6 @@ title: Wheel Count Configuration
 type: constraint
 status: approved
 priority: medium
-owner: platform-team
 tags: [configuration, hardware]
 references:
   parameters:
