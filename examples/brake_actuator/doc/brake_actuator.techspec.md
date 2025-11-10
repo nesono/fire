@@ -1,15 +1,5 @@
 ---
-component: brake_actuator
-version: 1
-sil: ASIL-D
-security_related: false
 system_function: examples/system_functions/braking_control.sysarch.md
-implements_requirements:
-  - REQ_BA_RECEIVE_COMMANDS
-  - REQ_BA_CONVERT_FORCE
-  - REQ_BA_CONTROL_HYDRAULICS
-  - REQ_BA_MONITOR_PRESSURE
-  - REQ_BA_SAFETY_LIMITS
 ---
 
 # Technical Specification: Brake Actuator

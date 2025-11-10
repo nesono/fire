@@ -1,15 +1,5 @@
 ---
-component: vehicle_status
-version: 1
-sil: ASIL-D
-security_related: false
 system_function: examples/system_functions/braking_control.sysarch.md
-implements_requirements:
-  - REQ_VS_READ_SENSORS
-  - REQ_VS_CALCULATE_SPEED
-  - REQ_VS_CALCULATE_ACCELERATION
-  - REQ_VS_PUBLISH_STATUS
-  - REQ_VS_VALIDATE_SENSORS
 ---
 
 # Technical Specification: Vehicle Status

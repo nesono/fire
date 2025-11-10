@@ -1,14 +1,5 @@
 ---
-component: brake_controller
-version: 1
-sil: ASIL-D
-security_related: false
 system_function: examples/system_functions/braking_control.sysarch.md
-implements_requirements:
-  - REQ_BC_CALCULATE_FORCE
-  - REQ_BC_MONITOR_DECELERATION
-  - REQ_BC_USE_BRAKING_TABLE
-  - REQ_BC_EMERGENCY_BRAKE
 ---
 
 # Technical Specification: Brake Controller
