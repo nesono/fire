@@ -272,23 +272,25 @@ func TestParameters(t *testing.T) {
 
 Requirements are written in Markdown with YAML frontmatter:
 
-**requirements/REQ-VEL-001.md**:
+**requirements/REQ-VEL-001.sysreq.md**:
 
 ```markdown
 ---
 id: REQ-VEL-001
-title: Maximum Vehicle Velocity
-type: safety
 status: approved
-priority: critical
 sil: ASIL-D
 security_related: false
-tags: [velocity, safety, ASIL-D]
+version: 2
+changelog:
+  - version: 2
+    description: Added parent requirement version tracking support
+  - version: 1
+    description: Initial maximum velocity requirement definition
 references:
   parameters:
     - examples/vehicle_params.bzl#maximum_vehicle_velocity
   requirements:
-    - path: examples/requirements/REQ-BRK-001.md
+    - path: examples/requirements/REQ-BRK-001.sysreq.md
       version: 1
   standards:
     - ISO 26262:2018, Part 3, Section 7
@@ -308,7 +310,7 @@ under any operating conditions.
 
 This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www.iso.org/standard/68383.html)
 safety analysis for ASIL-D classification. The requirement relates to braking
-performance (see [REQ-BRK-001](examples/requirements/REQ-BRK-001.md)).
+performance (see [REQ-BRK-001](examples/requirements/REQ-BRK-001.sysreq.md)).
 
 ## Verification
 
