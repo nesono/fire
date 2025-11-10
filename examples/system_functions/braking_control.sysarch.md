@@ -1,16 +1,6 @@
 ---
-id: BRAKING_CONTROL_SYSTEM
-title: Braking Control System Function
-version: 1
-type: system_function
-sil: ASIL-D
-security_related: false
 implements_requirements:
   - examples/requirements/REQ-BRK-001.sysreq.md
-composed_of:
-  - examples/brake_control
-  - examples/vehicle_status
-  - examples/brake_actuator
 ---
 
 # Braking Control System Function
