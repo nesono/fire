@@ -17,7 +17,10 @@ composed_of:
 
 ## Description
 
-The Braking Control System Function is responsible for calculating and applying appropriate braking force to ensure the vehicle can decelerate safely within specified distance constraints. This function implements the system-level braking requirements and coordinates between multiple software components to achieve safe vehicle stopping.
+The Braking Control System Function is responsible for calculating and applying appropriate braking force
+to ensure the vehicle can decelerate safely within specified distance constraints. This function implements
+the system-level braking requirements and coordinates between multiple software components to achieve safe
+vehicle stopping.
 
 ## Diagram
 

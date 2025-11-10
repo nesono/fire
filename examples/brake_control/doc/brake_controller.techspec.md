@@ -15,9 +15,13 @@ implements_requirements:
 
 ## Introduction
 
-The `brake_controller` component is responsible for calculating and commanding appropriate brake force to achieve desired vehicle deceleration. This component implements the core control logic for the braking system, using vehicle parameters and real-time sensor data to determine optimal braking force.
+The `brake_controller` component is responsible for calculating and commanding appropriate brake force to
+achieve desired vehicle deceleration. This component implements the core control logic for the braking
+system, using vehicle parameters and real-time sensor data to determine optimal braking force.
 
-The component uses the braking distance lookup table to determine the relationship between speed, friction coefficient, and required braking distance, then calculates the necessary brake force to achieve safe stopping within those constraints.
+The component uses the braking distance lookup table to determine the relationship between speed, friction
+coefficient, and required braking distance, then calculates the necessary brake force to achieve safe
+stopping within those constraints.
 
 ## Requirements
 
@@ -99,7 +103,7 @@ Each processing cycle performs these steps:
 
 The brake force is calculated using a PID controller:
 
-```
+```python
 target_decel = lookup_table(speed, friction)
 error = target_decel - current_accel
 brake_force = Kp * error + Ki * integral_error + Kd * derivative_error + feedforward
@@ -221,7 +225,7 @@ None. All security provided by execution framework.
 
 The braking distance table has the following structure:
 
-```
+```text
 | velocity (m/s) | friction_coefficient | braking_distance (m) |
 |----------------|----------------------|----------------------|
 | 10.0           | 0.7                  | 7.1                  |

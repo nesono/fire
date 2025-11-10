@@ -16,9 +16,13 @@ implements_requirements:
 
 ## Introduction
 
-The `brake_actuator` component is responsible for receiving high-level brake force commands from the brake controller and translating them into hardware-specific control signals for the hydraulic brake system. This component serves as the interface between software control and physical actuation hardware.
+The `brake_actuator` component is responsible for receiving high-level brake force commands from the brake
+controller and translating them into hardware-specific control signals for the hydraulic brake system. This
+component serves as the interface between software control and physical actuation hardware.
 
-The component receives brake force percentage commands, converts them to hydraulic pressure setpoints, and controls the electro-hydraulic brake actuator to achieve the desired pressure while monitoring actual pressure feedback.
+The component receives brake force percentage commands, converts them to hydraulic pressure setpoints, and
+controls the electro-hydraulic brake actuator to achieve the desired pressure while monitoring actual
+pressure feedback.
 
 ## Requirements
 
@@ -108,7 +112,7 @@ The component runs two loops:
 
 Brake force percentage is converted to hydraulic pressure:
 
-```
+```text
 target_pressure = brake_force_percent × max_pressure / 100
 
 Where:
@@ -123,7 +127,7 @@ Example:
 
 A PI (Proportional-Integral) controller maintains hydraulic pressure:
 
-```
+```text
 error = target_pressure - actual_pressure
 integral_error += error × dt
 valve_command = Kp × error + Ki × integral_error

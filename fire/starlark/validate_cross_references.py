@@ -216,9 +216,11 @@ def validate_requirement_reference(req_id, req_path, workspace_root):
     """Validate that a requirement reference exists."""
     # Check that link text matches filename
     filename = os.path.basename(req_path)
-    expected_filename = f"{req_id}.md"
-    if filename != expected_filename:
-        return False, f"Requirement link text '{req_id}' does not match filename '{filename}' (expected '{expected_filename}')"
+    # Accept both .md and .sysreq.md extensions
+    expected_filename_md = f"{req_id}.md"
+    expected_filename_sysreq = f"{req_id}.sysreq.md"
+    if filename != expected_filename_md and filename != expected_filename_sysreq:
+        return False, f"Requirement link text '{req_id}' does not match filename '{filename}' (expected '{expected_filename_md}' or '{expected_filename_sysreq}')"
 
     # Convert to absolute path
     abs_path = os.path.join(workspace_root, req_path)

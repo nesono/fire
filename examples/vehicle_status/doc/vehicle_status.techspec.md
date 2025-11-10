@@ -16,9 +16,12 @@ implements_requirements:
 
 ## Introduction
 
-The `vehicle_status` component is responsible for reading vehicle sensor data, calculating derived quantities (speed, acceleration), and publishing the current vehicle state for use by control components. This component serves as the primary interface between raw sensor hardware and higher-level control algorithms.
+The `vehicle_status` component is responsible for reading vehicle sensor data, calculating derived quantities
+(speed, acceleration), and publishing the current vehicle state for use by control components. This component
+serves as the primary interface between raw sensor hardware and higher-level control algorithms.
 
-The component reads wheel speed sensors, applies calibration factors, calculates vehicle speed and acceleration, and publishes a consolidated vehicle status message at high frequency.
+The component reads wheel speed sensors, applies calibration factors, calculates vehicle speed and
+acceleration, and publishes a consolidated vehicle status message at high frequency.
 
 ## Requirements
 
@@ -96,7 +99,7 @@ Each processing cycle performs these steps:
 
 Vehicle speed is calculated from wheel speeds:
 
-```
+```python
 # Convert each wheel RPM to linear velocity
 wheel_velocity[i] = (wheel_rpm[i] * 2 * π * wheel_radius) / 60
 
@@ -114,7 +117,7 @@ Sensor validation:
 
 Acceleration is calculated using a moving average filter:
 
-```
+```python
 current_accel = (current_speed - previous_speed) / dt
 filtered_accel = 0.7 * previous_accel + 0.3 * current_accel
 ```
@@ -211,7 +214,7 @@ None. All security provided by execution framework.
 
 The conversion from wheel RPM to vehicle linear velocity:
 
-```
+```text
 linear_velocity (m/s) = (RPM × 2π × wheel_radius) / 60
 
 Example:
@@ -234,7 +237,7 @@ The component performs cross-validation between sensors:
 
 The first-order low-pass filter:
 
-```
+```text
 α = 0.3  (filter coefficient)
 y[n] = α × x[n] + (1 - α) × y[n-1]
 ```

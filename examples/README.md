@@ -4,7 +4,7 @@ This directory contains example files demonstrating the complete traceability ch
 
 ## Directory Structure
 
-```
+```text
 examples/
 ├── README.md                          # This file
 ├── requirements/                      # System requirements
@@ -34,7 +34,7 @@ examples/
 
 This example demonstrates the complete traceability from system to software:
 
-```
+```text
 System Requirement (REQ-BRK-001, REQ-VEL-001)
     ↓ implements via
 System Function (BRAKING_CONTROL_SYSTEM)

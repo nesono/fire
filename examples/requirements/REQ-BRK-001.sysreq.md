@@ -15,7 +15,7 @@ references:
   parameters:
     - examples/vehicle_params.bzl#braking_distance_table
   requirements:
-    - path: examples/requirements/REQ-VEL-001.md
+    - path: examples/requirements/REQ-VEL-001.sysreq.md
       version: 2
   standards:
     - UN ECE R13-H
@@ -27,7 +27,7 @@ references:
 
 ## Description
 
-The vehicle SHALL be capable of performing emergency braking from any velocity up to maximum design velocity (see [REQ-VEL-001](examples/requirements/REQ-VEL-001.md)), achieving deceleration
+The vehicle SHALL be capable of performing emergency braking from any velocity up to maximum design velocity (see [REQ-VEL-001](examples/requirements/REQ-VEL-001.sysreq.md)), achieving deceleration
 according to the [@braking_distance_table](examples/vehicle_params.bzl#braking_distance_table) parameters.
 
 ## Rationale
