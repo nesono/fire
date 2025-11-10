@@ -5,6 +5,10 @@ def _to_pascal_case(snake_case):
     parts = snake_case.split("_")
     return "".join([part.capitalize() for part in parts])
 
+def _to_upper_case(snake_case):
+    """Convert snake_case to UPPER_CASE (C++ constant naming convention)."""
+    return snake_case.upper()
+
 def _format_cpp_value(value, param_type):
     """Format a value for C++ code."""
     if param_type == "float":
@@ -71,10 +75,11 @@ def _generate_simple_parameter(param):
     if comment_parts:
         lines.append("/// {}".format(" - ".join(comment_parts)))
 
-    # Generate declaration
+    # Generate declaration using UPPER_CASE constant naming convention
     cpp_type = _get_cpp_type(param_type)
     cpp_value = _format_cpp_value(value, param_type)
-    lines.append("constexpr {} {} = {};".format(cpp_type, param_name, cpp_value))
+    const_name = _to_upper_case(param_name)
+    lines.append("constexpr {} {} = {};".format(cpp_type, const_name, cpp_value))
 
     return lines
 
@@ -108,10 +113,11 @@ def _generate_table_parameter(param):
     lines.append("};")
     lines.append("")
 
-    # Generate array declaration
+    # Generate array declaration using UPPER_CASE constant naming convention
+    const_name = _to_upper_case(param_name)
     if description:
         lines.append("/// {}".format(description))
-    lines.append("constexpr {} {}[] = {{".format(struct_name, param_name))
+    lines.append("constexpr {} {}[] = {{".format(struct_name, const_name))
 
     # Generate rows
     for row in rows:
@@ -125,9 +131,9 @@ def _generate_table_parameter(param):
     lines.append("};")
     lines.append("")
 
-    # Generate size constant
-    lines.append("/// Number of rows in {}".format(param_name))
-    lines.append("constexpr size_t {}_size = {};".format(param_name, len(rows)))
+    # Generate size constant using UPPER_CASE constant naming convention
+    lines.append("/// Number of rows in {}".format(const_name))
+    lines.append("constexpr size_t {}_SIZE = {};".format(const_name, len(rows)))
 
     return lines
 
