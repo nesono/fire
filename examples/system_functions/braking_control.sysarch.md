@@ -62,10 +62,10 @@ flowchart LR
 
 ## References
 
-* [brake_controller](../brake_control/doc/brake_controller.techspec.md) - Software component implementing brake control logic
-* [vehicle_status](../vehicle_status/doc/vehicle_status.techspec.md) - Software component providing vehicle state information
-* [brake_actuator](../brake_actuator/doc/brake_actuator.techspec.md) - Software component interfacing with brake hardware
-* [REQ-BRK-001](../requirements/REQ-BRK-001.sysreq.md) - System requirement for braking distance
+* [brake_controller](examples/brake_control/doc/brake_controller.techspec.md) - Software component implementing brake control logic
+* [vehicle_status](examples/vehicle_status/doc/vehicle_status.techspec.md) - Software component providing vehicle state information
+* [brake_actuator](examples/brake_actuator/doc/brake_actuator.techspec.md) - Software component interfacing with brake hardware
+* [REQ-BRK-001](examples/requirements/REQ-BRK-001.sysreq.md) - System requirement for braking distance
 
 ## Links
 
