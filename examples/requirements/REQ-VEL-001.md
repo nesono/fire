@@ -4,6 +4,8 @@ title: Maximum Vehicle Velocity
 type: safety
 status: approved
 priority: critical
+sil: ASIL-D
+security_related: false
 owner: safety-team
 tags: [velocity, safety, ASIL-D]
 version: 2
