@@ -13,7 +13,6 @@ title: Maximum Vehicle Velocity
 type: functional
 status: approved
 priority: high
-owner: safety-team
 tags: [velocity, safety]
 ---
 

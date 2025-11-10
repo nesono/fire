@@ -21,7 +21,7 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 
 - **Markdown Requirements**: Requirements documents with YAML frontmatter
 - **Requirement Validation**: Enforce structure, types, and mandatory fields at build time
-- **Requirement Metadata**: ID, title, type, status, priority, owner, tags
+- **Requirement Metadata**: ID, title, type, status, priority, tags
 - **Template System**: Predefined requirement types (functional, safety, interface, etc.)
 - **Pure Starlark Validation**: All validation logic in Starlark (testable and reusable)
 
@@ -283,7 +283,6 @@ status: approved
 priority: critical
 sil: ASIL-D
 security_related: false
-owner: safety-team
 tags: [velocity, safety, ASIL-D]
 references:
   parameters:
@@ -448,7 +447,6 @@ Requirements are Markdown documents with YAML frontmatter.
   - IEC 61508 (general): `SIL-1`, `SIL-2`, `SIL-3`, `SIL-4`
   - DO-178C (aviation): `DAL-A`, `DAL-B`, `DAL-C`, `DAL-D`, `DAL-E`
 - `security_related`: Boolean (`true`/`false`) indicating if requirement has security implications
-- `owner`: Team or individual responsible
 - `tags`: List of tags for categorization
 - `version`: Simple integer version number (1, 2, 3, ...)
 - `changelog`: List of version changes with `{version, description}` (optional)
@@ -715,7 +713,6 @@ status: approved
 priority: high
 sil: ASIL-C
 security_related: true
-owner: dynamics-team
 tags: [braking, safety, performance]
 references:
   parameters:
