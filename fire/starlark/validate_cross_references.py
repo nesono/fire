@@ -185,6 +185,11 @@ def validate_parameter_reference(param_name, param_path, workspace_root):
         file_path = param_path
         anchor = param_name
 
+    # Strip leading slash for repository-relative paths (e.g., /examples/foo.bzl -> examples/foo.bzl)
+    # Markdown uses /path for repository-relative, but os.path.join treats it as absolute
+    if file_path.startswith('/'):
+        file_path = file_path[1:]
+
     # Check that link text matches anchor
     if param_name != anchor:
         return False, f"Parameter link text '{param_name}' does not match anchor '{anchor}' in {param_path}"
@@ -214,6 +219,11 @@ def validate_parameter_reference(param_name, param_path, workspace_root):
 
 def validate_requirement_reference(req_id, req_path, workspace_root):
     """Validate that a requirement reference exists."""
+    # Strip leading slash for repository-relative paths (e.g., /examples/foo.md -> examples/foo.md)
+    # Markdown uses /path for repository-relative, but os.path.join treats it as absolute
+    if req_path.startswith('/'):
+        req_path = req_path[1:]
+
     # Check that link text matches filename
     filename = os.path.basename(req_path)
     # Accept both .md and .sysreq.md extensions

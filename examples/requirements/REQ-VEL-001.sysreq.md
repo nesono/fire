@@ -15,9 +15,9 @@ changelog:
     description: Initial maximum velocity requirement definition
 references:
   parameters:
-    - examples/vehicle_params.bzl#maximum_vehicle_velocity
+    - /examples/vehicle_params.bzl#maximum_vehicle_velocity
   requirements:
-    - path: examples/requirements/REQ-BRK-001.sysreq.md
+    - path: /examples/requirements/REQ-BRK-001.sysreq.md
       version: 1
   standards:
     - ISO 26262:2018, Part 3, Section 7
@@ -29,7 +29,7 @@ references:
 
 ## Description
 
-The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](examples/vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
+The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](/examples/vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
 
 ## Rationale
 
@@ -37,7 +37,7 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 
 - Mechanical stress limits on drivetrain components
 - Tire rating specifications
-- Braking system performance envelope (see [REQ-BRK-001](examples/requirements/REQ-BRK-001.sysreq.md))
+- Braking system performance envelope (see [REQ-BRK-001](/examples/requirements/REQ-BRK-001.sysreq.md))
 - Control system response time requirements
 
 ## Verification

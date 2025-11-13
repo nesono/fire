@@ -13,9 +13,9 @@ changelog:
     description: Initial emergency braking requirement, derived from REQ-VEL-001 v2
 references:
   parameters:
-    - examples/vehicle_params.bzl#braking_distance_table
+    - /examples/vehicle_params.bzl#braking_distance_table
   requirements:
-    - path: examples/requirements/REQ-VEL-001.sysreq.md
+    - path: /examples/requirements/REQ-VEL-001.sysreq.md
       version: 2
   standards:
     - UN ECE R13-H
