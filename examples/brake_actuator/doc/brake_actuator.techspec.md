@@ -1,5 +1,5 @@
 ---
-system_function: examples/system_functions/braking_control.sysarch.md
+system_function: /examples/system_functions/braking_control.sysarch.md
 ---
 
 # Technical Specification: Brake Actuator

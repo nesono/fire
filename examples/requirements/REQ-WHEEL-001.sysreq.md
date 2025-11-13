@@ -7,7 +7,7 @@ priority: medium
 tags: [configuration, hardware]
 references:
   parameters:
-    - examples/vehicle_params.bzl#wheel_count
+    - /examples/vehicle_params.bzl#wheel_count
   tests:
     - //examples:vehicle_params_test
 ---
@@ -16,7 +16,7 @@ references:
 
 ## Description
 
-The vehicle SHALL be configured with exactly [@wheel_count](examples/vehicle_params.bzl#wheel_count) wheels as specified in the vehicle parameters.
+The vehicle SHALL be configured with exactly [@wheel_count](/examples/vehicle_params.bzl#wheel_count) wheels as specified in the vehicle parameters.
 
 ## Rationale
 
@@ -28,7 +28,7 @@ The vehicle dynamics model, control algorithms, and safety systems are designed 
 
 ## Constraints
 
-- Physical wheel count MUST match parameter [@wheel_count](examples/vehicle_params.bzl#wheel_count)
+- Physical wheel count MUST match parameter [@wheel_count](/examples/vehicle_params.bzl#wheel_count)
 - Each wheel MUST have independent sensor monitoring
 - Wheel failure detection MUST account for all 4 wheels
 

@@ -1,5 +1,5 @@
 ---
-system_function: examples/system_functions/braking_control.sysarch.md
+system_function: /examples/system_functions/braking_control.sysarch.md
 ---
 
 # Technical Specification: Brake Controller
@@ -56,7 +56,7 @@ flowchart LR
 
 - `braking_distance_table`: Lookup table mapping (speed, friction) → braking_distance
 - Loaded at startup from vehicle parameters
-- References: [@braking_distance_table](examples/vehicle_params.bzl#braking_distance_table)
+- References: [@braking_distance_table](/examples/vehicle_params.bzl#braking_distance_table)
 
 ### Outputs
 
