@@ -53,45 +53,6 @@ def _parse_frontmatter(content):
     body = "\n".join(lines[end_idx + 1:])
     return (frontmatter, body)
 
-def _extract_list_value(line, prefix):
-    """Extract value after a list item prefix like '- **ID**:'.
-
-    Args:
-        line: Line containing the list item
-        prefix: The prefix to extract (e.g., "- **ID**:")
-
-    Returns:
-        Extracted value or None
-    """
-    if not line.strip().startswith(prefix):
-        return None
-
-    # Extract everything after the prefix
-    value = line[line.index(prefix) + len(prefix):].strip()
-    return value if value else None
-
-def _parse_bool(value):
-    """Parse boolean value from string.
-
-    Args:
-        value: String value ("true", "false", "True", "False", etc.)
-
-    Returns:
-        Boolean value or None if not parseable
-    """
-    if not value:
-        return None
-
-    lower_value = value.lower().strip()
-    if lower_value == "true":
-        return True
-    elif lower_value == "false":
-        return False
-    elif lower_value == "none":
-        return None
-    else:
-        return None
-
 def _split_by_h2_sections(body):
     """Split markdown body by ## level-2 headers.
 
@@ -124,8 +85,82 @@ def _split_by_h2_sections(body):
 
     return sections
 
+def _parse_yaml_block(section_content):
+    """Parse YAML code block from requirement section.
+
+    Looks for ```yaml ... ``` block and parses key:value pairs.
+
+    Args:
+        section_content: Content of one requirement section
+
+    Returns:
+        Tuple of (yaml_dict, remaining_content) or (None, section_content) if no YAML block
+    """
+    lines = section_content.split("\n")
+
+    # Find ```yaml block
+    yaml_start = -1
+    yaml_end = -1
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == "```yaml" and yaml_start == -1:
+            yaml_start = i
+        elif stripped == "```" and yaml_start != -1 and yaml_end == -1:
+            yaml_end = i
+            break
+
+    if yaml_start == -1 or yaml_end == -1:
+        return (None, section_content)
+
+    # Parse YAML content (simple key: value format)
+    yaml_dict = {}
+    for i in range(yaml_start + 1, yaml_end):
+        line = lines[i].strip()
+        if not line or line.startswith("#"):
+            continue
+
+        if ":" in line:
+            parts = line.split(":", 1)
+            key = parts[0].strip()
+            value = parts[1].strip() if len(parts) > 1 else ""
+
+            # Strip quotes
+            if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+                value = value[1:-1]
+
+            # Convert booleans
+            if value.lower() == "true":
+                yaml_dict[key] = True
+            elif value.lower() == "false":
+                yaml_dict[key] = False
+            elif value.lower() == "none":
+                yaml_dict[key] = None
+                # Try to parse as integer
+
+            elif value.isdigit():
+                yaml_dict[key] = int(value)
+            else:
+                yaml_dict[key] = value
+
+    # Return YAML dict and remaining content after the block
+    remaining_lines = lines[:yaml_start] + lines[yaml_end + 1:]
+    remaining_content = "\n".join(remaining_lines)
+
+    return (yaml_dict, remaining_content)
+
 def _parse_requirement_section(section_content):
-    """Parse a single requirement section (list format).
+    """Parse a single requirement section (YAML block format).
+
+    Expected format:
+    ```yaml
+    parent: /path/to/parent.md#ANCHOR
+    parent_version: 2
+    sil: ASIL-D
+    sec: false
+    ```
+
+    Description text follows after YAML block...
 
     Args:
         section_content: Content of one requirement section
@@ -134,54 +169,36 @@ def _parse_requirement_section(section_content):
         Dictionary with requirement fields or None if invalid
     """
     req = {}
-    lines = section_content.split("\n")
 
-    # Accumulate multi-line description
+    # Parse YAML block
+    yaml_dict, remaining_content = _parse_yaml_block(section_content)
+
+    if not yaml_dict:
+        # No YAML block found - return empty (invalid requirement)
+        return None
+
+    # Extract fields from YAML
+    if "parent" in yaml_dict:
+        req["parent"] = yaml_dict["parent"]
+
+    if "parent_version" in yaml_dict:
+        req["parent_version"] = yaml_dict["parent_version"]
+
+    if "sil" in yaml_dict:
+        req["sil"] = yaml_dict["sil"]
+
+    if "sec" in yaml_dict:
+        req["sec"] = yaml_dict["sec"]
+
+    # Extract description from remaining content
     description_lines = []
-    in_description = False
-
-    for line in lines:
+    for line in remaining_content.split("\n"):
         stripped = line.strip()
 
         # Skip empty lines and horizontal rules
         if not stripped or stripped == "---":
             continue
-
-        # Parse list items
-        if stripped.startswith("- **ID**:"):
-            req["id"] = _extract_list_value(line, "- **ID**:")
-            in_description = False
-        elif stripped.startswith("- **Parent**:"):
-            req["parent"] = _extract_list_value(line, "- **Parent**:")
-            in_description = False
-        elif stripped.startswith("- **SIL**:"):
-            sil_value = _extract_list_value(line, "- **SIL**:")
-
-            # "None" as string should become None
-            if sil_value and sil_value.lower() == "none":
-                req["sil"] = None
-            else:
-                req["sil"] = sil_value
-            in_description = False
-        elif stripped.startswith("- **Sec**:"):
-            sec_value = _extract_list_value(line, "- **Sec**:")
-            req["sec"] = _parse_bool(sec_value)
-            in_description = False
-        elif stripped.startswith("- **Description**:"):
-            desc_value = _extract_list_value(line, "- **Description**:")
-            if desc_value:
-                description_lines.append(desc_value)
-            in_description = True
-        elif in_description:
-            # Continue multi-line description
-            # Check if it's the start of a new field
-            if stripped.startswith("- **"):
-                in_description = False
-
-                # Don't process this line, it's a new field
-                continue
-            else:
-                description_lines.append(stripped)
+        description_lines.append(stripped)
 
     # Combine description lines
     if description_lines:
@@ -195,28 +212,35 @@ def parse_swreq(content):
     Expects format:
     ```
     ---
-    component: hazard_zone
-    version: 1
-    sil: SIL-2
-    security_related: true
-    system_function: path/to/sysarch.md
+    system_function: /path/to/sysarch.md
     ---
 
     # Software Requirements: Component Name
 
     ## REQ_ID_1
 
-    - **ID**: REQ_ID_1
-    - **Parent**: path/to/sysreq.md#SYSREQ_ID
-    - **SIL**: SIL-2
-    - **Sec**: true
-    - **Description**: The component shall...
+    ```yaml
+    parent: /path/to/sysreq.md#SYSREQ_ID
+    parent_version: 2
+    sil: ASIL-D
+    sec: false
+    ```
+
+    Derived from [REQ-PARENT](/path/to/sysreq.md?version=2#SYSREQ_ID).
+    The component shall perform the required function...
 
     ---
 
     ## REQ_ID_2
 
-    ...
+    ```yaml
+    parent: /path/to/sysreq.md#ANOTHER_ID
+    parent_version: 1
+    sil: ASIL-C
+    sec: true
+    ```
+
+    Description text for REQ_ID_2...
     ```
 
     Args:
@@ -238,10 +262,8 @@ def parse_swreq(content):
     for header, section_content in sections:
         req = _parse_requirement_section(section_content)
         if req:
-            # Validate that header matches ID
-            if "id" in req and req["id"] != header:
-                # Header should match ID, but we'll be lenient and just use the ID from the list
-                pass
+            # Use header as the requirement ID
+            req["id"] = header
             requirements.append(req)
 
     return (frontmatter, requirements)

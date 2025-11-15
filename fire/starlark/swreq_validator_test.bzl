@@ -24,21 +24,29 @@ system_function: sys_eng/software_architecture/hzm.sysarch.md
 
 ## REQ_HZM_HZ
 
-- **ID**: REQ_HZM_HZ
-- **Parent**: sys_eng/sysreq/hzm.sysreq.md#ATS_867
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: The HZM hazard_zone component shall output a no-steering sector.
+```yaml
+parent: sys_eng/sysreq/hzm.sysreq.md#ATS_867
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [ATS_867](sys_eng/sysreq/hzm.sysreq.md?version=1#ATS_867).
+The HZM hazard_zone component shall output a no-steering sector.
 
 ---
 
 ## REQ_HZM_NOT_HZ
 
-- **ID**: REQ_HZM_NOT_HZ
-- **Parent**: sys_eng/sysreq/hzm.sysreq.md#ATS_871
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: The HZM hazard_zone component shall output a not-hazard-zone as a list of polygons.
+```yaml
+parent: sys_eng/sysreq/hzm.sysreq.md#ATS_871
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [ATS_871](sys_eng/sysreq/hzm.sysreq.md?version=1#ATS_871).
+The HZM hazard_zone component shall output a not-hazard-zone as a list of polygons.
 
 ---
 """
@@ -81,13 +89,17 @@ def _test_parse_multiline_description(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: This is a very long description that spans
-  multiple lines and should be properly concatenated into a single
-  description field by the parser.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+This is a very long description that spans
+multiple lines and should be properly concatenated into a single
+description field by the parser.
 
 ---
 """
@@ -116,11 +128,15 @@ def _test_parse_sil_none(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: None
-- **Sec**: false
-- **Description**: This requirement has no SIL level assigned.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: none
+sec: false
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+This requirement has no SIL level assigned.
 
 ---
 """
@@ -153,11 +169,15 @@ def _test_validate_valid_swreq(ctx):
 
 ## REQ_HZM_HZ
 
-- **ID**: REQ_HZM_HZ
-- **Parent**: sys_eng/sysreq/hzm.md#ATS_867
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: The component shall output a hazard zone sector.
+```yaml
+parent: sys_eng/sysreq/hzm.md#ATS_867
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [ATS_867](sys_eng/sysreq/hzm.md?version=1#ATS_867).
+The component shall output a hazard zone sector.
 
 ---
 """
@@ -182,31 +202,43 @@ def _test_validate_multiple_requirements(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: ASIL-D
-- **Sec**: true
-- **Description**: First requirement description with sufficient length.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: ASIL-D
+sec: true
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+First requirement description with sufficient length.
 
 ---
 
 ## REQ_TEST_002
 
-- **ID**: REQ_TEST_002
-- **Parent**: sysreq.md#SYS_002
-- **SIL**: ASIL-C
-- **Sec**: false
-- **Description**: Second requirement description with sufficient length.
+```yaml
+parent: sysreq.md#SYS_002
+parent_version: 1
+sil: ASIL-C
+sec: false
+```
+
+Derived from [SYS_002](sysreq.md?version=1#SYS_002).
+Second requirement description with sufficient length.
 
 ---
 
 ## REQ_TEST_003
 
-- **ID**: REQ_TEST_003
-- **Parent**: sysreq.md#SYS_003
-- **SIL**: ASIL-D
-- **Sec**: true
-- **Description**: Third requirement description with sufficient length.
+```yaml
+parent: sysreq.md#SYS_003
+parent_version: 1
+sil: ASIL-D
+sec: true
+```
+
+Derived from [SYS_003](sysreq.md?version=1#SYS_003).
+Third requirement description with sufficient length.
 
 ---
 """
@@ -231,21 +263,29 @@ def _test_validate_internal_references(ctx):
 
 ## REQ_TEST_PRIMARY
 
-- **ID**: REQ_TEST_PRIMARY
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: This requirement references REQ_TEST_SECONDARY in its description.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+This requirement references REQ_TEST_SECONDARY in its description.
 
 ---
 
 ## REQ_TEST_SECONDARY
 
-- **ID**: REQ_TEST_SECONDARY
-- **Parent**: sysreq.md#SYS_002
-- **SIL**: SIL-2
-- **Sec**: false
-- **Description**: This is the secondary requirement being referenced.
+```yaml
+parent: sysreq.md#SYS_002
+parent_version: 1
+sil: SIL-2
+sec: false
+```
+
+Derived from [SYS_002](sysreq.md?version=1#SYS_002).
+This is the secondary requirement being referenced.
 
 ---
 """
@@ -267,11 +307,15 @@ def _test_validate_missing_frontmatter(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: This requirement has no frontmatter.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+This requirement has no frontmatter.
 """
 
     err = swreq_validator.validate(content)
@@ -291,11 +335,15 @@ def _test_validate_missing_required_frontmatter_field(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: Valid requirement description.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+Valid requirement description.
 """
 
     err = swreq_validator.validate(content)
@@ -319,11 +367,15 @@ def _test_validate_invalid_requirement_id_format(ctx):
 
 ## req_test_001
 
-- **ID**: req_test_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: This has invalid ID format (lowercase).
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+This has invalid ID format (lowercase).
 """
 
     err = swreq_validator.validate(content)
@@ -347,11 +399,15 @@ def _test_validate_missing_req_prefix(ctx):
 
 ## TEST_001
 
-- **ID**: TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: This ID doesn't start with REQ_.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+This ID doesn't start with REQ_.
 """
 
     err = swreq_validator.validate(content)
@@ -376,11 +432,15 @@ def _test_validate_invalid_parent_reference(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: Parent reference missing anchor.
+```yaml
+parent: sysreq.md
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from parent requirement.
+Parent reference missing anchor.
 """
 
     err = swreq_validator.validate(content)
@@ -404,21 +464,29 @@ def _test_validate_duplicate_requirement_ids(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: First requirement with this ID.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+First requirement with this ID.
 
 ---
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_002
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: Duplicate requirement with same ID.
+```yaml
+parent: sysreq.md#SYS_002
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [SYS_002](sysreq.md?version=1#SYS_002).
+Duplicate requirement with same ID.
 """
 
     err = swreq_validator.validate(content)
@@ -443,10 +511,12 @@ def _test_validate_missing_requirement_field(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
 """
 
     err = swreq_validator.validate(content)
@@ -470,11 +540,14 @@ def _test_validate_short_description(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: Short.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Short.
 """
 
     err = swreq_validator.validate(content)
@@ -498,11 +571,15 @@ def _test_validate_invalid_internal_reference(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: true
-- **Description**: This requirement references REQ_NONEXISTENT which does not exist.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: true
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+This requirement references REQ_NONEXISTENT which does not exist.
 """
 
     err = swreq_validator.validate(content)
@@ -549,11 +626,15 @@ def _test_validate_invalid_sec_type(ctx):
 
 ## REQ_TEST_001
 
-- **ID**: REQ_TEST_001
-- **Parent**: sysreq.md#SYS_001
-- **SIL**: SIL-2
-- **Sec**: yes
-- **Description**: Sec field should be boolean not string.
+```yaml
+parent: sysreq.md#SYS_001
+parent_version: 1
+sil: SIL-2
+sec: yes
+```
+
+Derived from [SYS_001](sysreq.md?version=1#SYS_001).
+Sec field should be boolean not string.
 """
 
     err = swreq_validator.validate(content)
