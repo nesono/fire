@@ -6,6 +6,7 @@ load(
     "java_parameter_library",
     "parameter_library",
     "python_parameter_library",
+    "rust_parameter_library",
 )
 load("//fire/starlark:reports.bzl", "generate_report")
 load("//fire/starlark:requirements.bzl", "requirement_library")
@@ -44,6 +45,13 @@ java_parameter_library(
 # Auto-derived: examples -> package examples
 go_parameter_library(
     name = "vehicle_params_go",
+    parameters = VEHICLE_PARAMS,
+)
+
+# Generate Rust parameters
+# Auto-derived: examples -> module with SCREAMING_SNAKE_CASE constants
+rust_parameter_library(
+    name = "vehicle_params_rust",
     parameters = VEHICLE_PARAMS,
 )
 

@@ -9,6 +9,7 @@ load("//fire/starlark:cpp_generator.bzl", "cpp_generator")
 load("//fire/starlark:go_generator.bzl", "go_generator")
 load("//fire/starlark:java_generator.bzl", "java_generator")
 load("//fire/starlark:python_generator.bzl", "python_generator")
+load("//fire/starlark:rust_generator.bzl", "rust_generator")
 load("//fire/starlark:validator.bzl", "validator")
 
 def _derive_namespace_from_package():
@@ -353,5 +354,65 @@ def go_parameter_library(
         cmd = """cat > $@ <<'EOF'
 {}
 EOF""".format(go_code),
+        visibility = ["//visibility:public"],
+    )
+
+def rust_parameter_library(
+        name,
+        parameters,
+        namespace = None,
+        schema_version = "1.0"):
+    """Generate Rust module with parameters.
+
+    Args:
+        name: Name of the generated Rust file (will create name.rs)
+        parameters: List of parameter dictionaries
+        namespace: Namespace (optional, derived from package path if not provided)
+        schema_version: Schema version (default "1.0")
+
+    Example:
+        # Namespace auto-derived from package path
+        rust_parameter_library(
+            name = "vehicle_params",
+            parameters = VEHICLE_PARAMS,
+        )
+
+        # Or explicitly specify namespace
+        rust_parameter_library(
+            name = "vehicle_params",
+            namespace = "vehicle.dynamics",
+            parameters = VEHICLE_PARAMS,
+        )
+    """
+
+    # Derive namespace from package path if not provided
+    if not namespace:
+        namespace = _derive_namespace_from_package()
+
+    # Get source label for traceability
+    source_label = _get_source_label(name)
+
+    param_data = {
+        "namespace": namespace,
+        "parameters": parameters,
+        "schema_version": schema_version,
+        "source_label": source_label,
+    }
+
+    # Validate at load time
+    validation_error = validator.validate(param_data)
+    if validation_error:
+        fail("Parameter validation failed for {}: {}".format(name, validation_error))
+
+    # Generate Rust code
+    rust_code = rust_generator.generate(namespace, parameters, source_label)
+
+    # Create a generated Rust file
+    native.genrule(
+        name = name,
+        outs = [name + ".rs"],
+        cmd = """cat > $@ <<'EOF'
+{}
+EOF""".format(rust_code),
         visibility = ["//visibility:public"],
     )
