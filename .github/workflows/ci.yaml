@@ -77,6 +77,9 @@ jobs:
       - name: Run integration tests
         run: bazel test //examples:vehicle_params_test --test_output=all
 
+      - name: Run Rust integration tests
+        run: bazel test //examples:vehicle_params_rust_test --test_output=all
+
       - name: Verify generated header
         run: |
           bazel build //examples:vehicle_params_header
@@ -86,6 +89,16 @@ jobs:
           fi
           echo "Generated header:"
           cat bazel-bin/examples/vehicle_params_header.h
+
+      - name: Verify generated Rust module
+        run: |
+          bazel build //examples:vehicle_params_rust
+          if [ ! -f bazel-bin/examples/vehicle_params_rust.rs ]; then
+            echo "Generated Rust module not found!"
+            exit 1
+          fi
+          echo "Generated Rust module:"
+          cat bazel-bin/examples/vehicle_params_rust.rs
 
       - name: Upload test results
         if: always()
