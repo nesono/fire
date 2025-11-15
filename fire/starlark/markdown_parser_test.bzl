@@ -14,7 +14,7 @@ also references [REQ-VEL-001](REQ-VEL-001.md).
 """
 
     refs = markdown_parser.parse_references(body)
-    asserts.equals(env, [("REQ-BRK-001", "REQ-BRK-001.md"), ("REQ-VEL-001", "REQ-VEL-001.md")], refs["requirements"])
+    asserts.equals(env, [("REQ-BRK-001", "REQ-BRK-001.md", None), ("REQ-VEL-001", "REQ-VEL-001.md", None)], refs["requirements"])
     asserts.equals(env, [], refs["parameters"])
     asserts.equals(env, [], refs["tests"])
 
@@ -71,7 +71,7 @@ See [ISO 26262](https://example.com/iso26262) for details.
 
     refs = markdown_parser.parse_references(body)
     asserts.equals(env, [("max_velocity", "../params.bzl#max_velocity")], refs["parameters"])
-    asserts.equals(env, [("REQ-001", "REQ-001.md")], refs["requirements"])
+    asserts.equals(env, [("REQ-001", "REQ-001.md", None)], refs["requirements"])
     asserts.equals(env, [("my_test", "//examples:my_test")], refs["tests"])
     asserts.true(env, len(refs["external"]) == 1)
 
@@ -220,7 +220,7 @@ def _test_parse_requirement_with_path(ctx):
     body = "See [REQ-001](requirements/safety/REQ-001.md)."
 
     refs = markdown_parser.parse_references(body)
-    asserts.equals(env, [("REQ-001", "requirements/safety/REQ-001.md")], refs["requirements"])
+    asserts.equals(env, [("REQ-001", "requirements/safety/REQ-001.md", None)], refs["requirements"])
 
     return unittest.end(env)
 
@@ -232,7 +232,7 @@ def _test_parse_multiple_refs_same_line(ctx):
 
     refs = markdown_parser.parse_references(body)
     asserts.equals(env, [("p1", "f.bzl#p1"), ("p2", "f.bzl#p2")], refs["parameters"])
-    asserts.equals(env, [("REQ-1", "REQ-1.md")], refs["requirements"])
+    asserts.equals(env, [("REQ-1", "REQ-1.md", None)], refs["requirements"])
 
     return unittest.end(env)
 

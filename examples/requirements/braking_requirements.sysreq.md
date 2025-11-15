@@ -5,7 +5,7 @@
 ```yaml
 sil: ASIL-C
 sec: true
-version: 1
+version: 2
 ```
 
 **Emergency Braking Distance**

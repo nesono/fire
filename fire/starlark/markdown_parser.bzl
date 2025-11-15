@@ -49,6 +49,48 @@ def _parse_markdown_link(line):
 
     return links
 
+def _parse_url_version(url):
+    """Extract version from URL query parameter.
+
+    Args:
+        url: URL string (e.g., "path.md?version=2#anchor")
+
+    Returns:
+        Tuple of (clean_url, version) where:
+        - clean_url is URL without query params
+        - version is int or None if not present
+    """
+    if "?" not in url:
+        return (url, None)
+
+    # Split URL into parts
+    parts = url.split("?")
+    clean_url = parts[0]
+    query_and_fragment = parts[1]
+
+    # Extract query string (before # if present)
+    query_str = query_and_fragment.split("#")[0] if "#" in query_and_fragment else query_and_fragment
+
+    # Parse version=N from query string
+    for param in query_str.split("&"):
+        if "=" in param:
+            key, value = param.split("=", 1)
+            if key == "version":
+                # Try to parse as integer
+                version = None
+                if value.isdigit():
+                    version = int(value)
+
+                # Reconstruct URL with fragment if present
+                if "#" in query_and_fragment:
+                    clean_url = clean_url + "#" + query_and_fragment.split("#")[1]
+                return (clean_url, version)
+
+    # No version found, but had query params
+    if "#" in query_and_fragment:
+        clean_url = clean_url + "#" + query_and_fragment.split("#")[1]
+    return (clean_url, None)
+
 def _classify_reference(text, url):
     """Classify a markdown reference by type.
 
@@ -59,16 +101,17 @@ def _classify_reference(text, url):
     Returns:
         Tuple of (type, data) where:
         - type is "parameter", "requirement", "test", "external", or "unknown"
-        - data is (text, url) for validation
+        - data is type-specific tuple for validation
     """
 
     # Parameter reference: [@param_name](path/file.bzl#param_name)
     if text.startswith("@"):
         return ("parameter", (text[1:], url))
 
-    # Requirement reference: [REQ-ID](path/to/REQ-ID.md)
-    if url.endswith(".md"):
-        return ("requirement", (text, url))
+    # Requirement reference: [REQ-ID](path/to/REQ-ID.md?version=N#REQ-ID)
+    if url.endswith(".md") or "?" in url and ".md?" in url:
+        clean_url, version = _parse_url_version(url)
+        return ("requirement", (text, clean_url, version))
 
     # Test reference: [test_name](//package:target)
     if url.startswith("//") and ":" in url:
@@ -89,7 +132,7 @@ def parse_markdown_references(body):
     Returns:
         Dictionary with keys:
         - "parameters": List of (param_name, param_path) tuples
-        - "requirements": List of (req_id, req_path) tuples
+        - "requirements": List of (req_id, req_path, version) tuples
         - "tests": List of (test_name, test_label) tuples
         - "external": List of (text, url) tuples
     """
@@ -112,6 +155,7 @@ def parse_markdown_references(body):
             if ref_type == "parameter":
                 refs["parameters"].append(ref_data)
             elif ref_type == "requirement":
+                # ref_data is now (req_id, req_path, version)
                 refs["requirements"].append(ref_data)
             elif ref_type == "test":
                 refs["tests"].append(ref_data)
@@ -160,8 +204,12 @@ def validate_markdown_references(body, frontmatter_refs):
                     param_path,
                 )
 
-    for req_id, req_path in body_refs.get("requirements", []):
+    for req_id, req_path, _ in body_refs.get("requirements", []):
         filename = req_path.split("/")[-1] if "/" in req_path else req_path
+
+        # Remove fragment if present
+        if "#" in filename:
+            filename = filename.split("#")[0]
         expected = req_id + ".md"
         if filename != expected:
             return "requirement link text '{}' does not match filename '{}' (expected '{}')".format(
@@ -193,7 +241,7 @@ def validate_markdown_references(body, frontmatter_refs):
 
     # Body sets
     body_params = set([path for _, path in body_refs.get("parameters", [])])
-    body_reqs = set([path for _, path in body_refs.get("requirements", [])])
+    body_reqs = set([path for _, path, _ in body_refs.get("requirements", [])])
     body_tests = set([label for _, label in body_refs.get("tests", [])])
 
     # Check body references are in frontmatter
