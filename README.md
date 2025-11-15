@@ -430,130 +430,101 @@ constexpr size_t gear_ratios_size = 4;
 
 ## Requirement Format
 
-Requirements are Markdown documents with YAML frontmatter.
+Requirements use section-based markdown with YAML code blocks. Each requirement is identified by an H2 header (`##`), with a YAML block containing only essential structured data.
 
-### Required Fields
+### System Requirements (`.sysreq.md`)
 
-- `id`: Unique identifier (letters, numbers, hyphens, underscores)
-- `title`: Human-readable title
-- `type`: One of `functional`, `non-functional`, `safety`, `interface`, `constraint`, `performance`
-- `status`: One of `draft`, `proposed`, `approved`, `implemented`, `verified`, `deprecated`
+System requirements contain only essential structured data in YAML blocks, with all metadata in markdown prose.
 
-### Optional Fields
+**Format:**
 
-- `priority`: One of `low`, `medium`, `high`, `critical`
-- `sil`: Safety Integrity Level (flexible string to support various standards)
-  - ISO 26262 (automotive): `ASIL-A`, `ASIL-B`, `ASIL-C`, `ASIL-D`, `QM`
-  - IEC 61508 (general): `SIL-1`, `SIL-2`, `SIL-3`, `SIL-4`
-  - DO-178C (aviation): `DAL-A`, `DAL-B`, `DAL-C`, `DAL-D`, `DAL-E`
-- `security_related`: Boolean (`true`/`false`) indicating if requirement has security implications
-- `tags`: List of tags for categorization
-- `version`: Simple integer version number (1, 2, 3, ...)
-- `changelog`: List of version changes with `{version, description}` (optional)
-- `references`: Cross-references to other entities
-  - `parameters`: List of parameter names
-  - `requirements`: List of requirement IDs (string) or dicts with `{id, version}`
-  - `tests`: List of Bazel test targets
-  - `standards`: List of standard references
+- No frontmatter
+- H2 headers (`##`) for requirement IDs
+- YAML code block with 3 fields: `sil`, `sec`, `version`
+- Bold text (`**Title**`) for requirement title
+- Markdown links for all references (parameters, tests, standards)
+
+**YAML Block Fields:**
+
+- `sil`: Safety Integrity Level - `ASIL-A/B/C/D`, `SIL-1/2/3/4`, `DAL-A/B/C/D/E`, or `QM`
+- `sec`: Security-related flag - `true` or `false`
+- `version`: Positive integer version number (1, 2, 3, ...)
+
+**Example:** (see "Define Requirements" section above for full example)
+
+### Software Requirements (`.swreq.md`)
+
+Software requirements are derived from system requirements and follow a similar minimal format.
+
+**Format:**
+
+- Optional frontmatter: `system_function` (path to `.sysarch.md` file)
+- H2 headers (`##`) for requirement IDs (e.g., `REQ_BC_CALCULATE_FORCE`)
+- YAML code block with 2 fields: `sil`, `sec`
+- Description starts with "Derived from [PARENT](path?version=N#PARENT)" link
+- Markdown links for all references
+
+**YAML Block Fields:**
+
+- `sil`: Safety Integrity Level (inherited from parent or refined)
+- `sec`: Security-related flag
+
+**Example:**
+
+````markdown
+---
+system_function: /examples/system_functions/braking_control.sysarch.md
+---
+
+# Software Requirements: Brake Controller
+
+## REQ_BC_CALCULATE_FORCE
+
+```yaml
+sil: ASIL-D
+sec: false
+```
+
+Derived from [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001).
+The brake controller component shall calculate the required brake force...
+
+````
 
 ### Markdown References
 
-Requirements can use markdown links to reference parameters, other requirements, tests, and standards.
-These links render properly in web UIs (GitHub, GitLab, etc.) and are validated against frontmatter.
+All cross-references use standard markdown links with repository-relative paths:
 
-**Reference Syntax:**
-
-- **Parameter Reference**: `[@parameter_name](repo/relative/path/file.bzl#parameter_name)`
+- **Parameter Reference**: `[@param_name](/path/to/file.bzl#param_name)`
   - Uses `@` prefix to distinguish from regular links
-  - Uses repository-relative path for clickable links
-  - Example: `[@maximum_vehicle_velocity](examples/vehicle_params.bzl#maximum_vehicle_velocity)`
+  - Example: `[@maximum_vehicle_velocity](/examples/vehicle_params.bzl#maximum_vehicle_velocity)`
 
-- **Requirement Reference**: `[REQ-ID](repo/relative/path/REQ-ID.md)`
-  - Uses repository-relative path for clickable links in GitHub/GitLab
-  - Example: `[REQ-BRK-001](examples/requirements/REQ-BRK-001.md)`
+- **Requirement Reference**: `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
+  - Includes `?version=N` query parameter to track parent version
+  - Example: `[REQ-VEL-001](/examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001)`
 
 - **Test Reference**: `[test_name](//package:target)`
-  - Uses Bazel label format for test references
+  - Uses Bazel label format
   - Example: `[vehicle_params_test](//examples:vehicle_params_test)`
 
-- **External Reference**: `[text](https://url)`
-  - Standard markdown links for standards, specifications, etc.
+- **Standard Reference**: `[text](https://url)`
+  - Standard markdown links for external standards and specifications
+  - Example: `[ISO 26262:2018, Part 3](https://www.iso.org/standard/68383.html)`
 
-**Validation**: All markdown references in the body must be declared in the frontmatter `references` section using the same
-repository-relative format. Bi-directional validation ensures frontmatter and body stay in sync. References must be sorted
-alphabetically within each section.
+### Version Tracking
 
-### Parent Requirement Version Tracking
+System requirements track their own versions in the YAML block. Software requirements track parent versions in markdown links.
 
-When a requirement is derived from a parent requirement, track the parent's version to detect when the parent changes.
+**Detecting Stale Requirements:**
 
-**Simple Integer Versioning**:
+When a parent requirement version changes (e.g., REQ-VEL-001 v2 → v3), any child requirement still referencing `?version=2` is flagged as potentially needing review.
 
-```yaml
-version: 2  # Just increment when requirement changes
-```
+**Why This Format:**
 
-**Optional Changelog** (no dates needed - Git has those):
-
-```yaml
-changelog:
-  - version: 2
-    description: Added new safety constraint
-  - version: 1
-    description: Initial requirement definition
-```
-
-**Track Parent Versions** (derived requirements):
-
-```yaml
-references:
-  requirements:
-    # Required format (tracks parent version)
-    - path: examples/requirements/REQ-VEL-001.md
-      version: 2  # This requirement was derived from version 2 of REQ-VEL-001
-```
-
-**Detecting Stale Requirements**:
-
-When `REQ-VEL-001` changes to version 3, any child requirement still referencing version 2 is flagged as potentially needing review.
-
-**Why Simple Integers**:
-
-- Easy to understand and maintain
-- Git already tracks full history (who, when, why)
-- Just need to know "did parent change?"
-- No complex versioning rules
-- Changelog optional for quick summary
-
-**Example**:
-
-Parent requirement `REQ-VEL-001.md`:
-
-```yaml
-id: REQ-VEL-001
-version: 2
-changelog:
-  - version: 2
-    description: Added parent requirement version tracking support
-  - version: 1
-    description: Initial maximum velocity requirement definition
-```
-
-Derived requirement `REQ-BRK-001.md`:
-
-```yaml
-id: REQ-BRK-001
-version: 1
-changelog:
-  - version: 1
-    description: Initial emergency braking requirement, derived from REQ-VEL-001 v2
-references:
-  requirements:
-    - path: examples/requirements/REQ-VEL-001.md
-      version: 2  # Tracks which parent version this was derived from
-```
-
-If `REQ-VEL-001` changes to version 3, you can immediately identify that `REQ-BRK-001` needs review.
+- Minimal structured data (only fields we actually parse and validate)
+- All metadata in markdown prose (title, rationale, changelog, etc.)
+- Single source of truth for references (markdown links, not duplicated in YAML)
+- Clean, readable format that renders well in GitHub/GitLab
+- Version tracking via query parameters in links
 
 ## Reporting & Compliance
 
