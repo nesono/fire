@@ -131,6 +131,23 @@ def _validate_description(description, req_id):
 
     return None
 
+def _validate_parent_version(parent_version):
+    """Validate parent requirement version number.
+
+    Args:
+        parent_version: Parent version number (should be positive integer)
+
+    Returns:
+        None if valid, error message if invalid
+    """
+    if type(parent_version) != "int":
+        return "parent_version must be an integer, got {}".format(type(parent_version))
+
+    if parent_version <= 0:
+        return "parent_version must be positive, got {}".format(parent_version)
+
+    return None
+
 def _validate_frontmatter(frontmatter):
     """Validate software requirements frontmatter.
 
@@ -172,7 +189,7 @@ def _validate_requirement(req, all_req_ids):
     """
 
     # Check required fields
-    required_fields = ["id", "parent", "sil", "sec", "description"]
+    required_fields = ["id", "parent", "parent_version", "sil", "sec", "description"]
     for field in required_fields:
         if field not in req:
             return "requirement missing required field: {}".format(field)
@@ -191,6 +208,11 @@ def _validate_requirement(req, all_req_ids):
 
     # Validate parent reference
     err = _validate_parent_reference(req["parent"])
+    if err:
+        return "requirement '{}': {}".format(req_id, err)
+
+    # Validate parent_version
+    err = _validate_parent_version(req["parent_version"])
     if err:
         return "requirement '{}': {}".format(req_id, err)
 
