@@ -25,8 +25,6 @@ system_function: sys_eng/software_architecture/hzm.sysarch.md
 ## REQ_HZM_HZ
 
 ```yaml
-parent: sys_eng/sysreq/hzm.sysreq.md#ATS_867
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -39,8 +37,6 @@ The HZM hazard_zone component shall output a no-steering sector.
 ## REQ_HZM_NOT_HZ
 
 ```yaml
-parent: sys_eng/sysreq/hzm.sysreq.md#ATS_871
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -62,7 +58,6 @@ The HZM hazard_zone component shall output a not-hazard-zone as a list of polygo
     # Check first requirement
     req1 = requirements[0]
     asserts.equals(env, "REQ_HZM_HZ", req1["id"])
-    asserts.equals(env, "sys_eng/sysreq/hzm.sysreq.md#ATS_867", req1["parent"])
     asserts.equals(env, "SIL-2", req1["sil"])
     asserts.equals(env, True, req1["sec"])
     asserts.true(env, "no-steering sector" in req1["description"])
@@ -70,7 +65,6 @@ The HZM hazard_zone component shall output a not-hazard-zone as a list of polygo
     # Check second requirement
     req2 = requirements[1]
     asserts.equals(env, "REQ_HZM_NOT_HZ", req2["id"])
-    asserts.equals(env, "sys_eng/sysreq/hzm.sysreq.md#ATS_871", req2["parent"])
 
     return unittest.end(env)
 
@@ -90,8 +84,6 @@ def _test_parse_multiline_description(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -129,8 +121,6 @@ def _test_parse_sil_none(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: none
 sec: false
 ```
@@ -170,8 +160,6 @@ def _test_validate_valid_swreq(ctx):
 ## REQ_HZM_HZ
 
 ```yaml
-parent: sys_eng/sysreq/hzm.md#ATS_867
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -203,8 +191,6 @@ def _test_validate_multiple_requirements(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: ASIL-D
 sec: true
 ```
@@ -217,8 +203,6 @@ First requirement description with sufficient length.
 ## REQ_TEST_002
 
 ```yaml
-parent: sysreq.md#SYS_002
-parent_version: 1
 sil: ASIL-C
 sec: false
 ```
@@ -231,8 +215,6 @@ Second requirement description with sufficient length.
 ## REQ_TEST_003
 
 ```yaml
-parent: sysreq.md#SYS_003
-parent_version: 1
 sil: ASIL-D
 sec: true
 ```
@@ -264,8 +246,6 @@ def _test_validate_internal_references(ctx):
 ## REQ_TEST_PRIMARY
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -278,8 +258,6 @@ This requirement references REQ_TEST_SECONDARY in its description.
 ## REQ_TEST_SECONDARY
 
 ```yaml
-parent: sysreq.md#SYS_002
-parent_version: 1
 sil: SIL-2
 sec: false
 ```
@@ -308,8 +286,6 @@ def _test_validate_missing_frontmatter(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -336,8 +312,6 @@ def _test_validate_missing_required_frontmatter_field(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -368,8 +342,6 @@ def _test_validate_invalid_requirement_id_format(ctx):
 ## req_test_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -400,8 +372,6 @@ def _test_validate_missing_req_prefix(ctx):
 ## TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -416,38 +386,8 @@ This ID doesn't start with REQ_.
 
     return unittest.end(env)
 
-def _test_validate_invalid_parent_reference(ctx):
-    """Test validation fails with invalid parent reference format."""
-    env = unittest.begin(ctx)
-
-    # Missing anchor
-    content = """---
-# component field removed - redundant
-# version field removed - redundant
-# sil field removed - redundant
-# security_related field removed - redundant
----
-
-# Software Requirements
-
-## REQ_TEST_001
-
-```yaml
-parent: sysreq.md
-parent_version: 1
-sil: SIL-2
-sec: true
-```
-
-Derived from parent requirement.
-Parent reference missing anchor.
-"""
-
-    err = swreq_validator.validate(content)
-    asserts.true(env, err != None)
-    asserts.true(env, "anchor" in err)
-
-    return unittest.end(env)
+# Removed: _test_validate_invalid_parent_reference
+# Parent field is no longer required in YAML blocks - it's in markdown links instead
 
 def _test_validate_duplicate_requirement_ids(ctx):
     """Test validation fails with duplicate requirement IDs."""
@@ -465,8 +405,6 @@ def _test_validate_duplicate_requirement_ids(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -479,8 +417,6 @@ First requirement with this ID.
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_002
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -512,8 +448,6 @@ def _test_validate_missing_requirement_field(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -541,8 +475,6 @@ def _test_validate_short_description(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -572,8 +504,6 @@ def _test_validate_invalid_internal_reference(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: true
 ```
@@ -627,8 +557,6 @@ def _test_validate_invalid_sec_type(ctx):
 ## REQ_TEST_001
 
 ```yaml
-parent: sysreq.md#SYS_001
-parent_version: 1
 sil: SIL-2
 sec: yes
 ```
@@ -738,7 +666,8 @@ validate_missing_frontmatter_test = unittest.make(_test_validate_missing_frontma
 validate_missing_required_frontmatter_field_test = unittest.make(_test_validate_missing_required_frontmatter_field)
 validate_invalid_requirement_id_format_test = unittest.make(_test_validate_invalid_requirement_id_format)
 validate_missing_req_prefix_test = unittest.make(_test_validate_missing_req_prefix)
-validate_invalid_parent_reference_test = unittest.make(_test_validate_invalid_parent_reference)
+
+# Removed: validate_invalid_parent_reference_test - parent field no longer required
 validate_duplicate_requirement_ids_test = unittest.make(_test_validate_duplicate_requirement_ids)
 validate_missing_requirement_field_test = unittest.make(_test_validate_missing_requirement_field)
 validate_short_description_test = unittest.make(_test_validate_short_description)
@@ -768,7 +697,7 @@ def swreq_validator_test_suite(name):
         validate_missing_required_frontmatter_field_test,
         validate_invalid_requirement_id_format_test,
         validate_missing_req_prefix_test,
-        validate_invalid_parent_reference_test,
+        # Removed: validate_invalid_parent_reference_test - parent field no longer required
         validate_duplicate_requirement_ids_test,
         validate_missing_requirement_field_test,
         validate_short_description_test,
