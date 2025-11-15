@@ -1,4 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
+load("@rules_rust//rust:defs.bzl", "rust_test")
 load(
     "//fire/starlark:parameters.bzl",
     "cc_parameter_library",
@@ -60,6 +61,17 @@ cc_test(
     name = "vehicle_params_test",
     srcs = ["vehicle_params_test.cc"],
     deps = [":vehicle_params_cc"],
+)
+
+# Rust test that uses the generated parameters
+rust_test(
+    name = "vehicle_params_rust_test",
+    srcs = [
+        "vehicle_params_test.rs",
+        ":vehicle_params_rust",
+    ],
+    crate_root = "vehicle_params_test.rs",
+    edition = "2021",
 )
 
 # Validate requirement documents
