@@ -328,6 +328,126 @@ def _test_empty_reference_lists(ctx):
 
     return unittest.end(env)
 
+def _test_unsorted_parameters(ctx):
+    """Test that unsorted parameter references fail validation."""
+    env = unittest.begin(ctx)
+
+    frontmatter = {
+        "id": "REQ-001",
+        "references": {
+            "parameters": [
+                "z_params.bzl#zebra",
+                "a_params.bzl#apple",  # Out of order!
+            ],
+        },
+    }
+
+    err = reference_validator.validate(frontmatter)
+    asserts.true(env, err != None, "Unsorted parameters should fail")
+    asserts.true(env, "not sorted lexicographically" in err, "Should mention sorting")
+
+    return unittest.end(env)
+
+def _test_unsorted_requirements(ctx):
+    """Test that unsorted requirement references fail validation."""
+    env = unittest.begin(ctx)
+
+    frontmatter = {
+        "id": "REQ-001",
+        "references": {
+            "requirements": [
+                {"path": "z_requirements/REQ-Z.md", "version": 1},
+                {"path": "a_requirements/REQ-A.md", "version": 1},  # Out of order!
+            ],
+        },
+    }
+
+    err = reference_validator.validate(frontmatter)
+    asserts.true(env, err != None, "Unsorted requirements should fail")
+    asserts.true(env, "not sorted lexicographically" in err, "Should mention sorting")
+
+    return unittest.end(env)
+
+def _test_unsorted_tests(ctx):
+    """Test that unsorted test references fail validation."""
+    env = unittest.begin(ctx)
+
+    frontmatter = {
+        "id": "REQ-001",
+        "references": {
+            "tests": [
+                "//zed:test",
+                "//alpha:test",  # Out of order!
+            ],
+        },
+    }
+
+    err = reference_validator.validate(frontmatter)
+    asserts.true(env, err != None, "Unsorted tests should fail")
+    asserts.true(env, "not sorted lexicographically" in err, "Should mention sorting")
+
+    return unittest.end(env)
+
+def _test_unsorted_standards(ctx):
+    """Test that unsorted standard references fail validation."""
+    env = unittest.begin(ctx)
+
+    frontmatter = {
+        "id": "REQ-001",
+        "references": {
+            "standards": [
+                "UN ECE R13-H",
+                "ISO 26262:2018",  # Out of order!
+            ],
+        },
+    }
+
+    err = reference_validator.validate(frontmatter)
+    asserts.true(env, err != None, "Unsorted standards should fail")
+    asserts.true(env, "not sorted lexicographically" in err, "Should mention sorting")
+
+    return unittest.end(env)
+
+def _test_sorted_parameters(ctx):
+    """Test that sorted parameter references pass validation."""
+    env = unittest.begin(ctx)
+
+    frontmatter = {
+        "id": "REQ-001",
+        "references": {
+            "parameters": [
+                "a_params.bzl#apple",
+                "b_params.bzl#banana",
+                "c_params.bzl#cherry",
+            ],
+        },
+    }
+
+    err = reference_validator.validate(frontmatter)
+    asserts.equals(env, None, err, "Sorted parameters should be valid")
+
+    return unittest.end(env)
+
+def _test_sorted_requirements(ctx):
+    """Test that sorted requirement references pass validation."""
+    env = unittest.begin(ctx)
+
+    frontmatter = {
+        "id": "REQ-001",
+        "references": {
+            "requirements": [
+                {"path": "a_requirements/REQ-A.md", "version": 1},
+                {"path": "b_requirements/REQ-B.md", "version": 2},
+                {"path": "c_requirements/REQ-C.md", "version": 1},
+            ],
+        },
+    }
+
+    err = reference_validator.validate(frontmatter)
+    asserts.equals(env, None, err, "Sorted requirements should be valid")
+
+    return unittest.end(env)
+
 # Test suite
 no_references_test = unittest.make(_test_no_references)
 valid_parameter_references_test = unittest.make(_test_valid_parameter_references)
@@ -344,6 +464,12 @@ references_not_list_test = unittest.make(_test_references_not_list)
 references_not_dict_test = unittest.make(_test_references_not_dict)
 reference_not_string_test = unittest.make(_test_reference_not_string)
 empty_reference_lists_test = unittest.make(_test_empty_reference_lists)
+unsorted_parameters_test = unittest.make(_test_unsorted_parameters)
+unsorted_requirements_test = unittest.make(_test_unsorted_requirements)
+unsorted_tests_test = unittest.make(_test_unsorted_tests)
+unsorted_standards_test = unittest.make(_test_unsorted_standards)
+sorted_parameters_test = unittest.make(_test_sorted_parameters)
+sorted_requirements_test = unittest.make(_test_sorted_requirements)
 
 def reference_validator_test_suite(name):
     """Create test suite for reference_validator."""
@@ -364,4 +490,10 @@ def reference_validator_test_suite(name):
         references_not_dict_test,
         reference_not_string_test,
         empty_reference_lists_test,
+        unsorted_parameters_test,
+        unsorted_requirements_test,
+        unsorted_tests_test,
+        unsorted_standards_test,
+        sorted_parameters_test,
+        sorted_requirements_test,
     )
