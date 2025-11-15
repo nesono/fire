@@ -162,9 +162,35 @@ bazel build //examples:compliance_report
 
 ### System Requirements (`.sysreq.md`)
 
-- YAML frontmatter with metadata (id, title, type, status, priority, sil, etc.)
-- Markdown body with description, rationale, verification
-- Cross-references to parameters, tests, standards
+- No frontmatter
+- Section-based format with ## headers for each requirement ID
+- Each requirement contains:
+  - YAML code block with: sil, sec, version
+  - Bold title text (e.g., `**Emergency Braking Distance**`)
+  - Markdown description, rationale, verification
+  - Cross-references to parameters, tests, standards using markdown links
+
+Example format:
+
+````markdown
+## REQ-BRK-001
+
+```yaml
+sil: ASIL-C
+sec: true
+version: 1
+```
+
+**Emergency Braking Distance**
+
+The vehicle SHALL be capable of performing emergency braking from any velocity up to
+maximum design velocity (see [REQ-VEL-001](/examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001)),
+achieving deceleration according to [@braking_distance_table](/examples/vehicle_params.bzl#braking_distance_table).
+
+### Changelog
+
+- **Version 1**: Initial requirement, derived from REQ-VEL-001 v2
+````
 
 ### System Functions (`.sysarch.md`)
 

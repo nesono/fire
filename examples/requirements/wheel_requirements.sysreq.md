@@ -1,24 +1,18 @@
----
-id: REQ-WHEEL-001
-title: Wheel Count Configuration
-type: constraint
-status: approved
-priority: medium
-tags: [configuration, hardware]
-references:
-  parameters:
-    - /examples/vehicle_params.bzl#wheel_count
-  tests:
-    - //examples:vehicle_params_test
----
+# Wheel Configuration Requirements
 
-# REQ-WHEEL-001: Wheel Count Configuration
+## REQ-WHEEL-001
 
-## Description
+```yaml
+sil: QM
+sec: false
+version: 1
+```
+
+**Wheel Count Configuration**
 
 The vehicle SHALL be configured with exactly [@wheel_count](/examples/vehicle_params.bzl#wheel_count) wheels as specified in the vehicle parameters.
 
-## Rationale
+### Rationale
 
 The vehicle dynamics model, control algorithms, and safety systems are designed and validated for a 4-wheel configuration. Any deviation from this configuration would require:
 
@@ -26,21 +20,28 @@ The vehicle dynamics model, control algorithms, and safety systems are designed 
 - New safety analysis and certification
 - Updates to all wheel-dependent algorithms (traction control, stability control, ABS)
 
-## Constraints
+### Constraints
 
 - Physical wheel count MUST match parameter [@wheel_count](/examples/vehicle_params.bzl#wheel_count)
 - Each wheel MUST have independent sensor monitoring
 - Wheel failure detection MUST account for all 4 wheels
 
-## Verification
+### Verification
 
-Testing is performed according to [vehicle_params_test](//examples:vehicle_params_test):
+Testing performed according to [vehicle_params_test](//examples:vehicle_params_test):
 
 - Visual inspection during vehicle assembly
 - Sensor count verification in startup diagnostics
 - Configuration parameter cross-check at system initialization
 
-## Design Notes
+### Design Notes
 
-This is a configuration constraint rather than a functional requirement. While the code supports parameterization of wheel count, the current vehicle platform is
-designed exclusively for 4-wheel operation. Future platforms (3-wheel, 6-wheel, etc.) would be separate variants with their own requirement sets.
+This is a configuration constraint rather than a functional requirement. While the code supports
+parameterization of wheel count, the current vehicle platform is designed exclusively for 4-wheel operation.
+Future platforms (3-wheel, 6-wheel, etc.) would be separate variants with their own requirement sets.
+
+### Changelog
+
+- **Version 1**: Initial wheel count requirement
+
+---

@@ -28,9 +28,8 @@ MD033:
 MD034: false
 
 # MD036/no-emphasis-as-heading - Emphasis used instead of a heading
-MD036:
-  # Allow emphasis for non-heading purposes
-  punctuation: ".,;:!?。，；：！？"
+# Disabled because requirement titles use bold text (e.g., **Title**) intentionally
+MD036: false
 
 # MD041/first-line-heading - First line in file should be a top level heading
 MD041: false

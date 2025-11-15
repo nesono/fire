@@ -270,52 +270,50 @@ func TestParameters(t *testing.T) {
 
 ### 5. Define Requirements
 
-Requirements are written in Markdown with YAML frontmatter:
+Requirements are written in Markdown with YAML code blocks for each requirement:
 
-**requirements/REQ-VEL-001.sysreq.md**:
+**requirements/velocity_requirements.sysreq.md**:
 
-```markdown
----
-id: REQ-VEL-001
-status: approved
+````markdown
+# Velocity Requirements
+
+## REQ-VEL-001
+
+```yaml
 sil: ASIL-D
-security_related: false
+sec: false
 version: 2
-changelog:
-  - version: 2
-    description: Added parent requirement version tracking support
-  - version: 1
-    description: Initial maximum velocity requirement definition
-references:
-  parameters:
-    - examples/vehicle_params.bzl#maximum_vehicle_velocity
-  requirements:
-    - path: examples/requirements/REQ-BRK-001.sysreq.md
-      version: 1
-  standards:
-    - ISO 26262:2018, Part 3, Section 7
-  tests:
-    - //examples:vehicle_params_test
----
+```
 
-# REQ-VEL-001: Maximum Vehicle Velocity
-
-## Description
+**Maximum Vehicle Velocity**
 
 The vehicle SHALL NOT exceed the maximum design velocity defined by
 [@maximum_vehicle_velocity](examples/vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s)
 under any operating conditions.
 
-## Rationale
+### Rationale
 
 This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www.iso.org/standard/68383.html)
-safety analysis for ASIL-D classification. The requirement relates to braking
-performance (see [REQ-BRK-001](examples/requirements/REQ-BRK-001.sysreq.md)).
+safety analysis for ASIL-D classification. The maximum velocity is constrained by:
 
-## Verification
+- Mechanical stress limits on drivetrain components
+- Tire rating specifications
+- Braking system performance envelope (see [REQ-BRK-001](examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001))
+- Control system response time requirements
 
-Testing is performed according to [vehicle_params_test](//examples:vehicle_params_test).
-```
+### Verification
+
+- Static analysis of control algorithms
+- Hardware-in-the-loop testing with velocity limiting scenarios
+- Vehicle dynamics simulation at boundary conditions
+- Track testing with instrumentation (see [vehicle_params_test](//examples:vehicle_params_test))
+
+### Changelog
+
+- **Version 2**: Added parent requirement version tracking support
+- **Version 1**: Initial maximum velocity requirement definition
+
+````
 
 ### 5. Validate Requirements
 
