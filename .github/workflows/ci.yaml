@@ -74,11 +74,8 @@ jobs:
           restore-keys: |
             bazel-integration-
 
-      - name: Run integration tests
-        run: bazel test //examples:vehicle_params_test --test_output=all
-
-      - name: Run Rust integration tests
-        run: bazel test //examples:vehicle_params_rust_test --test_output=all
+      - name: Run all tests
+        run: bazel test //... --test_output=errors
 
       - name: Verify generated header
         run: |
