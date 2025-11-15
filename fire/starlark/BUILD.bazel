@@ -2,6 +2,7 @@ load(":cpp_generator_test.bzl", "cpp_generator_test_suite")
 load(":markdown_parser_test.bzl", "markdown_parser_test_suite")
 load(":reference_validator_test.bzl", "reference_validator_test_suite")
 load(":requirement_validator_test.bzl", "requirement_validator_test_suite")
+load(":rust_generator_test.bzl", "rust_generator_test_suite")
 load(":swreq_validator_test.bzl", "swreq_validator_test_suite")
 load(":traceability_test.bzl", "traceability_test_suite")
 load(":validator_test.bzl", "validator_test_suite")
@@ -13,6 +14,7 @@ exports_files([
     "python_generator.bzl",
     "java_generator.bzl",
     "go_generator.bzl",
+    "rust_generator.bzl",
     "parameters.bzl",
     "requirement_validator.bzl",
     "reference_validator.bzl",
@@ -50,3 +52,6 @@ traceability_test_suite(name = "traceability_test")
 
 # Unit tests for swreq_validator
 swreq_validator_test_suite(name = "swreq_validator_test")
+
+# Unit tests for rust_generator
+rust_generator_test_suite(name = "rust_generator_test")

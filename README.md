@@ -69,9 +69,9 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 
 ### Testing
 
-- **93 Unit Tests**: Comprehensive Starlark unit tests using Skylib's unittest framework
+- **124 Unit Tests**: Comprehensive Starlark unit tests using Skylib's unittest framework
 - **Validation Tests**: Tests for parameters, requirements, references, versions, and markdown parsing
-- **Code Generation Tests**: Test examples in all supported languages (C++, Python, Java, Go)
+- **Code Generation Tests**: Test examples in all supported languages (C++, Python, Java, Go, Rust)
 - **Traceability Tests**: Verify matrix generation and reporting functionality
 
 ## Quick Start
@@ -182,7 +182,7 @@ int main() {
 
 ### 4. Multi-Language Support
 
-Generate parameters for Python, Java, and Go tests (in `vehicle/dynamics/`):
+Generate parameters for Python, Java, Go, and Rust (in `vehicle/dynamics/`):
 
 ```python
 load(
@@ -190,6 +190,7 @@ load(
     "python_parameter_library",
     "java_parameter_library",
     "go_parameter_library",
+    "rust_parameter_library",
 )
 
 # Generate Python parameters
@@ -212,6 +213,13 @@ java_parameter_library(
 # Package name auto-derived: vehicle/dynamics -> package dynamics
 go_parameter_library(
     name = "vehicle_params_go",
+    parameters = VEHICLE_PARAMS,
+)
+
+# Generate Rust parameters
+# Generates constants with SCREAMING_SNAKE_CASE naming
+rust_parameter_library(
+    name = "vehicle_params_rust",
     parameters = VEHICLE_PARAMS,
 )
 ```
@@ -264,6 +272,25 @@ func TestParameters(t *testing.T) {
 
     for _, row := range dynamics.BrakingDistanceTable {
         // Access row.Velocity, row.FrictionCoefficient, row.BrakingDistance
+    }
+}
+```
+
+**Rust usage:**
+
+```rust
+mod vehicle_params_rust;
+use vehicle_params_rust::*;
+
+#[test]
+fn test_parameters() {
+    assert_eq!(MAXIMUM_VEHICLE_VELOCITY, 55.0);
+    assert_eq!(WHEEL_COUNT, 4);
+    assert_eq!(BRAKING_DISTANCE_TABLE_SIZE, 6);
+
+    for row in BRAKING_DISTANCE_TABLE {
+        // Access row.velocity, row.friction_coefficient, row.braking_distance
+        println!("v={}, μ={}, d={}", row.velocity, row.friction_coefficient, row.braking_distance);
     }
 }
 ```
@@ -850,6 +877,42 @@ go_parameter_library(
 go_parameter_library(
     name = "vehicle_params_go",
     package_name = "dynamics",
+    parameters = VEHICLE_PARAMS,
+)
+```
+
+### `rust_parameter_library()`
+
+Generates a Rust module with parameters.
+
+**Attributes:**
+
+- `name`: Name of the generated Rust file (creates `name.rs`)
+- `namespace`: Namespace (optional, auto-derived from package path if not provided)
+- `parameters`: List of parameter dictionaries
+- `schema_version`: Schema version (optional, defaults to "1.0")
+
+**Generated code features:**
+
+- Constants use `SCREAMING_SNAKE_CASE` naming convention
+- Table parameters generate structs with `#[derive(Debug, Clone, Copy)]`
+- Table data as `&[StructRow]` slices
+- Size constants for tables (e.g., `TABLE_NAME_SIZE: usize`)
+- Type mapping: `f64` for float, `i32` for integer, `&'static str` for string, `bool` for boolean
+
+**Example:**
+
+```python
+# Namespace auto-derived from package path
+rust_parameter_library(
+    name = "vehicle_params_rust",
+    parameters = VEHICLE_PARAMS,
+)
+
+# Or explicitly specify namespace
+rust_parameter_library(
+    name = "vehicle_params_rust",
+    namespace = "vehicle.dynamics",
     parameters = VEHICLE_PARAMS,
 )
 ```
