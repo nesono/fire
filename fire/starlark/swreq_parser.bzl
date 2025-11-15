@@ -154,13 +154,14 @@ def _parse_requirement_section(section_content):
 
     Expected format:
     ```yaml
-    parent: /path/to/parent.md#ANCHOR
-    parent_version: 2
     sil: ASIL-D
     sec: false
     ```
 
+    Derived from [PARENT](/path/to/parent.md?version=2#PARENT).
     Description text follows after YAML block...
+
+    Note: parent and parent_version fields are deprecated - use markdown links instead.
 
     Args:
         section_content: Content of one requirement section
@@ -220,8 +221,6 @@ def parse_swreq(content):
     ## REQ_ID_1
 
     ```yaml
-    parent: /path/to/sysreq.md#SYSREQ_ID
-    parent_version: 2
     sil: ASIL-D
     sec: false
     ```
@@ -234,12 +233,11 @@ def parse_swreq(content):
     ## REQ_ID_2
 
     ```yaml
-    parent: /path/to/sysreq.md#ANOTHER_ID
-    parent_version: 1
     sil: ASIL-C
     sec: true
     ```
 
+    Derived from [REQ-ANOTHER](/path/to/sysreq.md?version=1#ANOTHER_ID).
     Description text for REQ_ID_2...
     ```
 

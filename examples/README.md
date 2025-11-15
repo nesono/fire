@@ -204,7 +204,7 @@ achieving deceleration according to [@braking_distance_table](/examples/vehicle_
 - Optional YAML frontmatter (system_function)
 - Section-based format with ## headers for each requirement ID
 - Each requirement contains:
-  - YAML code block with: parent, parent_version, sil, sec
+  - YAML code block with: sil, sec
   - Markdown description starting with "Derived from [PARENT](link?version=X#PARENT)" link
 
 Example format:
@@ -213,13 +213,11 @@ Example format:
 ## REQ_BC_CALCULATE_FORCE
 
 ```yaml
-parent: /examples/requirements/REQ-BRK-001.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
 
-Derived from [REQ-BRK-001](/examples/requirements/REQ-BRK-001.sysreq.md?version=1#REQ-BRK-001).
+Derived from [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001).
 The brake controller component shall calculate the required brake force...
 
 ````

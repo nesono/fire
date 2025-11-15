@@ -9,8 +9,6 @@ This document contains the software requirements for the Brake Actuator componen
 ## REQ_BA_RECEIVE_COMMANDS
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -23,8 +21,6 @@ The brake actuator component shall subscribe to brake force commands at a rate o
 ## REQ_BA_CONVERT_FORCE
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -37,8 +33,6 @@ The brake actuator component shall convert brake force percentage commands to hy
 ## REQ_BA_CONTROL_HYDRAULICS
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -51,8 +45,6 @@ The brake actuator component shall control the electro-hydraulic valve using a P
 ## REQ_BA_MONITOR_PRESSURE
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -65,8 +57,6 @@ The brake actuator component shall read the hydraulic pressure sensor at 1000 Hz
 ## REQ_BA_SAFETY_LIMITS
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```

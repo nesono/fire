@@ -9,8 +9,6 @@ This document contains the software requirements for the Vehicle Status componen
 ## REQ_VS_READ_SENSORS
 
 ```yaml
-parent: /examples/requirements/velocity_requirements.sysreq.md#REQ-VEL-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -23,8 +21,6 @@ The vehicle status component shall read wheel speed sensor data from all four wh
 ## REQ_VS_CALCULATE_SPEED
 
 ```yaml
-parent: /examples/requirements/velocity_requirements.sysreq.md#REQ-VEL-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -37,8 +33,6 @@ The vehicle status component shall calculate vehicle linear speed by converting 
 ## REQ_VS_CALCULATE_ACCELERATION
 
 ```yaml
-parent: /examples/requirements/velocity_requirements.sysreq.md#REQ-VEL-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -51,8 +45,6 @@ The vehicle status component shall calculate vehicle acceleration by computing t
 ## REQ_VS_PUBLISH_STATUS
 
 ```yaml
-parent: /examples/requirements/velocity_requirements.sysreq.md#REQ-VEL-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -65,8 +57,6 @@ The vehicle status component shall publish vehicle status messages at a rate of 
 ## REQ_VS_VALIDATE_SENSORS
 
 ```yaml
-parent: /examples/requirements/velocity_requirements.sysreq.md#REQ-VEL-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```

@@ -9,8 +9,6 @@ This document contains the software requirements for the Brake Controller compon
 ## REQ_BC_CALCULATE_FORCE
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -23,8 +21,6 @@ The brake controller component shall calculate the required brake force based on
 ## REQ_BC_MONITOR_DECELERATION
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -37,8 +33,6 @@ The brake controller component shall continuously monitor the actual vehicle dec
 ## REQ_BC_USE_BRAKING_TABLE
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -51,8 +45,6 @@ The brake controller component shall use the braking distance table parameter to
 ## REQ_BC_EMERGENCY_BRAKE
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -65,8 +57,6 @@ The brake controller component shall enter emergency braking mode and command ma
 ## REQ_BC_OUTPUT_RATE
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -79,8 +69,6 @@ The brake controller component shall publish brake force commands at a rate of 5
 ## REQ_BC_INPUT_VALIDATION
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -93,8 +81,6 @@ The brake controller component shall validate all input values at each processin
 ## REQ_BC_FORCE_LIMITS
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
@@ -107,8 +93,6 @@ The brake controller component shall limit all calculated brake force values to 
 ## REQ_BC_INITIALIZATION
 
 ```yaml
-parent: /examples/requirements/braking_requirements.sysreq.md#REQ-BRK-001
-parent_version: 1
 sil: ASIL-D
 sec: false
 ```
