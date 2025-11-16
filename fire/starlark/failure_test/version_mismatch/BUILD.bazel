@@ -1,0 +1,21 @@
+"""Tests for version mismatch warnings.
+
+These tests verify that builds produce warnings when referenced requirement
+versions don't match the actual requirement versions.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+# Version mismatch test - should produce WARNING
+requirement_library(
+    name = "test_version_mismatch",
+    srcs = [
+        "base_requirement_v2.md",
+        "test_version_mismatch.md",
+    ],
+    tags = [
+        "failure_test",  # Expected to produce warning
+        "manual",  # Don't run in normal test runs
+    ],
+)
