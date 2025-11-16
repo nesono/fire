@@ -334,10 +334,11 @@ def validate_requirement_reference(req_id, req_path, workspace_root, ref_version
         # Check version if ref_version is specified
         if ref_version is not None:
             actual_version = frontmatter.get('version')
+            # ANSI color codes: \033[91m = light red, \033[0m = reset
             if actual_version is None:
-                print(f"#FIRE_VERSION_MISMATCH# WARNING: {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} has no version field", file=sys.stderr)
+                print(f"\033[91mWARNING:\033[0m #FIRE_VERSION_MISMATCH# {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} has no version field", file=sys.stderr)
             elif actual_version != ref_version:
-                print(f"#FIRE_VERSION_MISMATCH# WARNING: {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} is at version={actual_version}", file=sys.stderr)
+                print(f"\033[91mWARNING:\033[0m #FIRE_VERSION_MISMATCH# {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} is at version={actual_version}", file=sys.stderr)
 
         return True, None
 
