@@ -88,6 +88,7 @@ requirement_library(
         "brake_control/doc/*.swreq.md",
         "vehicle_status/doc/*.swreq.md",
     ]),
+    deps = [":vehicle_requirements"],  # Component requirements reference system requirements
 )
 
 # Generate traceability matrix report

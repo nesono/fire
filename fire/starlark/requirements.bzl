@@ -10,13 +10,21 @@ def _validate_requirements_impl(ctx):
     # Use "." as workspace root - the sandbox will have the right structure
     workspace_root = "."
 
-    # Build command
-    cmd = "python3 {script} {workspace}".format(
+    # Build command with --allowed-deps flag (always pass it to enable strict checking)
+    cmd = "python3 {script} {workspace} --allowed-deps".format(
         script = script.path,
         workspace = workspace_root,
     )
 
+    # Add allowed dependency paths (short_path format)
+    # Include srcs in allowed deps (requirements in same target can reference each other)
+    for src in ctx.files.srcs:
+        cmd += " " + src.short_path
+    for dep in ctx.files.deps:
+        cmd += " " + dep.short_path
+
     # Add requirement files (using short_path which is relative to workspace)
+    cmd += " --"
     for src in ctx.files.srcs:
         cmd += " " + src.short_path
     cmd += " && touch " + output.path
@@ -24,7 +32,7 @@ def _validate_requirements_impl(ctx):
     # Run validation script
     # Note: We need to disable sandbox or make all potential reference targets available
     ctx.actions.run_shell(
-        inputs = ctx.files.srcs + [script],
+        inputs = ctx.files.srcs + ctx.files.deps + [script],
         outputs = [output],
         command = cmd,
         mnemonic = "ValidateRequirements",
@@ -40,6 +48,11 @@ def _validate_requirements_impl(ctx):
 _validate_requirements = rule(
     implementation = _validate_requirements_impl,
     attrs = {
+        "deps": attr.label_list(
+            allow_files = [".md"],
+            default = [],
+            doc = "Dependencies: other requirement files referenced by srcs",
+        ),
         "out": attr.output(
             mandatory = True,
         ),
@@ -56,7 +69,7 @@ _validate_requirements = rule(
     doc = "Validates cross-references in requirement documents",
 )
 
-def requirement_library(name, srcs, visibility = None):
+def requirement_library(name, srcs, deps = [], visibility = None):
     """Validates requirement documents and creates a filegroup.
 
     This validates that all cross-references (parameters, requirements, tests)
@@ -65,12 +78,19 @@ def requirement_library(name, srcs, visibility = None):
     Args:
         name: Name of the target
         srcs: List of requirement markdown files
+        deps: List of other requirement_library targets that srcs references
         visibility: Visibility of the target
 
     Example:
         requirement_library(
             name = "safety_requirements",
             srcs = glob(["requirements/safety/*.md"]),
+        )
+
+        requirement_library(
+            name = "component_requirements",
+            srcs = glob(["components/**/*.swreq.md"]),
+            deps = [":safety_requirements"],  # References system requirements
         )
     """
 
@@ -79,6 +99,7 @@ def requirement_library(name, srcs, visibility = None):
     _validate_requirements(
         name = validation_name,
         srcs = srcs,
+        deps = deps,
         out = validation_name + ".marker",
     )
 
