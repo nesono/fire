@@ -1,0 +1,71 @@
+"""Integration test for fire requirements management system."""
+
+load(
+    "@fire//fire/starlark:parameters.bzl",
+    "cc_parameter_library",
+    "parameter_library",
+    "rust_parameter_library",
+)
+load("@fire//fire/starlark:reports.bzl", "generate_report")
+load(":test_params.bzl", "TEST_PARAMS")
+
+exports_files(["test_params.bzl"])
+
+# Define parameters
+parameter_library(
+    name = "test_params_header",
+    parameters = TEST_PARAMS,
+)
+
+# Generate C++ parameters
+cc_parameter_library(
+    name = "test_params_cc",
+    parameter_library = ":test_params_header",
+    visibility = ["//visibility:public"],
+)
+
+# Generate Rust parameters
+rust_parameter_library(
+    name = "test_params_rust",
+    parameters = TEST_PARAMS,
+)
+
+# Generate compliance report
+generate_report(
+    name = "compliance_report",
+    srcs = ["//requirements:integration_requirements"],
+    out = "compliance_report.md",
+    report_type = "compliance",
+)
+
+# Generate coverage report
+generate_report(
+    name = "coverage_report",
+    srcs = ["//requirements:integration_requirements"],
+    out = "coverage_report.md",
+    report_type = "coverage",
+)
+
+# Generate traceability report
+generate_report(
+    name = "traceability_report",
+    srcs = ["//requirements:integration_requirements"],
+    out = "traceability_report.md",
+    report_type = "traceability",
+)
+
+# Dummy test targets referenced in requirements
+sh_test(
+    name = "test_speed_limit",
+    srcs = ["test_dummy.sh"],
+)
+
+sh_test(
+    name = "test_braking",
+    srcs = ["test_dummy.sh"],
+)
+
+sh_test(
+    name = "test_update_rate",
+    srcs = ["test_dummy.sh"],
+)

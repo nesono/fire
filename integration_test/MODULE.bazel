@@ -1,0 +1,31 @@
+"""
+Integration Test for Fire Requirements Management System
+
+This workspace consumes fire as an external Bazel module to test
+end-to-end integration as users would experience it.
+"""
+
+module(
+    name = "fire_integration_test",
+    version = "0.0.0",
+)
+
+# Depend on fire project
+bazel_dep(name = "fire", version = "0.1.0")
+
+# Override to use local development version
+local_path_override(
+    module_name = "fire",
+    path = "..",
+)
+
+# C++ rules for consuming generated code
+bazel_dep(name = "rules_cc", version = "0.1.1")
+
+# Rust rules for consuming generated code
+bazel_dep(name = "rules_rust", version = "0.54.1")
+
+# Rust toolchain setup
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(edition = "2021")
+use_repo(rust, "rust_toolchains")

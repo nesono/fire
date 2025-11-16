@@ -154,11 +154,15 @@ def cc_parameter_library(name, parameter_library, **kwargs):
         name: Name of the cc_library
         parameter_library: Label of the parameter_library (the generated .h file)
         **kwargs: Additional arguments for cc_library
+
+    Note:
+        Headers should be included using repository-relative paths.
+        For example, if the header is in package "examples", use:
+            #include "examples/header_name.h"
     """
     cc_library(
         name = name,
         hdrs = [parameter_library],
-        includes = ["."],
         **kwargs
     )
 

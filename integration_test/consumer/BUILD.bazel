@@ -1,0 +1,40 @@
+"""Code consumers that use generated headers/modules."""
+
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
+
+# C++ binary that uses generated header
+cc_binary(
+    name = "test_cpp",
+    srcs = ["test_cpp.cc"],
+    deps = ["//:test_params_cc"],
+)
+
+# C++ test
+cc_test(
+    name = "test_cpp_test",
+    srcs = ["test_cpp.cc"],
+    deps = ["//:test_params_cc"],
+)
+
+# Rust binary that uses generated module
+rust_binary(
+    name = "test_rust",
+    srcs = [
+        "test_rust.rs",
+        "//:test_params_rust",
+    ],
+    crate_root = "test_rust.rs",
+    edition = "2021",
+)
+
+# Rust test
+rust_test(
+    name = "test_rust_test",
+    srcs = [
+        "test_rust.rs",
+        "//:test_params_rust",
+    ],
+    crate_root = "test_rust.rs",
+    edition = "2021",
+)
