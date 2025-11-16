@@ -99,7 +99,7 @@ jobs:
 
       - name: Run failure tests
         run: |
-          ./fire/starlark/tests/run_failure_tests.sh
+          ./fire/starlark/failure_test/run_failure_tests.sh
 
       - name: Upload test results
         if: always()
