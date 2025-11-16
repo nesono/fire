@@ -26,7 +26,7 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 - Static analysis of control algorithms
 - Hardware-in-the-loop testing with velocity limiting scenarios
 - Vehicle dynamics simulation at boundary conditions
-- Track testing with instrumentation (see [vehicle_params_test](//examples:vehicle_params_test))
+- Track testing with instrumentation (see [vehicle_params_cc_test](//examples:vehicle_params_cc_test))
 
 ### Changelog
 

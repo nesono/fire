@@ -1,19 +1,18 @@
 """Test for vehicle parameters in Python."""
 
-# Import the generated parameters
-# Note: In actual use, you would import from the Bazel-generated package
-# For this example, we'll show how the generated code can be used in tests
+# Import the generated parameters using repository-relative path
+from examples.vehicle_params_py_gen import (
+    BRAKING_DISTANCE_TABLE_DATA,
+    BrakingDistanceTableRow,
+    DEBUG_MODE,
+    MAXIMUM_VEHICLE_VELOCITY,
+    VEHICLE_NAME,
+    WHEEL_COUNT,
+)
+
 
 def test_simple_parameters():
     """Test simple parameter access."""
-    # These values would be imported from the generated module
-    from vehicle_params_py import (
-        DEBUG_MODE,
-        MAXIMUM_VEHICLE_VELOCITY,
-        VEHICLE_NAME,
-        WHEEL_COUNT,
-    )
-
     assert MAXIMUM_VEHICLE_VELOCITY == 55.0
     assert WHEEL_COUNT == 4
     assert VEHICLE_NAME == "TestVehicle"
@@ -22,8 +21,6 @@ def test_simple_parameters():
 
 def test_table_parameters():
     """Test table parameter access."""
-    from vehicle_params_py import BRAKING_DISTANCE_TABLE_DATA, BrakingDistanceTableRow
-
     # Check we have the expected number of rows
     assert len(BRAKING_DISTANCE_TABLE_DATA) == 6
 
@@ -43,8 +40,6 @@ def test_table_parameters():
 
 def test_table_immutability():
     """Test that table rows are immutable (frozen dataclass)."""
-    from vehicle_params_py import BRAKING_DISTANCE_TABLE_DATA
-
     first_row = BRAKING_DISTANCE_TABLE_DATA[0]
 
     # Try to modify a field (should raise error due to frozen=True)

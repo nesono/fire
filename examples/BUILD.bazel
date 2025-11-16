@@ -1,4 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 load(
     "//fire/starlark:parameters.bzl",
@@ -35,8 +37,15 @@ cc_parameter_library(
 # Generate Python parameters
 # Auto-derived: examples -> examples (Python module)
 python_parameter_library(
-    name = "vehicle_params_py",
+    name = "vehicle_params_py_gen",
     parameters = VEHICLE_PARAMS,
+)
+
+# Wrap generated Python file in py_library
+py_library(
+    name = "vehicle_params_py",
+    srcs = [":vehicle_params_py_gen"],
+    imports = [".."],  # Allow importing as examples.vehicle_params_py
 )
 
 # Generate Java parameters
@@ -51,8 +60,15 @@ java_parameter_library(
 # Generate Go parameters
 # Auto-derived: examples -> package examples
 go_parameter_library(
-    name = "vehicle_params_go",
+    name = "vehicle_params_go_gen",
     parameters = VEHICLE_PARAMS,
+)
+
+# Wrap generated Go file in go_library
+go_library(
+    name = "vehicle_params_go",
+    srcs = [":vehicle_params_go_gen"],
+    importpath = "examples/vehicle_params_go",
 )
 
 # Generate Rust parameters
@@ -62,11 +78,26 @@ rust_parameter_library(
     parameters = VEHICLE_PARAMS,
 )
 
-# Test that uses the generated parameters
+# C++ test that uses the generated parameters
 cc_test(
-    name = "vehicle_params_test",
+    name = "vehicle_params_cc_test",
     srcs = ["vehicle_params_test.cc"],
     deps = [":vehicle_params_cc"],
+)
+
+# Python test that uses the generated parameters
+py_test(
+    name = "vehicle_params_py_test",
+    srcs = ["vehicle_params_test.py"],
+    main = "vehicle_params_test.py",
+    deps = [":vehicle_params_py"],
+)
+
+# Go test that uses the generated parameters
+go_test(
+    name = "vehicle_params_go_test",
+    srcs = ["vehicle_params_test.go"],
+    deps = [":vehicle_params_go"],
 )
 
 # Rust test that uses the generated parameters

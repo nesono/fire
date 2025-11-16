@@ -28,7 +28,7 @@ The vehicle dynamics model, control algorithms, and safety systems are designed 
 
 ### Verification
 
-Testing performed according to [vehicle_params_test](//examples:vehicle_params_test):
+Testing performed according to [vehicle_params_cc_test](//examples:vehicle_params_cc_test):
 
 - Visual inspection during vehicle assembly
 - Sensor count verification in startup diagnostics
