@@ -319,7 +319,7 @@ def generate_rust(param_data):
     parameters = param_data["parameters"]
 
     lines = []
-    lines.append("//! Generated parameter constants")
+    lines.append("// Generated parameter constants")
     lines.append("")
 
     # Generate structs for tables

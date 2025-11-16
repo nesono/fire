@@ -169,8 +169,8 @@ def cc_parameter_library(
         name = header_target,
         srcs = [parameter_library],
         outs = [base_name + ".h"],
-        cmd = "$(location //fire/starlark:generate_code_script) $< cpp $@",
-        tools = ["//fire/starlark:generate_code_script"],
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< cpp $@",
+        tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
 
@@ -219,8 +219,8 @@ def python_parameter_library(
         name = py_file_target,
         srcs = [parameter_library],
         outs = [base_name + ".py"],
-        cmd = "$(location //fire/starlark:generate_code_script) $< python $@",
-        tools = ["//fire/starlark:generate_code_script"],
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< python $@",
+        tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
 
@@ -348,8 +348,8 @@ def go_parameter_library(
         name = go_file_target,
         srcs = [parameter_library],
         outs = [base_name + ".go"],
-        cmd = "$(location //fire/starlark:generate_code_script) $< go $@",
-        tools = ["//fire/starlark:generate_code_script"],
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< go $@",
+        tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
 
@@ -396,7 +396,7 @@ def rust_parameter_library(
         name = name,
         srcs = [parameter_library],
         outs = [base_name + ".rs"],
-        cmd = "$(location //fire/starlark:generate_code_script) $< rust $@",
-        tools = ["//fire/starlark:generate_code_script"],
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< rust $@",
+        tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
