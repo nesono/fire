@@ -335,10 +335,11 @@ def validate_requirement_reference(req_id, req_path, workspace_root, ref_version
         if ref_version is not None:
             actual_version = frontmatter.get('version')
             # ANSI color codes: \033[91m = light red, \033[0m = reset
+            # Print to stdout so Bazel shows these warnings even when validation passes
             if actual_version is None:
-                print(f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} has no version field", file=sys.stderr)
+                print(f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} has no version field")
             elif actual_version != ref_version:
-                print(f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} is at version={actual_version}", file=sys.stderr)
+                print(f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} is at version={actual_version}")
 
         return True, None
 
