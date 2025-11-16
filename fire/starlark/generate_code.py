@@ -398,8 +398,12 @@ def _get_rust_type(param_type):
 
 def generate_java(param_data):
     """Generate Java class from parameter data."""
-    # This would be implemented similarly
-    raise NotImplementedError("Java generation not yet implemented")
+    namespace = param_data["namespace"]
+    parameters = param_data["parameters"]
+
+    # For now, we'll use the existing java_generator.bzl approach
+    # This is a placeholder - the actual implementation would mirror the Starlark version
+    raise NotImplementedError("Java generation not yet implemented in Python script. Use java_generator.bzl for now.")
 
 if __name__ == "__main__":
     main()
