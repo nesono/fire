@@ -400,10 +400,127 @@ def generate_java(param_data):
     """Generate Java class from parameter data."""
     namespace = param_data["namespace"]
     parameters = param_data["parameters"]
+    source_label = param_data.get("source_label", "")
 
-    # For now, we'll use the existing java_generator.bzl approach
-    # This is a placeholder - the actual implementation would mirror the Starlark version
-    raise NotImplementedError("Java generation not yet implemented in Python script. Use java_generator.bzl for now.")
+    # Extract class name from source label or use default
+    # Source label format: //package:target_name
+    class_name = "Parameters"
+    if source_label and ":" in source_label:
+        target_name = source_label.split(":")[-1]
+        # Convert to PascalCase
+        class_name = "".join(word.capitalize() for word in target_name.split("_"))
+
+    lines = []
+    lines.append("// This file is auto-generated. Do not edit manually.")
+    if source_label:
+        lines.append(f"// Generated from: {source_label}")
+    lines.append(f"package {namespace};")
+    lines.append("")
+    lines.append("/**")
+    lines.append(" * Generated parameter definitions.")
+    lines.append(" */")
+    lines.append(f"public final class {class_name} {{")
+    lines.append("")
+    lines.append(f"    private {class_name}() {{")
+    lines.append("        // Utility class, no instantiation")
+    lines.append("    }")
+    lines.append("")
+
+    # Generate record classes for tables first
+    for param in parameters:
+        if param["type"] == "table":
+            param_name = param["name"]
+            columns = param["columns"]
+            description = param.get("description", "")
+
+            # Record class name
+            record_name = "".join(word.capitalize() for word in param_name.split("_")) + "Row"
+
+            if description:
+                lines.append("    /**")
+                lines.append(f"     * {description}")
+                lines.append("     */")
+
+            # Build record fields (convert to camelCase)
+            fields = []
+            for col in columns:
+                col_name_parts = col["name"].split("_")
+                camel_name = col_name_parts[0] + "".join(word.capitalize() for word in col_name_parts[1:])
+                col_type = col["type"]
+                java_type = _get_java_type(col_type)
+                fields.append(f"{java_type} {camel_name}")
+
+            lines.append(f"    public record {record_name}({', '.join(fields)}) {{}}")
+            lines.append("")
+
+    # Generate constants
+    for param in parameters:
+        param_name = param["name"]
+        param_type = param["type"]
+        description = param.get("description", "")
+        unit = param.get("unit", "")
+        const_name = param_name.upper()
+
+        if param_type == "table":
+            # Generate array of records
+            record_name = "".join(word.capitalize() for word in param_name.split("_")) + "Row"
+            rows = param["rows"]
+            columns = param["columns"]
+
+            lines.append(f"    public static final {record_name}[] {const_name} = {{")
+            for row in rows:
+                # rows are arrays, not dicts
+                values = []
+                for i, col in enumerate(columns):
+                    val = row[i]
+                    if col["type"] == "string":
+                        values.append(f'"{val}"')
+                    elif col["type"] in ["bool", "boolean"]:
+                        values.append("true" if val else "false")
+                    else:
+                        values.append(str(val))
+                lines.append(f"        new {record_name}({', '.join(values)}),")
+            lines.append("    };")
+        else:
+            # Simple constant
+            value = param["value"]
+            java_type = _get_java_type(param_type)
+
+            # Add documentation
+            if description or unit:
+                lines.append("    /**")
+                if description:
+                    lines.append(f"     * {description}")
+                if unit:
+                    lines.append(f"     * Unit: {unit}")
+                lines.append("     */")
+
+            if param_type == "string":
+                lines.append(f'    public static final {java_type} {const_name} = "{value}";')
+            elif param_type in ["bool", "boolean"]:
+                bool_val = "true" if value else "false"
+                lines.append(f"    public static final {java_type} {const_name} = {bool_val};")
+            else:
+                lines.append(f"    public static final {java_type} {const_name} = {value};")
+
+        lines.append("")
+
+    lines.append("}")
+    lines.append("")
+
+    return "\n".join(lines)
+
+def _get_java_type(param_type):
+    """Map parameter type to Java type."""
+    type_map = {
+        "float": "double",
+        "int": "int",
+        "integer": "int",
+        "string": "String",
+        "bool": "boolean",
+        "boolean": "boolean",
+    }
+    return type_map.get(param_type, param_type)
 
 if __name__ == "__main__":
     main()

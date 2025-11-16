@@ -7,7 +7,6 @@ Validation happens at load time, and code is generated at build time for multipl
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_go//go:def.bzl", "go_library")
 load("@rules_python//python:defs.bzl", "py_library")
-load("//fire/starlark:java_generator.bzl", "java_generator")
 load("//fire/starlark:validator.bzl", "validator")
 
 def _derive_namespace_from_package():
@@ -25,20 +24,6 @@ def _derive_namespace_from_package():
     if not pkg:
         return "root"
     return pkg.replace("/", ".")
-
-def _get_java_namespace(namespace, package_prefix = None):
-    """Convert namespace to Java format.
-
-    Args:
-        namespace: Dot-separated namespace (e.g., "vehicle.dynamics")
-        package_prefix: Optional prefix (e.g., "com.example")
-
-    Returns:
-        Java package format (e.g., "com.example.vehicle.dynamics")
-    """
-    if package_prefix:
-        return package_prefix + "." + namespace
-    return namespace
 
 def _get_source_label(name):
     """Get the source Bazel label for traceability.
@@ -234,82 +219,89 @@ def python_parameter_library(
 
 def java_parameter_library(
         name,
-        parameters = None,
-        parameter_library = None,
-        namespace = None,
-        package_prefix = None,
-        class_name = "Parameters",
-        schema_version = "1.0"):
-    """Generate Java class with parameters.
-
-    NOTE: Java generation still uses the legacy Starlark-based generator.
-    The parameter_library attribute is not yet supported.
+        parameter_library,
+        class_name = None,
+        package_prefix = None):
+    """Generate Java class from parameter_library.
 
     Args:
-        name: Name of the generated class file
-        parameters: List of parameter dictionaries (legacy, still required)
-        parameter_library: DEPRECATED - not yet implemented for Java
-        namespace: Java package namespace (optional, derived from package path if not provided)
+        name: Name of the Bazel target
+        parameter_library: Label of the parameter_library target (the .json file)
+        class_name: Name of the generated class (optional, derived from target name if not provided)
         package_prefix: Optional package prefix (e.g., "com.example")
-        class_name: Name of the generated class (default "Parameters")
-        schema_version: Schema version (default "1.0")
 
     Example:
-        # Namespace auto-derived from package path
-        java_parameter_library(
-            name = "VehicleParams",
-            class_name = "VehicleParams",
-            package_prefix = "com.example",  # Optional
+        parameter_library(
+            name = "vehicle_params",
             parameters = VEHICLE_PARAMS,
         )
 
-        # Or explicitly specify namespace
         java_parameter_library(
-            name = "VehicleParams",
-            namespace = "com.example.vehicle.dynamics",
-            class_name = "VehicleParams",
-            parameters = VEHICLE_PARAMS,
+            name = "vehicle_params_java",
+            parameter_library = ":vehicle_params",
+            class_name = "VehicleParams",  # Optional
+            package_prefix = "com.example",  # Optional
         )
+        # Generates: VehicleParams.java (or derived from target name)
     """
 
-    if parameter_library:
-        fail("java_parameter_library does not yet support parameter_library attribute. " +
-             "Java generation still uses the legacy Starlark generator. " +
-             "Please pass parameters directly for now.")
+    # Derive class_name if not provided
+    if not class_name:
+        # Strip common suffixes and convert to PascalCase
+        base_name = name.removesuffix("_java")
+        parts = base_name.split("_")
+        class_name = "".join([word.capitalize() for word in parts])
 
-    if not parameters:
-        fail("java_parameter_library requires 'parameters' attribute")
+    # Create a generated Java file using the Python script
+    # Note: The namespace with package_prefix will be handled in parameter_library
+    # We need to create a custom JSON that includes the package_prefix
+    # For now, we'll use a wrapper script or pass it as an environment variable
 
-    # Derive namespace from package path if not provided
-    if not namespace:
-        base_namespace = _derive_namespace_from_package()
-        namespace = _get_java_namespace(base_namespace, package_prefix)
+    # Actually, we need to handle package_prefix differently since parameter_library
+    # already set the namespace. Let me use a different approach:
+    # Generate with script, but we need to modify the namespace in the JSON
 
-    # Get source label for traceability
-    source_label = _get_source_label(name)
+    # For simplicity, let's generate using the script and handle package_prefix
+    # by modifying the parameter_library's namespace at this level
 
-    param_data = {
-        "namespace": namespace,
-        "parameters": parameters,
-        "schema_version": schema_version,
-        "source_label": source_label,
-    }
+    java_file_target = name + "_file"
 
-    # Validate at load time
-    validation_error = validator.validate(param_data)
-    if validation_error:
-        fail("Parameter validation failed for {}: {}".format(name, validation_error))
+    if package_prefix:
+        # Need to create a modified JSON with package prefix
+        # Use a genrule to modify the JSON
+        modified_json = name + "_json"
+        native.genrule(
+            name = modified_json,
+            srcs = [parameter_library],
+            outs = [name + "_modified.json"],
+            cmd = """python3 -c '
+import json, sys
+with open("$<", "r") as f:
+    data = json.load(f)
+base_ns = data["namespace"]
+data["namespace"] = "{}.{{}}".format(base_ns)
+with open("$@", "w") as f:
+    json.dump(data, f)
+' """.format(package_prefix),
+        )
+        json_input = ":" + modified_json
+    else:
+        json_input = parameter_library
 
-    # Generate Java code using legacy Starlark generator
-    java_code = java_generator.generate(namespace, parameters, class_name, source_label)
-
-    # Create a generated Java file
     native.genrule(
-        name = name,
+        name = java_file_target,
+        srcs = [json_input],
         outs = [class_name + ".java"],
-        cmd = """cat > $@ <<'EOF'
-{}
-EOF""".format(java_code),
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< java $@",
+        tools = ["@fire//fire/starlark:generate_code_script"],
+        visibility = ["//visibility:public"],
+    )
+
+    # Java doesn't need a wrapper library rule, the .java file is the output
+    # Users can add it to their java_library or java_binary
+    native.alias(
+        name = name,
+        actual = ":" + java_file_target,
         visibility = ["//visibility:public"],
     )
 
