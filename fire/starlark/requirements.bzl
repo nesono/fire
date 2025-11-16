@@ -69,7 +69,7 @@ _validate_requirements = rule(
     doc = "Validates cross-references in requirement documents",
 )
 
-def requirement_library(name, srcs, deps = [], visibility = None):
+def requirement_library(name, srcs, deps = [], tags = [], visibility = None):
     """Validates requirement documents and creates a filegroup.
 
     This validates that all cross-references (parameters, requirements, tests)
@@ -79,6 +79,7 @@ def requirement_library(name, srcs, deps = [], visibility = None):
         name: Name of the target
         srcs: List of requirement markdown files
         deps: List of dependencies that srcs references (requirement files and parameter files)
+        tags: Tags for this target (e.g., ["manual", "failure_test"])
         visibility: Visibility of the target
 
     Example:
@@ -105,6 +106,7 @@ def requirement_library(name, srcs, deps = [], visibility = None):
         srcs = srcs,
         deps = deps,
         out = validation_name + ".marker",
+        tags = tags,  # tags is a built-in attribute available on all rules
     )
 
     # Create filegroup that depends on validation
@@ -112,4 +114,5 @@ def requirement_library(name, srcs, deps = [], visibility = None):
         name = name,
         srcs = srcs + [":" + validation_name],
         visibility = visibility,
+        tags = tags,  # tags is a built-in attribute
     )
