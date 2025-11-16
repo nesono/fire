@@ -234,16 +234,21 @@ def python_parameter_library(
 
 def java_parameter_library(
         name,
-        parameters,
+        parameters = None,
+        parameter_library = None,
         namespace = None,
         package_prefix = None,
         class_name = "Parameters",
         schema_version = "1.0"):
     """Generate Java class with parameters.
 
+    NOTE: Java generation still uses the legacy Starlark-based generator.
+    The parameter_library attribute is not yet supported.
+
     Args:
         name: Name of the generated class file
-        parameters: List of parameter dictionaries
+        parameters: List of parameter dictionaries (legacy, still required)
+        parameter_library: DEPRECATED - not yet implemented for Java
         namespace: Java package namespace (optional, derived from package path if not provided)
         package_prefix: Optional package prefix (e.g., "com.example")
         class_name: Name of the generated class (default "Parameters")
@@ -267,6 +272,14 @@ def java_parameter_library(
         )
     """
 
+    if parameter_library:
+        fail("java_parameter_library does not yet support parameter_library attribute. " +
+             "Java generation still uses the legacy Starlark generator. " +
+             "Please pass parameters directly for now.")
+
+    if not parameters:
+        fail("java_parameter_library requires 'parameters' attribute")
+
     # Derive namespace from package path if not provided
     if not namespace:
         base_namespace = _derive_namespace_from_package()
@@ -287,7 +300,7 @@ def java_parameter_library(
     if validation_error:
         fail("Parameter validation failed for {}: {}".format(name, validation_error))
 
-    # Generate Java code
+    # Generate Java code using legacy Starlark generator
     java_code = java_generator.generate(namespace, parameters, class_name, source_label)
 
     # Create a generated Java file
