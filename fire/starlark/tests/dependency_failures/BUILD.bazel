@@ -1,0 +1,34 @@
+"""Tests for dependency validation failures.
+
+These tests verify that builds FAIL when dependencies are not declared.
+They are tagged as 'manual' so they don't run in normal test runs,
+but can be explicitly tested in CI to ensure dependency checking works.
+"""
+
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+# TEST 1: Missing requirement dependency - should FAIL
+# This test should fail because it references base_requirement.md
+# but doesn't declare it in deps
+requirement_library(
+    name = "test_missing_req_dep",
+    srcs = ["missing_req_dep.md"],
+    # deps = [":base_requirement_files"],  # INTENTIONALLY MISSING!
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)
+
+# TEST 2: Missing parameter dependency - should FAIL
+# This test should fail because it references test_params.bzl
+# but doesn't declare it in deps
+requirement_library(
+    name = "test_missing_param_dep",
+    srcs = ["missing_param_dep.md"],
+    # deps = [":test_params_files"],  # INTENTIONALLY MISSING!
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)

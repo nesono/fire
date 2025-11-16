@@ -97,6 +97,11 @@ jobs:
           echo "Generated Rust module:"
           cat bazel-bin/examples/vehicle_params_rust.rs
 
+      - name: Run failure tests
+        run: |
+          chmod +x fire/starlark/tests/run_failure_tests.sh
+          ./fire/starlark/tests/run_failure_tests.sh
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
