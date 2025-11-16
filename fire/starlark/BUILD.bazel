@@ -1,3 +1,4 @@
+load("@rules_python//python:defs.bzl", "py_binary")
 load(":cpp_generator_test.bzl", "cpp_generator_test_suite")
 load(":markdown_parser_test.bzl", "markdown_parser_test_suite")
 load(":reference_validator_test.bzl", "reference_validator_test_suite")
@@ -26,8 +27,17 @@ exports_files([
     "requirements.bzl",
     "reports.bzl",
     "generate_report.py",
+    "generate_code.py",
     "validate_cross_references.py",
 ])
+
+# Python script for generating code from JSON
+py_binary(
+    name = "generate_code_script",
+    srcs = ["generate_code.py"],
+    main = "generate_code.py",
+    visibility = ["//visibility:public"],
+)
 
 # Unit tests for validator
 validator_test_suite(name = "validator_test")

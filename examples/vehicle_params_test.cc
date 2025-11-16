@@ -1,6 +1,6 @@
 // Integration test for parameter code generation
 
-#include "examples/vehicle_params_header.h"
+#include "examples/vehicle_params.h"
 #include <cassert>
 #include <cstring>
 #include <iostream>

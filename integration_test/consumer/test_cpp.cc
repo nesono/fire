@@ -1,5 +1,5 @@
 #include <iostream>
-#include "test_params_header.h"  // Root package - no prefix needed
+#include "test_params.h"  // Root package - no prefix needed
 
 int main() {
     // Test that generated constants are accessible
