@@ -35,14 +35,6 @@ for target in $FAILURE_TARGETS; do
     echo ""
 done
 
-# Summary
-echo "========================================="
-echo "Test Summary"
-echo "========================================="
-echo "✅ Passed: $SUCCESSES"
-echo "❌ Failed: $FAILURES"
-echo ""
-
 if [ $FAILURES -eq 0 ]; then
     echo "All failure tests passed!"
     exit 0

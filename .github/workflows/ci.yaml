@@ -99,7 +99,6 @@ jobs:
 
       - name: Run failure tests
         run: |
-          chmod +x fire/starlark/tests/run_failure_tests.sh
           ./fire/starlark/tests/run_failure_tests.sh
 
       - name: Upload test results
