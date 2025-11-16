@@ -49,9 +49,9 @@ _validate_requirements = rule(
     implementation = _validate_requirements_impl,
     attrs = {
         "deps": attr.label_list(
-            allow_files = [".md"],
+            allow_files = [".md", ".bzl"],
             default = [],
-            doc = "Dependencies: other requirement files referenced by srcs",
+            doc = "Dependencies: other requirement files and parameter files referenced by srcs",
         ),
         "out": attr.output(
             mandatory = True,
@@ -78,19 +78,23 @@ def requirement_library(name, srcs, deps = [], visibility = None):
     Args:
         name: Name of the target
         srcs: List of requirement markdown files
-        deps: List of other requirement_library targets that srcs references
+        deps: List of dependencies that srcs references (requirement files and parameter files)
         visibility: Visibility of the target
 
     Example:
         requirement_library(
             name = "safety_requirements",
             srcs = glob(["requirements/safety/*.md"]),
+            deps = [":vehicle_params"],  # References parameter files
         )
 
         requirement_library(
             name = "component_requirements",
             srcs = glob(["components/**/*.swreq.md"]),
-            deps = [":safety_requirements"],  # References system requirements
+            deps = [
+                ":safety_requirements",  # References system requirements
+                ":vehicle_params",       # References parameter files
+            ],
         )
     """
 

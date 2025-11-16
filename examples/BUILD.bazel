@@ -13,6 +13,12 @@ load("//fire/starlark:reports.bzl", "generate_report")
 load("//fire/starlark:requirements.bzl", "requirement_library")
 load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
+# Export parameter source file for dependency tracking
+filegroup(
+    name = "vehicle_params",
+    srcs = ["vehicle_params.bzl"],
+)
+
 # Define parameters (loaded from separate .bzl file for better organization)
 # Namespace is auto-derived from package path: examples -> examples
 parameter_library(
@@ -78,6 +84,7 @@ rust_test(
 requirement_library(
     name = "vehicle_requirements",
     srcs = glob(["requirements/*.md"]),
+    deps = [":vehicle_params"],  # System requirements reference parameter files
 )
 
 # Validate software component requirement documents
@@ -88,7 +95,10 @@ requirement_library(
         "brake_control/doc/*.swreq.md",
         "vehicle_status/doc/*.swreq.md",
     ]),
-    deps = [":vehicle_requirements"],  # Component requirements reference system requirements
+    deps = [
+        ":vehicle_params",  # Component requirements also reference parameter files
+        ":vehicle_requirements",  # Component requirements reference system requirements
+    ],
 )
 
 # Generate traceability matrix report

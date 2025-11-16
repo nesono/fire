@@ -542,6 +542,22 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
 
     # Validate parameter references exist
     for param_name, param_path in param_refs:
+        # Check if this parameter file is in allowed_deps (strict dependency checking)
+        # Only enforce if allowed_deps is not None (i.e., was explicitly passed)
+        if allowed_deps is not None:
+            # Strip leading slash for comparison
+            normalized_path = param_path[1:] if param_path.startswith('/') else param_path
+            # Remove fragment if present
+            normalized_path = normalized_path.split('#')[0] if '#' in normalized_path else normalized_path
+
+            if normalized_path not in allowed_deps:
+                errors.append(
+                    f"{file_path}: References parameter file '{param_path}' which is not in declared dependencies.\n"
+                    f"       Add the target containing '{normalized_path}' to 'deps' in your requirement_library().\n"
+                    f"       Example: deps = [\":vehicle_params\"]"
+                )
+                continue  # Skip further validation for this parameter
+
         valid, error = validate_parameter_reference(param_name, param_path, workspace_root)
         if not valid:
             errors.append(f"{file_path}: {error}")
