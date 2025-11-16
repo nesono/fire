@@ -34,7 +34,7 @@ For each velocity and friction coefficient pair in [@braking_distance_table](/ex
 
 ### Verification
 
-Testing performed according to [vehicle_params_test](//examples:vehicle_params_test):
+Testing performed according to [vehicle_params_cc_test](//examples:vehicle_params_cc_test):
 
 - Brake dynamometer testing
 - Proving ground testing on various surfaces (dry, wet, low friction)
