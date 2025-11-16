@@ -74,10 +74,20 @@ rust_test(
     edition = "2021",
 )
 
-# Validate requirement documents
+# Validate requirement documents (system requirements)
 requirement_library(
     name = "vehicle_requirements",
     srcs = glob(["requirements/*.md"]),
+)
+
+# Validate software component requirement documents
+requirement_library(
+    name = "component_requirements",
+    srcs = glob([
+        "brake_actuator/doc/*.swreq.md",
+        "brake_control/doc/*.swreq.md",
+        "vehicle_status/doc/*.swreq.md",
+    ]),
 )
 
 # Generate traceability matrix report
