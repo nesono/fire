@@ -4,31 +4,31 @@ import (
 	"testing"
 
 	// Import the generated parameters using repository-relative path
-	vehicle_params_go "examples/vehicle_params_go"
+	vehicle_params "examples/vehicle_params"
 )
 
 func TestSimpleParameters(t *testing.T) {
 	// Access simple parameters
-	if vehicle_params_go.MaximumVehicleVelocity != 55.0 {
-		t.Errorf("Expected MaximumVehicleVelocity = 55.0, got %f", vehicle_params_go.MaximumVehicleVelocity)
+	if vehicle_params.MaximumVehicleVelocity != 55.0 {
+		t.Errorf("Expected MaximumVehicleVelocity = 55.0, got %f", vehicle_params.MaximumVehicleVelocity)
 	}
 
-	if vehicle_params_go.WheelCount != 4 {
-		t.Errorf("Expected WheelCount = 4, got %d", vehicle_params_go.WheelCount)
+	if vehicle_params.WheelCount != 4 {
+		t.Errorf("Expected WheelCount = 4, got %d", vehicle_params.WheelCount)
 	}
 
-	if vehicle_params_go.VehicleName != "TestVehicle" {
-		t.Errorf("Expected VehicleName = TestVehicle, got %s", vehicle_params_go.VehicleName)
+	if vehicle_params.VehicleName != "TestVehicle" {
+		t.Errorf("Expected VehicleName = TestVehicle, got %s", vehicle_params.VehicleName)
 	}
 
-	if vehicle_params_go.DebugMode != false {
-		t.Errorf("Expected DebugMode = false, got %v", vehicle_params_go.DebugMode)
+	if vehicle_params.DebugMode != false {
+		t.Errorf("Expected DebugMode = false, got %v", vehicle_params.DebugMode)
 	}
 }
 
 func TestTableParameters(t *testing.T) {
 	// Access table parameter
-	table := vehicle_params_go.BrakingDistanceTable
+	table := vehicle_params.BrakingDistanceTable
 
 	// Check we have the expected number of rows
 	if len(table) != 6 {
@@ -71,7 +71,7 @@ func TestTableLookup(t *testing.T) {
 	var brakingDist float64
 	found := false
 
-	for _, row := range vehicle_params_go.BrakingDistanceTable {
+	for _, row := range vehicle_params.BrakingDistanceTable {
 		if row.Velocity == velocity && row.FrictionCoefficient == friction {
 			brakingDist = row.BrakingDistance
 			found = true
@@ -91,7 +91,7 @@ func TestTableLookup(t *testing.T) {
 // Example of a benchmark using the generated parameters
 func BenchmarkTableLookup(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		for _, row := range vehicle_params_go.BrakingDistanceTable {
+		for _, row := range vehicle_params.BrakingDistanceTable {
 			_ = row.BrakingDistance
 		}
 	}

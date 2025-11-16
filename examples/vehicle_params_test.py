@@ -1,7 +1,7 @@
 """Test for vehicle parameters in Python."""
 
 # Import the generated parameters using repository-relative path
-from examples.vehicle_params_py_gen import (
+from examples.vehicle_params import (
     BRAKING_DISTANCE_TABLE_DATA,
     BrakingDistanceTableRow,
     DEBUG_MODE,

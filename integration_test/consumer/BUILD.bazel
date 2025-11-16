@@ -22,7 +22,7 @@ rust_binary(
     name = "test_rust",
     srcs = [
         "test_rust.rs",
-        "//:test_params_rust",
+        "//:test_params_rs",
     ],
     crate_root = "test_rust.rs",
     edition = "2021",
@@ -33,7 +33,7 @@ rust_test(
     name = "test_rust_test",
     srcs = [
         "test_rust.rs",
-        "//:test_params_rust",
+        "//:test_params_rs",
     ],
     crate_root = "test_rust.rs",
     edition = "2021",

@@ -2,12 +2,12 @@
 
 // Include the generated parameters
 // Note: In Bazel rust_test, both srcs are placed in the same directory (examples/),
-// so the path is just the filename. The file is generated at examples/vehicle_params_rust.rs
+// so the path is just the filename. The file is generated at examples/vehicle_params.rs
 // in the repository, matching the repository-relative convention.
-#[path = "vehicle_params_rust.rs"]
-mod vehicle_params_rust;
+#[path = "vehicle_params.rs"]
+mod vehicle_params;
 
-use vehicle_params_rust::*;
+use vehicle_params::*;
 
 #[test]
 fn test_scalar_parameters() {

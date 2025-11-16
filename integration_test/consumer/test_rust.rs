@@ -1,5 +1,5 @@
 // Include generated parameters
-include!("../test_params_rust.rs");
+include!("../test_params.rs");
 
 fn main() {
     // Test that generated constants are accessible
@@ -17,7 +17,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    include!("../test_params_rust.rs");
+    include!("../test_params.rs");
 
     #[test]
     fn test_constants() {
