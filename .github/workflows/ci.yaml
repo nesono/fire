@@ -57,53 +57,14 @@ jobs:
       - name: Build all targets
         run: bazel build //...
 
-  integration:
-    name: Integration Tests
+  failure-tests:
+    name: Run Failure Tests
     runs-on: ubuntu-latest
     needs: [pre-commit, test]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Mount bazel cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/bazel
-          key: bazel-integration-${{ hashFiles('MODULE.bazel', 'WORKSPACE', '**/*.bzl') }}
-          restore-keys: |
-            bazel-integration-
-
-      - name: Run all tests
-        run: bazel test //... --test_output=errors
-
-      - name: Verify generated header
-        run: |
-          bazel build //examples:vehicle_params_header
-          if [ ! -f bazel-bin/examples/vehicle_params_header.h ]; then
-            echo "Generated header not found!"
-            exit 1
-          fi
-          echo "Generated header:"
-          cat bazel-bin/examples/vehicle_params_header.h
-
-      - name: Verify generated Rust module
-        run: |
-          bazel build //examples:vehicle_params_rust
-          if [ ! -f bazel-bin/examples/vehicle_params_rust.rs ]; then
-            echo "Generated Rust module not found!"
-            exit 1
-          fi
-          echo "Generated Rust module:"
-          cat bazel-bin/examples/vehicle_params_rust.rs
-
       - name: Run failure tests
         run: |
           ./fire/starlark/failure_test/run_failure_tests.sh
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: bazel-testlogs/
