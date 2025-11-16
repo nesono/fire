@@ -17,6 +17,9 @@ def _validate_requirements_impl(ctx):
     )
 
     # Add allowed dependency paths (short_path format)
+    # Include srcs in allowed deps (requirements in same target can reference each other)
+    for src in ctx.files.srcs:
+        cmd += " " + src.short_path
     for dep in ctx.files.deps:
         cmd += " " + dep.short_path
 
