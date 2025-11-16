@@ -392,9 +392,17 @@ def validate_test_reference(test_name, test_label, workspace_root):
         return False, f"Error validating test target {test_label}: {e}"
 
 
-def validate_requirement_file(file_path, workspace_root):
-    """Validate all cross-references in a single requirement file."""
+def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
+    """Validate all cross-references in a single requirement file.
+
+    Args:
+        file_path: Path to the requirement file to validate
+        workspace_root: Workspace root directory
+        allowed_deps: Set of allowed dependency file paths (for strict validation)
+    """
     errors = []
+    if allowed_deps is None:
+        allowed_deps = set()
 
     try:
         with open(file_path, 'r') as f:
@@ -540,6 +548,21 @@ def validate_requirement_file(file_path, workspace_root):
 
     # Validate requirement references exist and check versions
     for req_id, req_path, ref_version in req_refs:
+        # Check if this requirement is in allowed_deps (strict dependency checking)
+        # Only enforce if allowed_deps is not None (i.e., was explicitly passed)
+        if allowed_deps is not None:
+            # Strip leading slash and fragment for comparison
+            normalized_path = req_path[1:] if req_path.startswith('/') else req_path
+            normalized_path = normalized_path.split('#')[0] if '#' in normalized_path else normalized_path
+
+            if normalized_path not in allowed_deps:
+                errors.append(
+                    f"{file_path}: References requirement '{req_path}' which is not in declared dependencies.\n"
+                    f"       Add the target containing '{normalized_path}' to 'deps' in your requirement_library().\n"
+                    f"       Example: deps = [\":vehicle_requirements\"]"
+                )
+                continue  # Skip further validation for this requirement
+
         valid, error = validate_requirement_reference(req_id, req_path, workspace_root, ref_version, file_path)
         if not valid:
             errors.append(f"{file_path}: {error}")
@@ -554,17 +577,24 @@ def validate_requirement_file(file_path, workspace_root):
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: validate_cross_references.py <workspace_root> <requirement_files...>")
-        sys.exit(1)
+    import argparse
 
-    workspace_root = sys.argv[1]
-    requirement_files = sys.argv[2:]
+    parser = argparse.ArgumentParser(description='Validate cross-references in requirement documents')
+    parser.add_argument('workspace_root', help='Workspace root directory')
+    parser.add_argument('--allowed-deps', nargs='*', default=None, help='Allowed dependency file paths')
+    parser.add_argument('requirement_files', nargs='+', help='Requirement files to validate')
+
+    args = parser.parse_args()
+
+    workspace_root = args.workspace_root
+    # Convert to set for faster lookup, or keep as None if not provided
+    allowed_deps = set(args.allowed_deps) if args.allowed_deps is not None else None
+    requirement_files = args.requirement_files
 
     all_errors = []
 
     for req_file in requirement_files:
-        errors = validate_requirement_file(req_file, workspace_root)
+        errors = validate_requirement_file(req_file, workspace_root, allowed_deps)
         all_errors.extend(errors)
 
     if all_errors:
