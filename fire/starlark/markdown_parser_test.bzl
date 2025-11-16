@@ -236,6 +236,77 @@ def _test_parse_multiple_refs_same_line(ctx):
 
     return unittest.end(env)
 
+def _test_parse_requirement_with_version_query(ctx):
+    """Test parsing requirement reference with ?version=N query parameter."""
+    env = unittest.begin(ctx)
+
+    body = "See [REQ-001](requirements/REQ-001.md?version=2#REQ-001)."
+
+    refs = markdown_parser.parse_references(body)
+    asserts.equals(env, [("REQ-001", "requirements/REQ-001.md#REQ-001", 2)], refs["requirements"])
+
+    return unittest.end(env)
+
+def _test_parse_requirement_with_version_no_fragment(ctx):
+    """Test parsing requirement with ?version=N but no fragment."""
+    env = unittest.begin(ctx)
+
+    body = "See [REQ-001](requirements/REQ-001.md?version=3)."
+
+    refs = markdown_parser.parse_references(body)
+    asserts.equals(env, [("REQ-001", "requirements/REQ-001.md", 3)], refs["requirements"])
+
+    return unittest.end(env)
+
+def _test_parse_requirement_multiple_versions(ctx):
+    """Test parsing multiple requirements with different versions."""
+    env = unittest.begin(ctx)
+
+    body = """
+References [REQ-A](path/REQ-A.md?version=1) and
+[REQ-B](path/REQ-B.md?version=5#REQ-B) and
+[REQ-C](path/REQ-C.md) without version.
+"""
+
+    refs = markdown_parser.parse_references(body)
+    asserts.equals(
+        env,
+        [
+            ("REQ-A", "path/REQ-A.md", 1),
+            ("REQ-B", "path/REQ-B.md#REQ-B", 5),
+            ("REQ-C", "path/REQ-C.md", None),
+        ],
+        refs["requirements"],
+    )
+
+    return unittest.end(env)
+
+def _test_parse_requirement_invalid_version(ctx):
+    """Test that non-numeric version values are handled (returns None)."""
+    env = unittest.begin(ctx)
+
+    body = "See [REQ-001](path/REQ-001.md?version=abc)."
+
+    refs = markdown_parser.parse_references(body)
+
+    # Non-numeric version should be treated as None
+    asserts.equals(env, [("REQ-001", "path/REQ-001.md", None)], refs["requirements"])
+
+    return unittest.end(env)
+
+def _test_parse_requirement_zero_version(ctx):
+    """Test that version=0 is parsed correctly."""
+    env = unittest.begin(ctx)
+
+    body = "See [REQ-001](path/REQ-001.md?version=0)."
+
+    refs = markdown_parser.parse_references(body)
+
+    # version=0 should be parsed as integer 0
+    asserts.equals(env, [("REQ-001", "path/REQ-001.md", 0)], refs["requirements"])
+
+    return unittest.end(env)
+
 # Test suite
 parse_requirement_references_test = unittest.make(_test_parse_requirement_references)
 parse_parameter_references_test = unittest.make(_test_parse_parameter_references)
@@ -252,6 +323,11 @@ validate_no_body_refs_test = unittest.make(_test_validate_no_body_refs)
 validate_empty_body_test = unittest.make(_test_validate_empty_body)
 parse_requirement_with_path_test = unittest.make(_test_parse_requirement_with_path)
 parse_multiple_refs_same_line_test = unittest.make(_test_parse_multiple_refs_same_line)
+parse_requirement_with_version_query_test = unittest.make(_test_parse_requirement_with_version_query)
+parse_requirement_with_version_no_fragment_test = unittest.make(_test_parse_requirement_with_version_no_fragment)
+parse_requirement_multiple_versions_test = unittest.make(_test_parse_requirement_multiple_versions)
+parse_requirement_invalid_version_test = unittest.make(_test_parse_requirement_invalid_version)
+parse_requirement_zero_version_test = unittest.make(_test_parse_requirement_zero_version)
 
 def markdown_parser_test_suite(name):
     """Create test suite for markdown_parser."""
@@ -272,4 +348,9 @@ def markdown_parser_test_suite(name):
         validate_empty_body_test,
         parse_requirement_with_path_test,
         parse_multiple_refs_same_line_test,
+        parse_requirement_with_version_query_test,
+        parse_requirement_with_version_no_fragment_test,
+        parse_requirement_multiple_versions_test,
+        parse_requirement_invalid_version_test,
+        parse_requirement_zero_version_test,
     )
