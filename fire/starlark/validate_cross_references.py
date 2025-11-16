@@ -334,10 +334,12 @@ def validate_requirement_reference(req_id, req_path, workspace_root, ref_version
         # Check version if ref_version is specified
         if ref_version is not None:
             actual_version = frontmatter.get('version')
+            # ANSI color codes: \033[91m = light red, \033[0m = reset
+            # Print to stdout so Bazel shows these warnings even when validation passes
             if actual_version is None:
-                print(f"WARNING: {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} has no version field")
+                print(f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} has no version field")
             elif actual_version != ref_version:
-                print(f"WARNING: {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} is at version={actual_version}")
+                print(f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} is at version={actual_version}")
 
         return True, None
 
@@ -493,36 +495,42 @@ def validate_requirement_file(file_path, workspace_root):
             else:
                 fm_tests.add(test_ref)
 
-        # Build sets of body references
-        body_params = set(param_path for _, param_path in param_refs)
-        body_reqs = set(req_path for _, req_path, _ in req_refs)
-        body_tests = set(test_label for _, test_label in test_refs)
+        # Only do bi-directional consistency check for single-requirement documents
+        # Multi-requirement documents (like .swreq.md) have inline YAML blocks,
+        # not frontmatter references, so skip the bi-directional check
+        has_requirement_id = frontmatter.get('id') is not None
 
-        # Check bi-directional consistency: all body refs must be in frontmatter
-        for param_path in body_params:
-            if param_path not in fm_params:
-                errors.append(f"{file_path}: Body references parameter '{param_path}' not declared in frontmatter")
+        if has_requirement_id:
+            # Build sets of body references
+            body_params = set(param_path for _, param_path in param_refs)
+            body_reqs = set(req_path for _, req_path, _ in req_refs)
+            body_tests = set(test_label for _, test_label in test_refs)
 
-        for req_path in body_reqs:
-            if req_path not in fm_reqs:
-                errors.append(f"{file_path}: Body references requirement '{req_path}' not declared in frontmatter")
+            # Check bi-directional consistency: all body refs must be in frontmatter
+            for param_path in body_params:
+                if param_path not in fm_params:
+                    errors.append(f"{file_path}: Body references parameter '{param_path}' not declared in frontmatter")
 
-        for test_label in body_tests:
-            if test_label not in fm_tests:
-                errors.append(f"{file_path}: Body references test '{test_label}' not declared in frontmatter")
+            for req_path in body_reqs:
+                if req_path not in fm_reqs:
+                    errors.append(f"{file_path}: Body references requirement '{req_path}' not declared in frontmatter")
 
-        # Check reverse: all frontmatter refs must be used in body
-        for param_path in fm_params:
-            if param_path not in body_params:
-                errors.append(f"{file_path}: Frontmatter declares parameter '{param_path}' but it's not used in body")
+            for test_label in body_tests:
+                if test_label not in fm_tests:
+                    errors.append(f"{file_path}: Body references test '{test_label}' not declared in frontmatter")
 
-        for req_path in fm_reqs:
-            if req_path and req_path not in body_reqs:
-                errors.append(f"{file_path}: Frontmatter declares requirement '{req_path}' but it's not used in body")
+            # Check reverse: all frontmatter refs must be used in body
+            for param_path in fm_params:
+                if param_path not in body_params:
+                    errors.append(f"{file_path}: Frontmatter declares parameter '{param_path}' but it's not used in body")
 
-        for test_label in fm_tests:
-            if test_label not in body_tests:
-                errors.append(f"{file_path}: Frontmatter declares test '{test_label}' but it's not used in body")
+            for req_path in fm_reqs:
+                if req_path and req_path not in body_reqs:
+                    errors.append(f"{file_path}: Frontmatter declares requirement '{req_path}' but it's not used in body")
+
+            for test_label in fm_tests:
+                if test_label not in body_tests:
+                    errors.append(f"{file_path}: Frontmatter declares test '{test_label}' but it's not used in body")
 
     # Validate parameter references exist
     for param_name, param_path in param_refs:
