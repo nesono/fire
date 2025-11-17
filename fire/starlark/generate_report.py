@@ -7,7 +7,11 @@ from pathlib import Path
 
 
 def parse_simple_yaml(yaml_text):
-    """Simple YAML parser for requirement frontmatter."""
+    """Simple YAML parser for requirement frontmatter.
+
+    TODO: DEPRECATED - Frontmatter is no longer used for requirements.
+    Remove this function after confirming all requirements use inline metadata format.
+    """
     result = {}
     lines = yaml_text.strip().split('\n')
 
@@ -132,10 +136,16 @@ def parse_simple_yaml(yaml_text):
 
 
 def parse_requirement_file(file_path):
-    """Parse a requirement markdown file and extract frontmatter."""
+    """Parse a requirement markdown file and extract frontmatter.
+
+    TODO: DEPRECATED - This function parses document-level YAML frontmatter.
+    Requirements now use inline metadata (pipe-separated format after ## REQ-ID).
+    Update this function to parse inline metadata or remove if no longer needed.
+    """
     with open(file_path, 'r') as f:
         content = f.read()
 
+    # TODO: DEPRECATED - Frontmatter parsing below
     # Find frontmatter boundaries
     lines = content.split('\n')
     first_delimiter = None

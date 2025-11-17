@@ -22,66 +22,88 @@ import re
 import sys
 
 
-def parse_inline_yaml_for_requirement(content, req_id):
-    """Parse inline YAML block for a specific requirement ID.
+def parse_inline_metadata_for_requirement(content, req_id):
+    """Parse inline metadata for a specific requirement ID.
 
-    Looks for ## REQ-ID heading followed by ```yaml block.
-    Returns the parsed YAML as a dict with 'id' and other fields.
+    Looks for ## REQ-ID heading followed by a line with pipe-separated fields.
+    Format: Key1: value1 | Key2: value2 | Key3: [link](url)
+    Returns the parsed metadata as a dict with 'id' and other fields.
     """
     lines = content.split('\n')
     in_req_section = False
-    in_yaml_block = False
-    yaml_lines = []
+    metadata_line = None
 
     for i, line in enumerate(lines):
         if line.startswith(f'## {req_id}'):
             in_req_section = True
-            continue
-
-        if in_req_section:
-            if line.startswith('## ') and not line.startswith(f'## {req_id}'):
-                # Hit next section, stop
-                break
-
-            if line.strip() == '```yaml':
-                in_yaml_block = True
-                continue
-
-            if in_yaml_block:
-                if line.strip() == '```':
-                    # End of YAML block
+            # The next non-empty line should be the metadata line
+            for j in range(i + 1, len(lines)):
+                next_line = lines[j].strip()
+                if next_line:
+                    # Check if this is a metadata line (contains | or single Key: value)
+                    if '|' in next_line:
+                        metadata_line = next_line
+                        break
+                    elif ':' in next_line and not next_line.startswith('#'):
+                        # Simple heuristic: metadata lines have key: value format
+                        # and the key is a known metadata field (SIL, Sec, Version, Parent)
+                        parts = next_line.split(':', 1)
+                        key = parts[0].strip().lower()
+                        known_fields = ['sil', 'sec', 'version', 'parent']
+                        if len(parts) == 2 and key in known_fields:
+                            metadata_line = next_line
+                            break
+                    # If it's not metadata, break (don't keep searching)
                     break
-                yaml_lines.append(line)
+            break
 
-    if not yaml_lines:
+    if not metadata_line:
         return None
 
-    # Parse simple YAML key: value pairs
-    frontmatter = {'id': req_id}  # Add the ID from the heading
-    for line in yaml_lines:
-        stripped = line.strip()
-        if not stripped or stripped.startswith('#'):
-            continue
-        if ':' in stripped:
-            parts = stripped.split(':', 1)
-            key = parts[0].strip()
-            value = parts[1].strip() if len(parts) > 1 else ''
+    # Parse pipe-separated fields: Key1: value1 | Key2: value2 | Parent: [REQ-ID](path)
+    frontmatter = {'id': req_id}
 
-            # Try to parse as int
-            if value.isdigit():
-                frontmatter[key] = int(value)
-            # Parse booleans
-            elif value.lower() == 'true':
-                frontmatter[key] = True
-            elif value.lower() == 'false':
-                frontmatter[key] = False
-            else:
-                frontmatter[key] = value
+    # Split by | to get individual fields
+    fields = metadata_line.split('|')
+
+    for field in fields:
+        field = field.strip()
+        if not field or ':' not in field:
+            continue
+
+        # Split by first : to get key and value
+        parts = field.split(':', 1)
+        key = parts[0].strip().lower()  # Normalize key to lowercase
+        value = parts[1].strip() if len(parts) > 1 else ''
+
+        # Check if value contains a markdown link [text](url)
+        if value.startswith('[') and '](' in value:
+            # This is a parent reference - extract just the requirement ID
+            # Format: [REQ-ID](/path/to/file.md?version=N#REQ-ID)
+            match = re.match(r'\[([^\]]+)\]\(([^\)]+)\)', value)
+            if match:
+                frontmatter[key] = value  # Keep full markdown link for parent
+                continue
+
+        # Try to parse as int
+        if value.isdigit():
+            frontmatter[key] = int(value)
+        # Parse booleans
+        elif value.lower() == 'true':
+            frontmatter[key] = True
+        elif value.lower() == 'false':
+            frontmatter[key] = False
+        else:
+            frontmatter[key] = value
 
     return frontmatter
 
 def parse_frontmatter(content):
-    """Parse YAML frontmatter from markdown content."""
+    """Parse YAML frontmatter from markdown content.
+
+    TODO: DEPRECATED - Frontmatter is no longer used for requirements.
+    Remove this function after confirming all requirements use inline metadata format.
+    """
     if not content.startswith("---"):
         return None, content
 
@@ -321,12 +343,13 @@ def validate_requirement_reference(req_id, req_path, workspace_root, ref_version
         with open(abs_path, 'r') as f:
             content = f.read()
 
+        # TODO: Frontmatter is deprecated - remove parse_frontmatter() after confirming all requirements use inline metadata
         # Try to parse frontmatter first (for traditional frontmatter style)
         frontmatter, _ = parse_frontmatter(content)
 
-        # If no frontmatter, try parsing inline YAML block (for ## REQ-ID style)
+        # If no frontmatter, try parsing inline metadata (for ## REQ-ID style)
         if not frontmatter or frontmatter.get('id') != req_id:
-            frontmatter = parse_inline_yaml_for_requirement(content, req_id)
+            frontmatter = parse_inline_metadata_for_requirement(content, req_id)
 
         if not frontmatter or frontmatter.get('id') != req_id:
             return False, f"Requirement file {req_path} does not contain ID '{req_id}'"

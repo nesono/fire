@@ -32,8 +32,100 @@ def _split_by_h2_sections(body):
 
     return sections
 
+def _parse_inline_metadata(section_content):
+    """Parse pipe-separated inline metadata from requirement section.
+
+    Expects format: Key1: value1 | Key2: value2 | Parent: [REQ-ID](path)
+
+    Args:
+        section_content: Content of one requirement section
+
+    Returns:
+        Tuple of (metadata_dict, remaining_content) or (None, section_content) if no metadata line
+    """
+    lines = section_content.split("\n")
+
+    # Find FIRST non-empty line - check if it's metadata
+    # Metadata must be on the first line after heading (not inside YAML blocks)
+    metadata_line = None
+    metadata_line_idx = -1
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue  # Skip empty lines
+
+        # This is the first non-empty line
+        # Check if it's pipe-separated metadata or starts with a YAML block
+        if stripped == "```yaml" or stripped.startswith("```"):
+            # It's a YAML block, not inline metadata
+            return (None, section_content)
+
+        # Check for pipe-separated format OR single Key: value
+        if "|" in stripped:
+            metadata_line = stripped
+            metadata_line_idx = i
+            break
+        elif ":" in stripped and not stripped.startswith("#"):
+            # Check if it's a known metadata field
+            parts = stripped.split(":", 1)
+            key = parts[0].strip().lower()
+            known_fields = ["sil", "sec", "version", "parent"]
+            if len(parts) == 2 and key in known_fields:
+                metadata_line = stripped
+                metadata_line_idx = i
+                break
+
+        # First non-empty line is not metadata
+        return (None, section_content)
+
+    if not metadata_line:
+        return (None, section_content)
+
+    # Parse pipe-separated fields
+    metadata_dict = {}
+    fields = metadata_line.split("|")
+
+    for field in fields:
+        field = field.strip()
+        if not field or ":" not in field:
+            continue
+
+        # Split by first colon
+        colon_idx = field.find(":")
+        key = field[:colon_idx].strip().lower()  # Normalize to lowercase
+        value = field[colon_idx + 1:].strip()
+
+        # Keep markdown links as-is (for parent references)
+        if value.startswith("[") and "](" in value:
+            metadata_dict[key] = value
+            continue
+
+        # Convert booleans
+        if value.lower() == "true":
+            metadata_dict[key] = True
+        elif value.lower() == "false":
+            metadata_dict[key] = False
+        elif value.lower() == "none":
+            metadata_dict[key] = None
+            # Try to parse as integer
+
+        elif value.isdigit():
+            metadata_dict[key] = int(value)
+        else:
+            metadata_dict[key] = value
+
+    # Return metadata dict and remaining content without the metadata line
+    remaining_lines = lines[:metadata_line_idx] + lines[metadata_line_idx + 1:]
+    remaining_content = "\n".join(remaining_lines)
+
+    return (metadata_dict, remaining_content)
+
 def _parse_yaml_block(section_content):
     """Parse YAML code block from requirement section.
+
+    TODO: DEPRECATED - YAML blocks are replaced by pipe-separated inline metadata.
+    Remove this function after updating to parse inline metadata format.
 
     Looks for ```yaml ... ``` block and parses key:value pairs.
 
@@ -97,16 +189,11 @@ def _parse_yaml_block(section_content):
     return (yaml_dict, remaining_content)
 
 def _parse_requirement_section(section_content):
-    """Parse a single requirement section (YAML block format).
+    """Parse a single requirement section.
 
-    Expected format:
-    ```yaml
-    sil: ASIL-D
-    sec: false
-    version: 1
-    ```
-
-    Description text follows after YAML block...
+    Supports two formats:
+    1. NEW: Pipe-separated inline metadata: SIL: ASIL-D | Sec: false | Parent: [REQ-ID](path)
+    2. OLD (TODO: DEPRECATED): YAML block format
 
     Args:
         section_content: Content of one requirement section
@@ -116,22 +203,31 @@ def _parse_requirement_section(section_content):
     """
     req = {}
 
-    # Parse YAML block
-    yaml_dict, remaining_content = _parse_yaml_block(section_content)
+    # Try to parse inline metadata first (new format)
+    metadata_dict, remaining_content = _parse_inline_metadata(section_content)
 
-    if not yaml_dict:
-        # No YAML block found - return empty (invalid requirement)
+    # TODO: Fallback to YAML block format (deprecated) - remove after migration
+    if not metadata_dict:
+        yaml_dict, remaining_content = _parse_yaml_block(section_content)
+        metadata_dict = yaml_dict
+
+    if not metadata_dict:
+        # No metadata found - return empty (invalid requirement)
         return None
 
-    # Extract fields from YAML
-    if "sil" in yaml_dict:
-        req["sil"] = yaml_dict["sil"]
+    # Extract fields from metadata
+    if "sil" in metadata_dict:
+        req["sil"] = metadata_dict["sil"]
 
-    if "sec" in yaml_dict:
-        req["sec"] = yaml_dict["sec"]
+    if "sec" in metadata_dict:
+        req["sec"] = metadata_dict["sec"]
 
-    if "version" in yaml_dict:
-        req["version"] = yaml_dict["version"]
+    if "version" in metadata_dict:
+        req["version"] = metadata_dict["version"]
+
+    # Extract parent if present (in new inline format)
+    if "parent" in metadata_dict:
+        req["parent"] = metadata_dict["parent"]
 
     # Extract description from remaining content
     description_lines = []

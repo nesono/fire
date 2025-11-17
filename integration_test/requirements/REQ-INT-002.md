@@ -2,10 +2,7 @@
 
 ## REQ-INT-002
 
-```yaml
-sil: ASIL-C
-version: 1
-```
+SIL: ASIL-C | Version: 1
 
 **Minimum Braking Distance**
 

@@ -2,10 +2,7 @@
 
 ## REQ-INT-003
 
-```yaml
-sil: ASIL-D
-version: 1
-```
+SIL: ASIL-D | Version: 1
 
 **System Update Rate**
 
