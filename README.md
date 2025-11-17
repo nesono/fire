@@ -797,104 +797,101 @@ cc_parameter_library(
 
 ### `python_parameter_library()`
 
-Generates a Python module with parameters.
+Creates a `py_library` from a parameter library for easy inclusion in Python targets.
 
 **Attributes:**
 
-- `name`: Name of the generated module (creates `name.py`)
-- `namespace`: Python module namespace (optional, auto-derived from package path if not provided)
-- `parameters`: List of parameter dictionaries
-- `schema_version`: Schema version (optional, defaults to "1.0")
+- `name`: Name of the `py_library`
+- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `base_name`: Optional base name for output file (defaults to name with `_py` suffix removed)
+- Additional `py_library` attributes supported
 
 **Example:**
 
 ```python
-# Namespace auto-derived from package path
+# Default: generates vehicle_params.py
 python_parameter_library(
     name = "vehicle_params_py",
-    parameters = VEHICLE_PARAMS,
+    parameter_library = ":vehicle_params",
 )
 
-# Or explicitly specify namespace
+# Custom base name: generates my_params.py
 python_parameter_library(
     name = "vehicle_params_py",
-    namespace = "vehicle.dynamics",
-    parameters = VEHICLE_PARAMS,
+    parameter_library = ":vehicle_params",
+    base_name = "my_params",
 )
 ```
 
 ### `java_parameter_library()`
 
-Generates a Java class with parameters.
+Creates a `java_library` from a parameter library for easy inclusion in Java targets.
 
 **Attributes:**
 
-- `name`: Name of the generated class file
-- `namespace`: Java package namespace (optional, auto-derived from package path if not provided)
-- `package_prefix`: Optional prefix for Java packages (e.g., "com.example")
-- `class_name`: Name of the generated class (optional, defaults to "Parameters")
-- `parameters`: List of parameter dictionaries
-- `schema_version`: Schema version (optional, defaults to "1.0")
+- `name`: Name of the Bazel target
+- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `class_name`: Name of the generated class (optional, derived from target name if not provided)
+- `package_prefix`: Optional package prefix (e.g., "com.example")
 
 **Example:**
 
 ```python
-# Namespace auto-derived from package path with prefix
+# Default: derives class name from target name (VehicleParams)
 java_parameter_library(
     name = "vehicle_params_java",
-    package_prefix = "com.example",  # Results in: com.example.<package_path>
+    parameter_library = ":vehicle_params",
     class_name = "VehicleParams",
-    parameters = VEHICLE_PARAMS,
+    package_prefix = "com.example",
 )
 
-# Or explicitly specify full namespace
+# Custom class name: generates MyParams.java
 java_parameter_library(
     name = "vehicle_params_java",
-    namespace = "com.example.vehicle.dynamics",
-    class_name = "VehicleParams",
-    parameters = VEHICLE_PARAMS,
+    parameter_library = ":vehicle_params",
+    class_name = "MyParams",
+    package_prefix = "com.example",
 )
 ```
 
 ### `go_parameter_library()`
 
-Generates a Go package with parameters.
+Creates a `go_library` from a parameter library for easy inclusion in Go targets.
 
 **Attributes:**
 
-- `name`: Name of the generated Go file (creates `name.go`)
-- `namespace`: Go package path (optional, auto-derived from package path if not provided)
-- `package_name`: Go package name (optional, auto-derived from last component of namespace if not provided)
-- `parameters`: List of parameter dictionaries
-- `schema_version`: Schema version (optional, defaults to "1.0")
+- `name`: Name of the `go_library`
+- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `base_name`: Optional base name for output file (defaults to name with `_go` suffix removed)
+- `importpath`: Go import path (optional, defaults to package path + "/" + base_name)
+- Additional `go_library` attributes supported
 
 **Example:**
 
 ```python
-# Package name auto-derived from package path
+# Default: generates vehicle_params.go
 go_parameter_library(
     name = "vehicle_params_go",
-    parameters = VEHICLE_PARAMS,  # vehicle/dynamics -> package dynamics
+    parameter_library = ":vehicle_params",
 )
 
-# Or explicitly specify package name
+# Custom base name: generates my_params.go
 go_parameter_library(
     name = "vehicle_params_go",
-    package_name = "dynamics",
-    parameters = VEHICLE_PARAMS,
+    parameter_library = ":vehicle_params",
+    base_name = "my_params",
 )
 ```
 
 ### `rust_parameter_library()`
 
-Generates a Rust module with parameters.
+Generates a Rust module from a parameter library (outputs a `.rs` file to be included in Rust targets).
 
 **Attributes:**
 
-- `name`: Name of the generated Rust file (creates `name.rs`)
-- `namespace`: Namespace (optional, auto-derived from package path if not provided)
-- `parameters`: List of parameter dictionaries
-- `schema_version`: Schema version (optional, defaults to "1.0")
+- `name`: Name of the Bazel target (use directly in `rust_test` srcs)
+- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `base_name`: Optional base name for output file (defaults to name with `_rs` suffix removed)
 
 **Generated code features:**
 
@@ -907,17 +904,17 @@ Generates a Rust module with parameters.
 **Example:**
 
 ```python
-# Namespace auto-derived from package path
+# Default: generates vehicle_params.rs
 rust_parameter_library(
-    name = "vehicle_params_rust",
-    parameters = VEHICLE_PARAMS,
+    name = "vehicle_params_rs",
+    parameter_library = ":vehicle_params",
 )
 
-# Or explicitly specify namespace
+# Custom base name: generates my_params.rs
 rust_parameter_library(
-    name = "vehicle_params_rust",
-    namespace = "vehicle.dynamics",
-    parameters = VEHICLE_PARAMS,
+    name = "vehicle_params_rs",
+    parameter_library = ":vehicle_params",
+    base_name = "my_params",
 )
 ```
 
