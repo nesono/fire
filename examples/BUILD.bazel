@@ -1,5 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
 load("@rules_go//go:def.bzl", "go_test")
+load("@rules_java//java:defs.bzl", "java_test")
 load("@rules_python//python:defs.bzl", "py_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 load(
@@ -79,6 +80,14 @@ py_test(
     srcs = ["vehicle_params_test.py"],
     main = "vehicle_params_test.py",
     deps = [":vehicle_params_py"],
+)
+
+# Java test that uses the generated parameters
+java_test(
+    name = "vehicle_params_java_test",
+    srcs = ["VehicleParamsTest.java"],
+    test_class = "com.example.examples.VehicleParamsTest",
+    deps = [":vehicle_params_java"],
 )
 
 # Go test that uses the generated parameters

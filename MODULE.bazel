@@ -20,6 +20,13 @@ bazel_dep(name = "rules_go", version = "0.50.1")
 # Rust rules for generated code
 bazel_dep(name = "rules_rust", version = "0.54.1")
 
+# Java rules for generated code
+bazel_dep(name = "rules_java", version = "7.11.1")
+
+# Configure Java toolchain for Java 17 (supports records)
+java_toolchains = use_extension("@rules_java//java:extensions.bzl", "toolchains")
+use_repo(java_toolchains, "remote_java_tools")
+
 # Skylib for unittest framework
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 
