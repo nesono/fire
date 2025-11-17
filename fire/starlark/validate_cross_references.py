@@ -40,9 +40,20 @@ def parse_inline_metadata_for_requirement(content, req_id):
             for j in range(i + 1, len(lines)):
                 next_line = lines[j].strip()
                 if next_line:
-                    # Check if this is a metadata line (contains |)
+                    # Check if this is a metadata line (contains | or single Key: value)
                     if '|' in next_line:
                         metadata_line = next_line
+                        break
+                    elif ':' in next_line and not next_line.startswith('#'):
+                        # Simple heuristic: metadata lines have key: value format
+                        # and the key is a known metadata field (SIL, Sec, Version, Parent)
+                        parts = next_line.split(':', 1)
+                        key = parts[0].strip().lower()
+                        known_fields = ['sil', 'sec', 'version', 'parent']
+                        if len(parts) == 2 and key in known_fields:
+                            metadata_line = next_line
+                            break
+                    # If it's not metadata, break (don't keep searching)
                     break
             break
 

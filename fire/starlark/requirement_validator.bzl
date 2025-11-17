@@ -45,16 +45,39 @@ def _parse_inline_metadata(section_content):
     """
     lines = section_content.split("\n")
 
-    # Find first non-empty line that contains |
+    # Find FIRST non-empty line - check if it's metadata
+    # Metadata must be on the first line after heading (not inside YAML blocks)
     metadata_line = None
     metadata_line_idx = -1
 
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if stripped and "|" in stripped:
+        if not stripped:
+            continue  # Skip empty lines
+
+        # This is the first non-empty line
+        # Check if it's pipe-separated metadata or starts with a YAML block
+        if stripped == "```yaml" or stripped.startswith("```"):
+            # It's a YAML block, not inline metadata
+            return (None, section_content)
+
+        # Check for pipe-separated format OR single Key: value
+        if "|" in stripped:
             metadata_line = stripped
             metadata_line_idx = i
             break
+        elif ":" in stripped and not stripped.startswith("#"):
+            # Check if it's a known metadata field
+            parts = stripped.split(":", 1)
+            key = parts[0].strip().lower()
+            known_fields = ["sil", "sec", "version", "parent"]
+            if len(parts) == 2 and key in known_fields:
+                metadata_line = stripped
+                metadata_line_idx = i
+                break
+
+        # First non-empty line is not metadata
+        return (None, section_content)
 
     if not metadata_line:
         return (None, section_content)
