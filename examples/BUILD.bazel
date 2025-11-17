@@ -52,10 +52,24 @@ cc_parameter_library(
     parameter_library = ":vehicle_params",
 )
 
+# Example: C++ library with custom base name
+cc_parameter_library(
+    name = "vehicle_params_cc_custom_name",
+    base_name = "custom_vehicle_config",  # Generates custom_vehicle_config.h
+    parameter_library = ":vehicle_params",
+)
+
 # Generate Python library with parameters
 # Consumes vehicle_params.json and generates vehicle_params.py
 python_parameter_library(
     name = "vehicle_params_py",
+    parameter_library = ":vehicle_params",
+)
+
+# Example: Python library with custom base name
+python_parameter_library(
+    name = "vehicle_params_py_custom_name",
+    base_name = "custom_vehicle_config",  # Generates custom_vehicle_config.py
     parameter_library = ":vehicle_params",
 )
 
@@ -75,10 +89,24 @@ go_parameter_library(
     parameter_library = ":vehicle_params",
 )
 
+# Example: Go library with custom base name
+go_parameter_library(
+    name = "vehicle_params_go_custom_name",
+    base_name = "custom_vehicle_config",  # Generates custom_vehicle_config.go
+    parameter_library = ":vehicle_params",
+)
+
 # Generate Rust parameters
 # Consumes vehicle_params.json and generates vehicle_params.rs
 rust_parameter_library(
     name = "vehicle_params_rs",
+    parameter_library = ":vehicle_params",
+)
+
+# Example: Rust library with custom base name
+rust_parameter_library(
+    name = "vehicle_params_rs_custom_name",
+    base_name = "custom_vehicle_config",  # Generates custom_vehicle_config.rs
     parameter_library = ":vehicle_params",
 )
 
