@@ -6,6 +6,7 @@ Validation happens at load time, and code is generated at build time for multipl
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_go//go:def.bzl", "go_library")
+load("@rules_java//java:defs.bzl", "java_library")
 load("@rules_python//python:defs.bzl", "py_library")
 load("//fire/starlark:validator.bzl", "validator")
 
@@ -297,11 +298,10 @@ with open("$@", "w") as f:
         visibility = ["//visibility:public"],
     )
 
-    # Java doesn't need a wrapper library rule, the .java file is the output
-    # Users can add it to their java_library or java_binary
-    native.alias(
+    # Wrap in java_library
+    java_library(
         name = name,
-        actual = ":" + java_file_target,
+        srcs = [":" + java_file_target],
         visibility = ["//visibility:public"],
     )
 

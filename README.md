@@ -704,24 +704,8 @@ bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:ch
 
 ```markdown
 ---
-id: REQ-BRK-001
-title: Emergency Braking Distance
-type: functional
-status: approved
-priority: high
 sil: ASIL-C
-security_related: true
-tags: [braking, safety, performance]
-references:
-  parameters:
-    - examples/vehicle_params.bzl#braking_distance_table
-  requirements:
-    - path: examples/requirements/REQ-VEL-001.md
-      version: 2
-  standards:
-    - UN ECE R13-H
-  tests:
-    - //examples:vehicle_params_test
+sec: true
 ---
 
 # REQ-BRK-001: Emergency Braking Distance
