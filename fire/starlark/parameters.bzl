@@ -116,6 +116,7 @@ def cc_parameter_library(
         name,
         parameter_library,
         base_name = None,
+        namespace = None,
         **kwargs):
     """Generate C++ header and create cc_library from parameter_library.
 
@@ -123,6 +124,7 @@ def cc_parameter_library(
         name: Name of the cc_library
         parameter_library: Label of the parameter_library target (the .json file)
         base_name: Base name for output file (optional, defaults to name with _cc suffix removed)
+        namespace: Optional C++ namespace (use :: for nested namespaces, e.g., "outer::inner")
         **kwargs: Additional arguments for cc_library
 
     Example:
@@ -134,6 +136,7 @@ def cc_parameter_library(
         cc_parameter_library(
             name = "vehicle_params_cc",
             parameter_library = ":vehicle_params",
+            namespace = "my_project::params",  # Optional
         )
         # Generates: vehicle_params.h
         # Include as: #include "examples/vehicle_params.h"
@@ -149,13 +152,21 @@ def cc_parameter_library(
         # Strip common suffixes
         base_name = name.removesuffix("_cc").removesuffix("_cpp")
 
+    # Build command with optional namespace
+    if namespace == None:
+        # No namespace parameter provided - use default from JSON
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< cpp $@"
+    else:
+        # Namespace explicitly provided (could be empty string for no namespace)
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< cpp $@ --namespace='{}'".format(namespace)
+
     # Create a generated header file using the Python script
     header_target = name + "_header"
     native.genrule(
         name = header_target,
         srcs = [parameter_library],
         outs = [base_name + ".h"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< cpp $@",
+        cmd = cmd,
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
