@@ -2,11 +2,7 @@
 
 ## REQ-WHEEL-001
 
-```yaml
-sil: QM
-sec: false
-version: 1
-```
+SIL: QM | Sec: false | Version: 1
 
 **Wheel Count Configuration**
 

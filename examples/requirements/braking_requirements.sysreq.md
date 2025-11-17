@@ -2,11 +2,7 @@
 
 ## REQ-BRK-001
 
-```yaml
-sil: ASIL-C
-sec: true
-version: 2
-```
+SIL: ASIL-C | Sec: true | Version: 2
 
 **Emergency Braking Distance**
 

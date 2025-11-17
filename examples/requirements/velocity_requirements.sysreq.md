@@ -2,11 +2,7 @@
 
 ## REQ-VEL-001
 
-```yaml
-sil: ASIL-D
-sec: false
-version: 2
-```
+SIL: ASIL-D | Sec: false | Version: 2
 
 **Maximum Vehicle Velocity**
 
