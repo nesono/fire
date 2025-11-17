@@ -2,10 +2,7 @@
 
 ## REQ-INT-001
 
-```yaml
-sil: ASIL-B
-version: 1
-```
+SIL: ASIL-B | Version: 1
 
 **Maximum Speed Constraint**
 
