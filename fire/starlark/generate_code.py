@@ -16,12 +16,18 @@ def load_starlark_module(module_path):
 
 def main():
     if len(sys.argv) < 4:
-        print("Usage: generate_code.py <json_file> <language> <output_file>", file=sys.stderr)
+        print("Usage: generate_code.py <json_file> <language> <output_file> [--namespace=...]", file=sys.stderr)
         sys.exit(1)
 
     json_file = sys.argv[1]
     language = sys.argv[2]
     output_file = sys.argv[3]
+
+    # Parse optional arguments
+    cpp_namespace = None
+    for arg in sys.argv[4:]:
+        if arg.startswith("--namespace="):
+            cpp_namespace = arg.split("=", 1)[1]
 
     # Read JSON parameter data
     with open(json_file, 'r') as f:
@@ -29,7 +35,7 @@ def main():
 
     # Generate code based on language
     if language == "cpp":
-        code = generate_cpp(param_data)
+        code = generate_cpp(param_data, cpp_namespace=cpp_namespace)
     elif language == "python":
         code = generate_python(param_data)
     elif language == "go":
@@ -46,14 +52,33 @@ def main():
     with open(output_file, 'w') as f:
         f.write(code)
 
-def generate_cpp(param_data):
-    """Generate C++ header from parameter data."""
-    namespace = param_data["namespace"]
+def generate_cpp(param_data, cpp_namespace=None):
+    """Generate C++ header from parameter data.
+
+    Args:
+        param_data: Parameter data dictionary from JSON
+        cpp_namespace: Optional C++ namespace override (e.g., "outer::inner")
+                      If None, uses the namespace from param_data.
+                      If empty string, no namespace is used.
+    """
     parameters = param_data["parameters"]
     source_label = param_data.get("source_label", "")
 
-    # Create namespace parts for include guard
-    guard_name = namespace.upper().replace(".", "_") + "_PARAMS_H"
+    # Determine namespace to use
+    if cpp_namespace is None:
+        # Use the namespace from param_data, converted from dots to ::
+        namespace = param_data["namespace"].replace(".", "::")
+    else:
+        # Use the explicitly provided namespace (could be empty)
+        namespace = cpp_namespace
+
+    # Create include guard
+    if namespace:
+        guard_name = namespace.upper().replace("::", "_") + "_PARAMS_H"
+    else:
+        # Use source label or generic name for guard
+        guard_base = source_label.replace("//", "").replace("/", "_").replace(":", "_") if source_label else "GENERATED"
+        guard_name = guard_base.upper() + "_PARAMS_H"
 
     lines = []
     lines.append(f"#ifndef {guard_name}")
@@ -61,8 +86,11 @@ def generate_cpp(param_data):
     lines.append("")
     lines.append("#include <cstddef>  // for size_t")
     lines.append("")
-    lines.append(f"namespace {namespace.replace('.', '::')} {{")
-    lines.append("")
+
+    # Only add namespace declaration if namespace is provided
+    if namespace:
+        lines.append(f"namespace {namespace} {{")
+        lines.append("")
 
     # Generate constants for simple parameters and struct definitions for tables
     for param in parameters:
@@ -138,8 +166,11 @@ def generate_cpp(param_data):
 
         lines.append("")
 
-    lines.append(f"}}  // namespace {namespace.replace('.', '::')}")
-    lines.append("")
+    # Only close namespace if one was opened
+    if namespace:
+        lines.append(f"}}  // namespace {namespace}")
+        lines.append("")
+
     lines.append(f"#endif  // {guard_name}")
     lines.append("")
 

@@ -763,15 +763,35 @@ Creates a `cc_library` from a parameter library for easy inclusion in C++ target
 **Attributes:**
 
 - `name`: Name of the `cc_library`
-- `parameter_library`: Label of the `parameter_library` target (the generated `.h` file)
+- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `namespace`: Optional C++ namespace (use `::` for nested namespaces, e.g., `"outer::inner"`)
+  - If not provided: uses namespace from `parameter_library` (auto-derived from package path)
+  - If empty string `""`: no namespace (constants in global scope)
+  - If custom string: uses that exact namespace
+- `base_name`: Optional base name for output file (defaults to name with `_cc` suffix removed)
 - Additional `cc_library` attributes supported
 
-**Example:**
+**Examples:**
 
 ```python
+# Use default namespace from package path (e.g., "examples")
 cc_parameter_library(
     name = "my_params_cc",
-    parameter_library = ":my_params_header",
+    parameter_library = ":my_params",
+)
+
+# Use custom nested namespace
+cc_parameter_library(
+    name = "my_params_cc_custom",
+    parameter_library = ":my_params",
+    namespace = "my_project::vehicle::params",
+)
+
+# No namespace (global scope)
+cc_parameter_library(
+    name = "my_params_cc_global",
+    parameter_library = ":my_params",
+    namespace = "",
 )
 ```
 
