@@ -11,11 +11,7 @@ def _test_valid_requirement(ctx):
 
 ## REQ-001
 
-```yaml
-sil: ASIL-D
-sec: false
-version: 1
-```
+SIL: ASIL-D | Sec: false | Version: 1
 
 **Maximum Vehicle Velocity**
 
@@ -35,11 +31,7 @@ def _test_minimal_valid_requirement(ctx):
 
     content = """## REQ-MIN-001
 
-```yaml
-sil: QM
-sec: false
-version: 1
-```
+SIL: QM | Sec: false | Version: 1
 
 **Minimal Requirement**
 
@@ -52,33 +44,30 @@ This is a minimal requirement with only required fields.
     return unittest.end(env)
 
 def _test_missing_yaml_block(ctx):
-    """Test requirement without YAML block."""
+    """Test requirement without metadata."""
     env = unittest.begin(ctx)
 
     content = """## REQ-001
 
 **Some Requirement**
 
-This requirement has no YAML block.
+This requirement has no metadata.
 """
 
     err = requirement_validator.validate(content)
-    asserts.true(env, err != None, "Missing YAML block should fail")
+    asserts.true(env, err != None, "Missing metadata should fail")
     asserts.true(env, "requirement" in err.lower(), "Should mention requirement problem")
 
     return unittest.end(env)
 
 def _test_missing_required_yaml_fields(ctx):
-    """Test missing required fields in YAML block."""
+    """Test missing required fields in metadata."""
     env = unittest.begin(ctx)
 
     # Missing sil
     content = """## REQ-001
 
-```yaml
-sec: false
-version: 1
-```
+Sec: false | Version: 1
 
 **Test Requirement**
 
@@ -90,10 +79,7 @@ Body content here.
     # Missing sec
     content = """## REQ-001
 
-```yaml
-sil: QM
-version: 1
-```
+SIL: QM | Version: 1
 
 **Test Requirement**
 
@@ -105,10 +91,7 @@ Body content here.
     # Missing version
     content = """## REQ-001
 
-```yaml
-sil: QM
-sec: false
-```
+SIL: QM | Sec: false
 
 **Test Requirement**
 
@@ -126,11 +109,7 @@ def _test_invalid_requirement_id(ctx):
     # ID starting with number
     content = """## 123REQ
 
-```yaml
-sil: QM
-sec: false
-version: 1
-```
+SIL: QM | Sec: false | Version: 1
 
 **Test Requirement**
 
@@ -142,11 +121,7 @@ Body content here.
     # ID with invalid characters
     content = """## REQ@001
 
-```yaml
-sil: QM
-sec: false
-version: 1
-```
+SIL: QM | Sec: false | Version: 1
 
 **Test Requirement**
 
@@ -163,11 +138,7 @@ def _test_empty_body(ctx):
 
     content = """## REQ-001
 
-```yaml
-sil: QM
-sec: false
-version: 1
-```
+SIL: QM | Sec: false | Version: 1
 
 """
 
@@ -183,11 +154,7 @@ def _test_too_short_body(ctx):
 
     content = """## REQ-001
 
-```yaml
-sil: QM
-sec: false
-version: 1
-```
+SIL: QM | Sec: false | Version: 1
 
 **T**
 
@@ -206,11 +173,7 @@ def _test_missing_title(ctx):
 
     content = """## REQ-001
 
-```yaml
-sil: QM
-sec: false
-version: 1
-```
+SIL: QM | Sec: false | Version: 1
 
 Body content here without a title.
 """
@@ -218,31 +181,6 @@ Body content here without a title.
     err = requirement_validator.validate(content)
     asserts.true(env, err != None, "Missing title should fail")
     asserts.true(env, "title" in err.lower(), "Should mention title")
-
-    return unittest.end(env)
-
-def _test_parse_yaml_block(ctx):
-    """Test parsing YAML block values."""
-    env = unittest.begin(ctx)
-
-    content = """## REQ-001
-
-```yaml
-sil: ASIL-D
-sec: true
-version: 2
-```
-
-**Test Requirement**
-
-Body content here.
-"""
-
-    yaml_data, _ = requirement_validator.parse_yaml_block(content)
-    asserts.true(env, yaml_data != None, "Should parse YAML block")
-    asserts.equals(env, "ASIL-D", yaml_data["sil"])
-    asserts.equals(env, True, yaml_data["sec"])
-    asserts.equals(env, 2, yaml_data["version"])
 
     return unittest.end(env)
 
@@ -262,11 +200,7 @@ def _test_valid_id_formats(ctx):
     for req_id in valid_ids:
         content = """## {}
 
-```yaml
-sil: QM
-sec: false
-version: 1
-```
+SIL: QM | Sec: false | Version: 1
 
 **Test Requirement**
 
@@ -302,11 +236,7 @@ def _test_valid_sil_values(ctx):
     for sil in valid_sils:
         content = """## REQ-001
 
-```yaml
-sil: {}
-sec: false
-version: 1
-```
+SIL: {} | Sec: false | Version: 1
 
 **Test Requirement**
 
@@ -325,11 +255,7 @@ def _test_invalid_sil_values(ctx):
     # Invalid SIL value
     content = """## REQ-001
 
-```yaml
-sil: INVALID-X
-sec: false
-version: 1
-```
+SIL: INVALID-X | Sec: false | Version: 1
 
 **Test Requirement**
 
@@ -348,11 +274,7 @@ def _test_valid_sec_values(ctx):
     # sec: true
     content = """## REQ-001
 
-```yaml
-sil: QM
-sec: true
-version: 1
-```
+SIL: QM | Sec: true | Version: 1
 
 **Test Requirement**
 
@@ -364,11 +286,7 @@ Body content here with sufficient length for validation.
     # sec: false
     content = """## REQ-002
 
-```yaml
-sil: QM
-sec: false
-version: 1
-```
+SIL: QM | Sec: false | Version: 1
 
 **Test Requirement**
 
@@ -386,11 +304,7 @@ def _test_invalid_sec_values(ctx):
     # Non-boolean value (string)
     content = """## REQ-001
 
-```yaml
-sil: QM
-sec: "yes"
-version: 1
-```
+SIL: QM | Sec: "yes" | Version: 1
 
 **Test Requirement**
 
@@ -409,11 +323,7 @@ def _test_invalid_version_values(ctx):
     # Negative version
     content = """## REQ-001
 
-```yaml
-sil: QM
-sec: false
-version: -1
-```
+SIL: QM | Sec: false | Version: -1
 
 **Test Requirement**
 
@@ -425,11 +335,7 @@ Body content here with sufficient length for validation.
     # Zero version
     content = """## REQ-002
 
-```yaml
-sil: QM
-sec: false
-version: 0
-```
+SIL: QM | Sec: false | Version: 0
 
 **Test Requirement**
 
@@ -449,11 +355,7 @@ def _test_valid_version_values(ctx):
     for ver in valid_versions:
         content = """## REQ-001
 
-```yaml
-sil: QM
-sec: false
-version: {}
-```
+SIL: QM | Sec: false | Version: {}
 
 **Test Requirement**
 
@@ -471,11 +373,7 @@ def _test_sil_and_sec_combined(ctx):
 
     content = """## REQ-SEC-001
 
-```yaml
-sil: ASIL-D
-sec: true
-version: 1
-```
+SIL: ASIL-D | Sec: true | Version: 1
 
 **Security Critical Requirement**
 
@@ -495,7 +393,6 @@ invalid_requirement_id_test = unittest.make(_test_invalid_requirement_id)
 empty_body_test = unittest.make(_test_empty_body)
 too_short_body_test = unittest.make(_test_too_short_body)
 missing_title_test = unittest.make(_test_missing_title)
-parse_yaml_block_test = unittest.make(_test_parse_yaml_block)
 valid_id_formats_test = unittest.make(_test_valid_id_formats)
 valid_sil_values_test = unittest.make(_test_valid_sil_values)
 invalid_sil_values_test = unittest.make(_test_invalid_sil_values)
@@ -517,7 +414,6 @@ def requirement_validator_test_suite(name):
         empty_body_test,
         too_short_body_test,
         missing_title_test,
-        parse_yaml_block_test,
         valid_id_formats_test,
         valid_sil_values_test,
         invalid_sil_values_test,

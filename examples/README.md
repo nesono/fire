@@ -175,12 +175,7 @@ Example format:
 ````markdown
 ## REQ-BRK-001
 
-<!-- TODO: Update to new pipe-separated format: SIL: ASIL-C | Sec: true | Version: 1 -->
-```yaml
-sil: ASIL-C
-sec: true
-version: 1
-```
+SIL: ASIL-C | Sec: true | Version: 1
 
 **Emergency Braking Distance**
 
@@ -213,13 +208,8 @@ Example format:
 ````markdown
 ## REQ_BC_CALCULATE_FORCE
 
-<!-- TODO: Update to new pipe-separated format: SIL: ASIL-D | Sec: false | Parent: [REQ-BRK-001](...) -->
-```yaml
-sil: ASIL-D
-sec: false
-```
+SIL: ASIL-D | Sec: false | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001)
 
-Derived from [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001).
 The brake controller component shall calculate the required brake force...
 
 ````

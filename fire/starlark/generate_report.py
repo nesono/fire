@@ -2,15 +2,13 @@
 """Generate requirement reports from markdown files."""
 
 import sys
-import re
-from pathlib import Path
 
 
 def parse_simple_yaml(yaml_text):
-    """Simple YAML parser for requirement frontmatter.
+    """DEPRECATED: Simple YAML parser for requirement frontmatter.
 
-    TODO: DEPRECATED - Frontmatter is no longer used for requirements.
-    Remove this function after confirming all requirements use inline metadata format.
+    This function is deprecated as requirements no longer use YAML frontmatter.
+    It remains for backward compatibility with legacy report generation.
     """
     result = {}
     lines = yaml_text.strip().split('\n')
@@ -136,16 +134,15 @@ def parse_simple_yaml(yaml_text):
 
 
 def parse_requirement_file(file_path):
-    """Parse a requirement markdown file and extract frontmatter.
+    """DEPRECATED: Parse a requirement markdown file and extract frontmatter.
 
-    TODO: DEPRECATED - This function parses document-level YAML frontmatter.
+    This function parses document-level YAML frontmatter which is deprecated.
     Requirements now use inline metadata (pipe-separated format after ## REQ-ID).
-    Update this function to parse inline metadata or remove if no longer needed.
+    This remains for backward compatibility with legacy report generation.
     """
     with open(file_path, 'r') as f:
         content = f.read()
 
-    # TODO: DEPRECATED - Frontmatter parsing below
     # Find frontmatter boundaries
     lines = content.split('\n')
     first_delimiter = None
