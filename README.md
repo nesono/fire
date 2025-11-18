@@ -306,6 +306,7 @@ Requirements are written in Markdown with YAML code blocks for each requirement:
 
 ## REQ-VEL-001
 
+<!-- TODO: Update to new pipe-separated format: SIL: ASIL-D | Sec: false | Version: 2 -->
 ```yaml
 sil: ASIL-D
 sec: false
@@ -507,6 +508,7 @@ system_function: /examples/system_functions/braking_control.sysarch.md
 
 ## REQ_BC_CALCULATE_FORCE
 
+<!-- TODO: Update to new pipe-separated format: SIL: ASIL-D | Sec: false | Parent: [REQ-BRK-001](...) -->
 ```yaml
 sil: ASIL-D
 sec: false

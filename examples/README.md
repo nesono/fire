@@ -175,6 +175,7 @@ Example format:
 ````markdown
 ## REQ-BRK-001
 
+<!-- TODO: Update to new pipe-separated format: SIL: ASIL-C | Sec: true | Version: 1 -->
 ```yaml
 sil: ASIL-C
 sec: true
@@ -212,6 +213,7 @@ Example format:
 ````markdown
 ## REQ_BC_CALCULATE_FORCE
 
+<!-- TODO: Update to new pipe-separated format: SIL: ASIL-D | Sec: false | Parent: [REQ-BRK-001](...) -->
 ```yaml
 sil: ASIL-D
 sec: false
