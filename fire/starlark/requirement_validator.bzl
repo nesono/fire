@@ -121,79 +121,14 @@ def _parse_inline_metadata(section_content):
 
     return (metadata_dict, remaining_content)
 
-def _parse_yaml_block(section_content):
-    """Parse YAML code block from requirement section.
-
-    TODO: DEPRECATED - YAML blocks are replaced by pipe-separated inline metadata.
-    Remove this function after updating to parse inline metadata format.
-
-    Looks for ```yaml ... ``` block and parses key:value pairs.
-
-    Args:
-        section_content: Content of one requirement section
-
-    Returns:
-        Tuple of (yaml_dict, remaining_content) or (None, section_content) if no YAML block
-    """
-    lines = section_content.split("\n")
-
-    # Find ```yaml block
-    yaml_start = -1
-    yaml_end = -1
-
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if stripped == "```yaml" and yaml_start == -1:
-            yaml_start = i
-        elif stripped == "```" and yaml_start != -1 and yaml_end == -1:
-            yaml_end = i
-            break
-
-    if yaml_start == -1 or yaml_end == -1:
-        return (None, section_content)
-
-    # Parse YAML content (simple key: value format)
-    yaml_dict = {}
-    for i in range(yaml_start + 1, yaml_end):
-        line = lines[i].strip()
-        if not line or line.startswith("#"):
-            continue
-
-        if ":" in line:
-            parts = line.split(":", 1)
-            key = parts[0].strip()
-            value = parts[1].strip() if len(parts) > 1 else ""
-
-            # Strip quotes
-            if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
-                value = value[1:-1]
-
-            # Convert booleans
-            if value.lower() == "true":
-                yaml_dict[key] = True
-            elif value.lower() == "false":
-                yaml_dict[key] = False
-            elif value.lower() == "none":
-                yaml_dict[key] = None
-                # Try to parse as integer
-
-            elif value.isdigit():
-                yaml_dict[key] = int(value)
-            else:
-                yaml_dict[key] = value
-
-    # Return YAML dict and remaining content after the block
-    remaining_lines = lines[:yaml_start] + lines[yaml_end + 1:]
-    remaining_content = "\n".join(remaining_lines)
-
-    return (yaml_dict, remaining_content)
-
 def _parse_requirement_section(section_content):
     """Parse a single requirement section.
 
-    Supports two formats:
-    1. NEW: Pipe-separated inline metadata: SIL: ASIL-D | Sec: false | Parent: [REQ-ID](path)
-    2. OLD (TODO: DEPRECATED): YAML block format
+    Expected format: Pipe-separated inline metadata on first line after heading:
+    SIL: ASIL-D | Sec: false | Version: 1 | Parent: [REQ-ID](path)
+
+    Or single field format:
+    Version: 1
 
     Args:
         section_content: Content of one requirement section
@@ -203,13 +138,8 @@ def _parse_requirement_section(section_content):
     """
     req = {}
 
-    # Try to parse inline metadata first (new format)
+    # Parse inline metadata
     metadata_dict, remaining_content = _parse_inline_metadata(section_content)
-
-    # TODO: Fallback to YAML block format (deprecated) - remove after migration
-    if not metadata_dict:
-        yaml_dict, remaining_content = _parse_yaml_block(section_content)
-        metadata_dict = yaml_dict
 
     if not metadata_dict:
         # No metadata found - return empty (invalid requirement)
@@ -503,7 +433,6 @@ def validate_requirement(content):
 requirement_validator = struct(
     validate = validate_requirement,
     parse = parse_requirements,
-    parse_yaml_block = _parse_yaml_block,
     validate_requirement_id = _validate_requirement_id,
     validate_sil = _validate_sil,
 )

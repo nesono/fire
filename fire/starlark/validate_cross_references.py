@@ -30,12 +30,10 @@ def parse_inline_metadata_for_requirement(content, req_id):
     Returns the parsed metadata as a dict with 'id' and other fields.
     """
     lines = content.split('\n')
-    in_req_section = False
     metadata_line = None
 
     for i, line in enumerate(lines):
         if line.startswith(f'## {req_id}'):
-            in_req_section = True
             # The next non-empty line should be the metadata line
             for j in range(i + 1, len(lines)):
                 next_line = lines[j].strip()
@@ -97,133 +95,6 @@ def parse_inline_metadata_for_requirement(content, req_id):
             frontmatter[key] = value
 
     return frontmatter
-
-def parse_frontmatter(content):
-    """Parse YAML frontmatter from markdown content.
-
-    TODO: DEPRECATED - Frontmatter is no longer used for requirements.
-    Remove this function after confirming all requirements use inline metadata format.
-    """
-    if not content.startswith("---"):
-        return None, content
-
-    lines = content.split("\n")
-    if len(lines) < 3:
-        return None, content
-
-    # Find closing ---
-    end_idx = -1
-    for i in range(1, len(lines)):
-        if lines[i].strip() == "---":
-            end_idx = i
-            break
-
-    if end_idx == -1:
-        return None, content
-
-    # Simple YAML parsing for references section
-    frontmatter = {}
-    current_key = None
-    current_list = None
-    current_dict_item = None
-    base_indent = 0
-
-    for i in range(1, end_idx):
-        line = lines[i]
-        stripped = line.strip()
-
-        if not stripped or stripped.startswith("#"):
-            continue
-
-        # Calculate indentation
-        indent = len(line) - len(line.lstrip())
-
-        # List item
-        if stripped.startswith("-"):
-            rest = stripped[1:].strip()
-
-            # Check if next line (if exists) is indented more - indicates a multi-line dict item
-            is_multiline_dict = False
-            if i + 1 < end_idx:
-                next_line = lines[i + 1]
-                next_stripped = next_line.strip()
-                if next_stripped and not next_stripped.startswith("-"):
-                    next_indent = len(next_line) - len(next_line.lstrip())
-                    if next_indent > indent and ":" in next_stripped:
-                        is_multiline_dict = True
-
-            # Check if this is a dict item (either multi-line or single-line)
-            # Dict items have format "- key: value" where key is a dict-like key (path, version, etc.)
-            # NOT Bazel labels (//...:...) or ISO standards (ISO ...:...)
-            is_dict_item = False
-            if ":" in rest and not rest.startswith("//") and not rest.startswith("ISO "):
-                # Check if this looks like a dict key (starts with alphanumeric word followed by colon)
-                parts = rest.split(":", 1)
-                potential_key = parts[0].strip()
-                # Common dict keys we expect: path, version, description, etc.
-                if potential_key.replace("_", "").replace("-", "").isalnum():
-                    is_dict_item = True
-
-            if is_dict_item:
-                parts = rest.split(":", 1)
-                dict_key = parts[0].strip()
-                dict_value = parts[1].strip() if len(parts) > 1 else ""
-
-                # Start a new dict item (or continue multi-line dict)
-                if is_multiline_dict:
-                    current_dict_item = {dict_key: dict_value}
-                    if current_key and current_list and isinstance(frontmatter[current_key], dict):
-                        if current_list not in frontmatter[current_key]:
-                            frontmatter[current_key][current_list] = []
-                        frontmatter[current_key][current_list].append(current_dict_item)
-                else:
-                    # Single-line dict item
-                    single_dict = {dict_key: dict_value}
-                    if current_key and current_list and isinstance(frontmatter[current_key], dict):
-                        if current_list not in frontmatter[current_key]:
-                            frontmatter[current_key][current_list] = []
-                        frontmatter[current_key][current_list].append(single_dict)
-                    current_dict_item = None  # Don't expect continuation
-            else:
-                # Simple string item (even if it contains ':')
-                if current_key and current_list and isinstance(frontmatter[current_key], dict):
-                    if current_list not in frontmatter[current_key]:
-                        frontmatter[current_key][current_list] = []
-                    frontmatter[current_key][current_list].append(rest)
-                    current_dict_item = None
-
-        # Key-value pair
-        elif ":" in stripped:
-            parts = stripped.split(":", 1)
-            key = parts[0].strip()
-            value = parts[1].strip() if len(parts) > 1 else ""
-
-            if indent == 0 or indent == base_indent:
-                # Top-level key (or back to base level)
-                current_key = key
-                if value:
-                    frontmatter[key] = value
-                else:
-                    frontmatter[key] = {}
-                    current_list = None
-                base_indent = indent
-                current_dict_item = None
-            elif current_dict_item is not None and indent > base_indent + 2:
-                # Additional key in the current dict item (must be indented beyond list level)
-                current_dict_item[key] = value
-            elif current_key and indent > base_indent:
-                # Nested key under current_key
-                current_dict_item = None  # Exit dict mode when we see a new nested key
-                if value:
-                    if isinstance(frontmatter[current_key], dict):
-                        frontmatter[current_key][key] = value
-                else:
-                    if isinstance(frontmatter[current_key], dict):
-                        frontmatter[current_key][key] = []
-                        current_list = key
-
-    body = "\n".join(lines[end_idx + 1:])
-    return frontmatter, body
 
 
 def extract_markdown_references(body):
@@ -343,13 +214,8 @@ def validate_requirement_reference(req_id, req_path, workspace_root, ref_version
         with open(abs_path, 'r') as f:
             content = f.read()
 
-        # TODO: Frontmatter is deprecated - remove parse_frontmatter() after confirming all requirements use inline metadata
-        # Try to parse frontmatter first (for traditional frontmatter style)
-        frontmatter, _ = parse_frontmatter(content)
-
-        # If no frontmatter, try parsing inline metadata (for ## REQ-ID style)
-        if not frontmatter or frontmatter.get('id') != req_id:
-            frontmatter = parse_inline_metadata_for_requirement(content, req_id)
+        # Parse inline metadata (pipe-separated format)
+        frontmatter = parse_inline_metadata_for_requirement(content, req_id)
 
         if not frontmatter or frontmatter.get('id') != req_id:
             return False, f"Requirement file {req_path} does not contain ID '{req_id}'"
@@ -433,135 +299,8 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
     except Exception as e:
         return [f"Error reading {file_path}: {e}"]
 
-    frontmatter, body = parse_frontmatter(content)
-
-    # Extract references from markdown body (even if no frontmatter)
-    if not frontmatter:
-        body = content  # Use full content as body if no frontmatter
-    param_refs, req_refs, test_refs = extract_markdown_references(body)
-
-    # Only do frontmatter validation if frontmatter exists
-    if frontmatter:
-        # Extract frontmatter references
-        fm_refs = frontmatter.get('references', {})
-
-        # Check lexicographic sorting of frontmatter references
-        for ref_type in ['parameters', 'tests', 'standards']:
-            ref_list = fm_refs.get(ref_type, [])
-            if not ref_list:
-                continue
-
-            # Extract sortable values (skip dict items)
-            sortable_items = []
-            for item in ref_list:
-                if isinstance(item, dict):
-                    # For dict items, use the 'path' key if available, otherwise skip
-                    if 'path' in item:
-                        sortable_items.append(item['path'])
-                else:
-                    sortable_items.append(item)
-
-            # Check if sorted
-            sorted_items = sorted(sortable_items)
-            if sortable_items != sorted_items:
-                errors.append(
-                    f"{file_path}: Frontmatter '{ref_type}' references are not sorted lexicographically.\n"
-                    f"  Current order: {sortable_items}\n"
-                    f"  Expected order: {sorted_items}"
-                )
-
-        # Check requirements separately (must be dicts with 'path' and 'version' keys)
-        req_list = fm_refs.get('requirements', [])
-        if req_list:
-            sortable_reqs = []
-            for i, req_ref in enumerate(req_list):
-                if isinstance(req_ref, dict):
-                    # Require both 'path' and 'version'
-                    if 'path' not in req_ref:
-                        errors.append(f"{file_path}: Requirement reference #{i+1} missing 'path' key")
-                    if 'version' not in req_ref:
-                        errors.append(f"{file_path}: Requirement reference #{i+1} missing 'version' key (path: {req_ref.get('path', 'unknown')})")
-                    sortable_reqs.append(req_ref.get('path', ''))
-                else:
-                    # Requirement references must be dicts with path and version
-                    errors.append(
-                        f"{file_path}: Requirement reference '{req_ref}' must use dict format with 'path' and 'version' keys.\n"
-                        f"  Example format:\n"
-                        f"    - path: {req_ref}\n"
-                        f"      version: 1"
-                    )
-                    sortable_reqs.append(req_ref)
-
-            sorted_reqs = sorted(sortable_reqs)
-            if sortable_reqs != sorted_reqs:
-                errors.append(
-                    f"{file_path}: Frontmatter 'requirements' references are not sorted lexicographically.\n"
-                    f"  Current order: {sortable_reqs}\n"
-                    f"  Expected order: {sorted_reqs}"
-                )
-
-        # Extract parameters (handle both string and dict formats)
-        fm_params = set()
-        for param_ref in fm_refs.get('parameters', []):
-            if isinstance(param_ref, dict):
-                # Skip dict items for now (shouldn't happen for parameters)
-                continue
-            else:
-                fm_params.add(param_ref)
-
-        # Extract requirement paths from frontmatter (handle both string and dict formats)
-        fm_reqs = set()
-        for req_ref in fm_refs.get('requirements', []):
-            if isinstance(req_ref, dict):
-                fm_reqs.add(req_ref.get('path', ''))
-            else:
-                fm_reqs.add(req_ref)
-
-        # Extract tests (handle both string and dict formats)
-        fm_tests = set()
-        for test_ref in fm_refs.get('tests', []):
-            if isinstance(test_ref, dict):
-                # Skip dict items for now (shouldn't happen for tests)
-                continue
-            else:
-                fm_tests.add(test_ref)
-
-        # Only do bi-directional consistency check for single-requirement documents
-        # Multi-requirement documents (like .swreq.md) have inline YAML blocks,
-        # not frontmatter references, so skip the bi-directional check
-        has_requirement_id = frontmatter.get('id') is not None
-
-        if has_requirement_id:
-            # Build sets of body references
-            body_params = set(param_path for _, param_path in param_refs)
-            body_reqs = set(req_path for _, req_path, _ in req_refs)
-            body_tests = set(test_label for _, test_label in test_refs)
-
-            # Check bi-directional consistency: all body refs must be in frontmatter
-            for param_path in body_params:
-                if param_path not in fm_params:
-                    errors.append(f"{file_path}: Body references parameter '{param_path}' not declared in frontmatter")
-
-            for req_path in body_reqs:
-                if req_path not in fm_reqs:
-                    errors.append(f"{file_path}: Body references requirement '{req_path}' not declared in frontmatter")
-
-            for test_label in body_tests:
-                if test_label not in fm_tests:
-                    errors.append(f"{file_path}: Body references test '{test_label}' not declared in frontmatter")
-
-            # Check reverse: all frontmatter refs must be used in body
-            for param_path in fm_params:
-                if param_path not in body_params:
-                    errors.append(f"{file_path}: Frontmatter declares parameter '{param_path}' but it's not used in body")
-
-            for req_path in fm_reqs:
-                if req_path and req_path not in body_reqs:
-                    errors.append(f"{file_path}: Frontmatter declares requirement '{req_path}' but it's not used in body")
-
-            for test_label in fm_tests:
-                if test_label not in body_tests:
-                    errors.append(f"{file_path}: Frontmatter declares test '{test_label}' but it's not used in body")
+    # Extract references from markdown body
+    param_refs, req_refs, test_refs = extract_markdown_references(content)
 
     # Validate parameter references exist
     for param_name, param_path in param_refs:
