@@ -306,11 +306,7 @@ Requirements are written in Markdown with YAML code blocks for each requirement:
 
 ## REQ-VEL-001
 
-```yaml
-sil: ASIL-D
-sec: false
-version: 2
-```
+SIL: ASIL-D | Sec: false | Version: 2
 
 **Maximum Vehicle Velocity**
 
@@ -507,12 +503,8 @@ system_function: /examples/system_functions/braking_control.sysarch.md
 
 ## REQ_BC_CALCULATE_FORCE
 
-```yaml
-sil: ASIL-D
-sec: false
-```
+SIL: ASIL-D | Sec: false | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001)
 
-Derived from [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001).
 The brake controller component shall calculate the required brake force...
 
 ````
