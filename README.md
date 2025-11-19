@@ -945,14 +945,6 @@ fire/
 │       ├── go_generator.bzl  # Go code generation
 │       ├── cpp_generator_test.bzl # Generator unit tests
 │       ├── parameters.bzl    # Multi-language parameter library rules
-│       ├── requirement_validator.bzl # Requirement validation logic
-│       ├── requirement_validator_test.bzl # Requirement validator tests
-│       ├── reference_validator.bzl # Cross-reference validation
-│       ├── reference_validator_test.bzl # Reference validator tests
-│       ├── version_validator.bzl # Versioning and change management validation
-│       ├── version_validator_test.bzl # Version validator tests (17 tests)
-│       ├── markdown_parser.bzl # Markdown link parsing and validation
-│       ├── markdown_parser_test.bzl # Markdown parser tests (15 tests)
 │       ├── traceability.bzl  # Traceability, compliance, and reporting
 │       ├── traceability_test.bzl # Traceability tests (10 tests)
 │       ├── requirements.bzl  # requirement_library rule
@@ -1006,10 +998,6 @@ Run specific test suites:
 # Starlark unit tests
 bazel test //fire/starlark:validator_test
 bazel test //fire/starlark:cpp_generator_test
-bazel test //fire/starlark:requirement_validator_test
-bazel test //fire/starlark:reference_validator_test
-bazel test //fire/starlark:version_validator_test
-bazel test //fire/starlark:markdown_parser_test
 bazel test //fire/starlark:traceability_test
 
 # Integration tests

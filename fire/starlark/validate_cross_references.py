@@ -5,10 +5,6 @@ ARCHITECTURE NOTE:
 This Python file is a THIN WRAPPER for file I/O only. The validation logic
 is defined in Starlark files which are the source of truth:
 
-  - fire/starlark/reference_validator.bzl    (frontmatter validation)
-  - fire/starlark/markdown_parser.bzl        (body reference validation)
-  - fire/starlark/requirement_validator.bzl  (YAML parsing)
-
 This Python implementation mirrors that Starlark logic to enable build-time
 validation via file I/O. When updating validation rules, update the Starlark
 files first, then mirror changes here.
