@@ -939,7 +939,6 @@ fire/
 │   └── starlark/             # Starlark implementation
 │       ├── validator.bzl     # Parameter validation logic
 │       ├── validator_test.bzl # Validator unit tests
-│       ├── go_generator.bzl  # Go code generation
 │       ├── parameters.bzl    # Multi-language parameter library rules
 │       ├── traceability.bzl  # Traceability, compliance, and reporting
 │       ├── traceability_test.bzl # Traceability tests (10 tests)
