@@ -1,11 +1,9 @@
 load("@rules_python//python:defs.bzl", "py_binary")
-load(":traceability_test.bzl", "traceability_test_suite")
 load(":validator_test.bzl", "validator_test_suite")
 
 exports_files([
     "validator.bzl",
     "parameters.bzl",
-    "traceability.bzl",
     "requirements.bzl",
     "reports.bzl",
     "generate_report.py",
@@ -23,6 +21,3 @@ py_binary(
 
 # Unit tests for validator
 validator_test_suite(name = "validator_test")
-
-# Unit tests for traceability
-traceability_test_suite(name = "traceability_test")
