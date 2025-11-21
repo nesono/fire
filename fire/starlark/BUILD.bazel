@@ -1,5 +1,4 @@
 load("@rules_python//python:defs.bzl", "py_binary")
-load(":cpp_generator_test.bzl", "cpp_generator_test_suite")
 load(":rust_generator_test.bzl", "rust_generator_test_suite")
 load(":swreq_validator_test.bzl", "swreq_validator_test_suite")
 load(":traceability_test.bzl", "traceability_test_suite")
@@ -7,7 +6,6 @@ load(":validator_test.bzl", "validator_test_suite")
 
 exports_files([
     "validator.bzl",
-    "cpp_generator.bzl",
     "python_generator.bzl",
     "java_generator.bzl",
     "go_generator.bzl",
@@ -33,9 +31,6 @@ py_binary(
 
 # Unit tests for validator
 validator_test_suite(name = "validator_test")
-
-# Unit tests for cpp_generator
-cpp_generator_test_suite(name = "cpp_generator_test")
 
 # Unit tests for traceability
 traceability_test_suite(name = "traceability_test")
