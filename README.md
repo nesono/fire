@@ -939,11 +939,6 @@ fire/
 │   └── starlark/             # Starlark implementation
 │       ├── validator.bzl     # Parameter validation logic
 │       ├── validator_test.bzl # Validator unit tests
-│       ├── cpp_generator.bzl # C++ code generation
-│       ├── python_generator.bzl # Python code generation
-│       ├── java_generator.bzl # Java code generation
-│       ├── go_generator.bzl  # Go code generation
-│       ├── cpp_generator_test.bzl # Generator unit tests
 │       ├── parameters.bzl    # Multi-language parameter library rules
 │       ├── traceability.bzl  # Traceability, compliance, and reporting
 │       ├── traceability_test.bzl # Traceability tests (10 tests)
@@ -997,7 +992,6 @@ Run specific test suites:
 ```bash
 # Starlark unit tests
 bazel test //fire/starlark:validator_test
-bazel test //fire/starlark:cpp_generator_test
 bazel test //fire/starlark:traceability_test
 
 # Integration tests
