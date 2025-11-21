@@ -144,9 +144,6 @@ All requirements reference appropriate parent system requirements.
 ## Building and Testing
 
 ```bash
-# Run all tests including swreq validation
-bazel test //fire/starlark:swreq_validator_test
-
 # Build all example targets
 bazel build //examples/...
 
