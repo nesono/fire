@@ -545,86 +545,6 @@ When a parent requirement version changes (e.g., REQ-VEL-001 v2 → v3), any chi
 - Clean, readable format that renders well in GitHub/GitLab
 - Version tracking via query parameters in links
 
-## Reporting & Compliance
-
-Fire provides built-in reporting functions in `traceability.bzl` to generate compliance and analysis reports.
-
-### Traceability Matrix
-
-Generate comprehensive traceability matrices with version information:
-
-```python
-load("@fire//fire/starlark:traceability.bzl", "traceability")
-
-# In your Starlark code
-requirements_data = [
-    ("REQ-VEL-001", frontmatter_dict),
-    ("REQ-BRK-001", frontmatter_dict),
-]
-
-matrix = traceability.generate_matrix_markdown(requirements_data)
-# Generates markdown with Requirements → Parameters, Requirements → Requirements (with versions),
-# Requirements → Tests, and Requirements → Standards sections
-```
-
-### Change Impact Analysis
-
-Identify requirements that need review due to parent changes:
-
-```python
-impact_report = traceability.generate_change_impact_markdown(requirements_data)
-# Shows which requirements have stale parent version references
-# Example output:
-# ⚠️ Requirements with Stale Parent References
-# REQ-BRK-001 (v1): Tracking REQ-VEL-001 v2, but current version is v3
-```
-
-### Compliance Reports
-
-Generate compliance reports for safety standards (ISO 26262, IEC 61508, etc.):
-
-```python
-# Standard-agnostic compliance report
-compliance_report = traceability.generate_compliance_markdown(requirements_data, "ISO 26262")
-
-# With critical requirement type highlighting
-compliance_report = traceability.generate_compliance_markdown(
-    requirements_data,
-    "ISO 26262",
-    critical_type="safety"  # or "security", "regulatory", etc.
-)
-# Includes:
-# - Summary statistics (breakdown by requirement type, standard references, linked tests)
-# - Requirements by status (draft, approved, verified, etc.)
-# - Critical type requirements detail (if specified)
-# - Compliance gaps (critical reqs without linked tests or standard references)
-# - Unverified requirements
-```
-
-**Note**: Reports show "Linked Tests" not "Test Coverage" - this refers to requirements with test references in their frontmatter, not verified test execution.
-
-### Coverage Dashboard
-
-Generate coverage reports showing traceability completeness:
-
-```python
-coverage_report = traceability.generate_coverage_markdown(requirements_data)
-# Shows percentage of requirements with:
-# - Parameter coverage
-# - Test coverage
-# - Standard references
-# Lists requirements missing coverage in each category
-```
-
-**Available Functions**:
-
-- `traceability.generate_matrix_markdown(requirements_data)` - Full traceability matrix
-- `traceability.generate_change_impact_markdown(requirements_data)` - Stale requirement detection
-- `traceability.generate_compliance_markdown(requirements_data, standard_name)` - Compliance report
-- `traceability.generate_coverage_markdown(requirements_data)` - Coverage metrics
-
-All reports are generated in Markdown format for easy viewing in GitHub/GitLab and integration into documentation pipelines.
-
 ### Generating Reports with Bazel
 
 Fire provides a `generate_report` Bazel rule to create reports at build time:
@@ -940,8 +860,6 @@ fire/
 │       ├── validator.bzl     # Parameter validation logic
 │       ├── validator_test.bzl # Validator unit tests
 │       ├── parameters.bzl    # Multi-language parameter library rules
-│       ├── traceability.bzl  # Traceability, compliance, and reporting
-│       ├── traceability_test.bzl # Traceability tests (10 tests)
 │       ├── requirements.bzl  # requirement_library rule
 │       └── BUILD.bazel
 └── examples/                 # Example usage
