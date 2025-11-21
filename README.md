@@ -939,7 +939,6 @@ fire/
 │   └── starlark/             # Starlark implementation
 │       ├── validator.bzl     # Parameter validation logic
 │       ├── validator_test.bzl # Validator unit tests
-│       ├── python_generator.bzl # Python code generation
 │       ├── java_generator.bzl # Java code generation
 │       ├── go_generator.bzl  # Go code generation
 │       ├── parameters.bzl    # Multi-language parameter library rules
