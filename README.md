@@ -10,12 +10,13 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 
 ### Parameter System
 
-- **Load-Time Validation**: Parameters validated when BUILD files load
+- **YAML-Based Definitions**: Parameters defined in ergonomic YAML format
+- **JSON Schema Validation**: Parameters validated at build time against JSON schema
 - **Type System**: Support for `float`, `integer`, `string`, `boolean`, and `table` types
 - **Units**: Associate physical units with parameters
 - **Tables**: Define multi-column tabular data with typed columns
 - **Bazel Integration**: Native Starlark rules for seamless integration
-- **No Dependencies**: Zero runtime dependencies
+- **No Dependencies**: Zero runtime dependencies (only pyyaml for build-time validation)
 
 ### Requirements Management
 
@@ -78,43 +79,40 @@ Fire is a Bazel module for managing safety-critical system requirements, paramet
 
 ### 1. Define Parameters
 
-Parameters are defined in Starlark (either inline in BUILD files or in separate .bzl files):
+Parameters are defined in YAML files with an ergonomic format where the parameter name is the key:
 
-**vehicle_params.bzl**:
+**vehicle_params.yaml**:
 
-```python
-"""Vehicle parameter definitions."""
+```yaml
+parameters:
+  maximum_vehicle_velocity:
+    type: float
+    unit: m/s
+    value: 55.0
+    description: Maximum design velocity for the vehicle
 
-VEHICLE_PARAMS = [
-    {
-        "name": "maximum_vehicle_velocity",
-        "type": "float",
-        "unit": "m/s",
-        "value": 55.0,
-        "description": "Maximum design velocity for the vehicle",
-    },
-    {
-        "name": "wheel_count",
-        "type": "integer",
-        "value": 4,
-        "description": "Number of wheels on the vehicle",
-    },
-    {
-        "name": "braking_distance_table",
-        "type": "table",
-        "description": "Braking distances under various conditions",
-        "columns": [
-            {"name": "velocity", "type": "float", "unit": "m/s"},
-            {"name": "friction_coefficient", "type": "float", "unit": "dimensionless"},
-            {"name": "braking_distance", "type": "float", "unit": "m"},
-        ],
-        "rows": [
-            [10.0, 0.7, 7.1],
-            [20.0, 0.7, 28.6],
-            [30.0, 0.7, 64.3],
-        ],
-    },
-]
+  wheel_count:
+    type: integer
+    value: 4
+    description: Number of wheels on the vehicle
+
+  braking_distance_table:
+    type: table
+    description: Braking distances under various conditions
+    columns:
+      - name: velocity
+        type: float
+        unit: m/s
+      - name: friction_coefficient
+        type: float
+        unit: dimensionless
+      - name: braking_distance
+        type: float
+        unit: m
+    rows:
+      - [10.0, 0.7, 7.1]
+      - [20.0, 0.7, 28.6]
+      - [30.0, 0.7, 64.3]
 ```
 
 ### 2. Create Bazel Targets
@@ -124,26 +122,25 @@ In your `BUILD.bazel` file (e.g., in `vehicle/dynamics/`):
 ```python
 load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
 load("@rules_cc//cc:defs.bzl", "cc_test")
-load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
-# Validate parameters and generate header
+# Validate parameters from YAML file
 # Namespace auto-derived from package path: vehicle/dynamics -> vehicle::dynamics
 parameter_library(
-    name = "vehicle_params_header",
-    parameters = VEHICLE_PARAMS,
+    name = "vehicle_params",
+    src = "vehicle_params.yaml",
 )
 
 # Or explicitly specify namespace if needed
 # parameter_library(
-#     name = "vehicle_params_header",
+#     name = "vehicle_params",
+#     src = "vehicle_params.yaml",
 #     namespace = "vehicle.dynamics",
-#     parameters = VEHICLE_PARAMS,
 # )
 
 # Create C++ library from parameters
 cc_parameter_library(
     name = "vehicle_params_cc",
-    parameter_library = ":vehicle_params_header",
+    parameter_library = ":vehicle_params",
 )
 
 # Use generated parameters in C++ code
@@ -159,7 +156,7 @@ cc_test(
 The generated header provides type-safe access to parameters:
 
 ```cpp
-#include "vehicle_params_header.h"
+#include "vehicle/dynamics/vehicle_params.h"
 
 int main() {
     using namespace vehicle::dynamics;
@@ -186,41 +183,48 @@ Generate parameters for Python, Java, Go, and Rust (in `vehicle/dynamics/`):
 
 ```python
 load(
-    "//fire/starlark:parameters.bzl",
+    "@fire//fire/starlark:parameters.bzl",
+    "parameter_library",
     "python_parameter_library",
     "java_parameter_library",
     "go_parameter_library",
     "rust_parameter_library",
 )
 
+# First create the parameter library from YAML
+parameter_library(
+    name = "vehicle_params",
+    src = "vehicle_params.yaml",
+)
+
 # Generate Python parameters
 # Namespace auto-derived: vehicle/dynamics -> vehicle.dynamics
 python_parameter_library(
     name = "vehicle_params_py",
-    parameters = VEHICLE_PARAMS,
+    parameter_library = ":vehicle_params",
 )
 
 # Generate Java parameters with package prefix
 # Namespace auto-derived: vehicle/dynamics -> com.example.vehicle.dynamics
 java_parameter_library(
     name = "vehicle_params_java",
+    parameter_library = ":vehicle_params",
     package_prefix = "com.example",  # Optional prefix for Java packages
     class_name = "VehicleParams",
-    parameters = VEHICLE_PARAMS,
 )
 
 # Generate Go parameters
 # Package name auto-derived: vehicle/dynamics -> package dynamics
 go_parameter_library(
     name = "vehicle_params_go",
-    parameters = VEHICLE_PARAMS,
+    parameter_library = ":vehicle_params",
 )
 
 # Generate Rust parameters
 # Generates constants with SCREAMING_SNAKE_CASE naming
 rust_parameter_library(
-    name = "vehicle_params_rust",
-    parameters = VEHICLE_PARAMS,
+    name = "vehicle_params_rs",
+    parameter_library = ":vehicle_params",
 )
 ```
 
@@ -311,7 +315,7 @@ SIL: ASIL-D | Sec: false | Version: 2
 **Maximum Vehicle Velocity**
 
 The vehicle SHALL NOT exceed the maximum design velocity defined by
-[@maximum_vehicle_velocity](examples/vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s)
+[@maximum_vehicle_velocity](examples/vehicle_params.yaml#maximum_vehicle_velocity) (55.0 m/s)
 under any operating conditions.
 
 ### Rationale
@@ -348,10 +352,13 @@ load("@fire//fire/starlark:requirements.bzl", "requirement_library")
 requirement_library(
     name = "safety_requirements",
     srcs = glob(["requirements/*.md"]),
+    deps = [":vehicle_params"],  # Depend on parameter_library for parameter references
 )
 ```
 
 ## Parameter Format
+
+Parameters are defined in YAML files with an ergonomic format where the parameter name is the key.
 
 ### Namespace
 
@@ -360,8 +367,8 @@ Namespaces are **auto-derived from the Bazel package path** for consistency with
 ```python
 # In package vehicle/dynamics/braking/BUILD.bazel
 parameter_library(
-    name = "my_params_header",
-    parameters = [...],  # Namespace auto-derived as vehicle::dynamics::braking
+    name = "my_params",
+    src = "my_params.yaml",  # Namespace auto-derived as vehicle::dynamics::braking
 )
 ```
 
@@ -381,17 +388,16 @@ You can also **explicitly specify** a namespace if needed:
 
 ```python
 parameter_library(
-    name = "my_params_header",
+    name = "my_params",
+    src = "my_params.yaml",
     namespace = "custom.namespace",
-    parameters = [...],
 )
 ```
 
 ### Simple Parameters
 
-Parameters are defined as dictionaries with the following fields:
+Parameters are defined in YAML with the following fields:
 
-- `name` (required): Identifier for the parameter
 - `type` (required): One of `float`, `integer`, `string`, `boolean`, `table`
 - `value` (required for non-table types): The parameter value
 - `description` (required): Human-readable description
@@ -399,37 +405,37 @@ Parameters are defined as dictionaries with the following fields:
 
 Example:
 
-```python
-{
-    "name": "max_temperature",
-    "type": "float",
-    "unit": "celsius",
-    "value": 85.0,
-    "description": "Maximum operating temperature",
-}
+```yaml
+parameters:
+  max_temperature:
+    type: float
+    unit: celsius
+    value: 85.0
+    description: Maximum operating temperature
 ```
 
 ### Table Parameters
 
 Tables define multi-column tabular data:
 
-```python
-{
-    "name": "gear_ratios",
-    "type": "table",
-    "description": "Gear ratios by gear number",
-    "columns": [
-        {"name": "gear", "type": "integer"},
-        {"name": "ratio", "type": "float"},
-        {"name": "max_speed", "type": "float", "unit": "km/h"},
-    ],
-    "rows": [
-        [1, 3.5, 40.0],
-        [2, 2.1, 70.0],
-        [3, 1.4, 110.0],
-        [4, 1.0, 160.0],
-    ],
-}
+```yaml
+parameters:
+  gear_ratios:
+    type: table
+    description: Gear ratios by gear number
+    columns:
+      - name: gear
+        type: integer
+      - name: ratio
+        type: float
+      - name: max_speed
+        type: float
+        unit: km/h
+    rows:
+      - [1, 3.5, 40.0]
+      - [2, 2.1, 70.0]
+      - [3, 1.4, 110.0]
+      - [4, 1.0, 160.0]
 ```
 
 Generated C++ code:
@@ -513,9 +519,9 @@ The brake controller component shall calculate the required brake force...
 
 All cross-references use standard markdown links with repository-relative paths:
 
-- **Parameter Reference**: `[@param_name](/path/to/file.bzl#param_name)`
+- **Parameter Reference**: `[@param_name](/path/to/file.yaml#param_name)`
   - Uses `@` prefix to distinguish from regular links
-  - Example: `[@maximum_vehicle_velocity](/examples/vehicle_params.bzl#maximum_vehicle_velocity)`
+  - Example: `[@maximum_vehicle_velocity](/examples/vehicle_params.yaml#maximum_vehicle_velocity)`
 
 - **Requirement Reference**: `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
   - Includes `?version=N` query parameter to track parent version
@@ -625,7 +631,7 @@ sec: true
 ## Description
 
 The vehicle SHALL achieve emergency braking according to
-[@braking_distance_table](examples/vehicle_params.bzl#braking_distance_table).
+[@braking_distance_table](examples/vehicle_params.yaml#braking_distance_table).
 This requirement relates to [REQ-VEL-001](examples/requirements/REQ-VEL-001.md).
 
 ## Verification
@@ -638,33 +644,28 @@ Compliance verified against [UN ECE R13-H](https://unece.org/r13h).
 
 ### `parameter_library()`
 
-Validates parameters and generates a C++ header file.
+Validates parameters from a YAML file against JSON schema and makes them available for code generation.
 
 **Attributes:**
 
-- `name`: Name of the target (generates `<name>.h`)
-- `namespace`: C++ namespace for parameters (optional, auto-derived from package path if not provided)
-- `parameters`: List of parameter dictionaries (required)
-- `schema_version`: Schema version (optional, defaults to "1.0")
+- `name`: Name of the target
+- `src`: Path to the parameter YAML file (required)
+- `namespace`: Namespace for parameters (optional, auto-derived from package path if not provided)
 
 **Example:**
 
 ```python
 # Namespace auto-derived from package path
 parameter_library(
-    name = "my_params_header",
-    parameters = [
-        {"name": "value1", "type": "float", "value": 1.0, "description": "..."},
-    ],
+    name = "my_params",
+    src = "my_params.yaml",
 )
 
 # Or explicitly specify namespace
 parameter_library(
-    name = "my_params_header",
+    name = "my_params",
+    src = "my_params.yaml",
     namespace = "my.namespace",
-    parameters = [
-        {"name": "value1", "type": "float", "value": 1.0, "description": "..."},
-    ],
 )
 ```
 
@@ -675,7 +676,7 @@ Creates a `cc_library` from a parameter library for easy inclusion in C++ target
 **Attributes:**
 
 - `name`: Name of the `cc_library`
-- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `parameter_library`: Label of the `parameter_library` target
 - `namespace`: Optional C++ namespace (use `::` for nested namespaces, e.g., `"outer::inner"`)
   - If not provided: uses namespace from `parameter_library` (auto-derived from package path)
   - If empty string `""`: no namespace (constants in global scope)
@@ -714,7 +715,7 @@ Creates a `py_library` from a parameter library for easy inclusion in Python tar
 **Attributes:**
 
 - `name`: Name of the `py_library`
-- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `parameter_library`: Label of the `parameter_library` target
 - `base_name`: Optional base name for output file (defaults to name with `_py` suffix removed)
 - Additional `py_library` attributes supported
 
@@ -742,7 +743,7 @@ Creates a `java_library` from a parameter library for easy inclusion in Java tar
 **Attributes:**
 
 - `name`: Name of the Bazel target
-- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `parameter_library`: Label of the `parameter_library` target
 - `class_name`: Name of the generated class (optional, derived from target name if not provided)
 - `package_prefix`: Optional package prefix (e.g., "com.example")
 
@@ -773,7 +774,7 @@ Creates a `go_library` from a parameter library for easy inclusion in Go targets
 **Attributes:**
 
 - `name`: Name of the `go_library`
-- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `parameter_library`: Label of the `parameter_library` target
 - `base_name`: Optional base name for output file (defaults to name with `_go` suffix removed)
 - `importpath`: Go import path (optional, defaults to package path + "/" + base_name)
 - Additional `go_library` attributes supported
@@ -802,7 +803,7 @@ Generates a Rust module from a parameter library (outputs a `.rs` file to be inc
 **Attributes:**
 
 - `name`: Name of the Bazel target (use directly in `rust_test` srcs)
-- `parameter_library`: Label of the `parameter_library` target (the `.json` file)
+- `parameter_library`: Label of the `parameter_library` target
 - `base_name`: Optional base name for output file (defaults to name with `_rs` suffix removed)
 
 **Generated code features:**
@@ -832,12 +833,13 @@ rust_parameter_library(
 
 ### `requirement_library()`
 
-Creates a filegroup containing requirement documents.
+Validates cross-references in requirement documents and creates a filegroup.
 
 **Attributes:**
 
 - `name`: Name of the target
 - `srcs`: List of requirement Markdown files
+- `deps`: List of dependencies (parameter_library targets and other requirement_library targets)
 
 **Example:**
 
@@ -845,6 +847,16 @@ Creates a filegroup containing requirement documents.
 requirement_library(
     name = "safety_requirements",
     srcs = glob(["requirements/safety/*.md"]),
+    deps = [":vehicle_params"],  # parameter_library target
+)
+
+requirement_library(
+    name = "component_requirements",
+    srcs = glob(["components/**/*.swreq.md"]),
+    deps = [
+        ":safety_requirements",  # References system requirements
+        ":vehicle_params",       # References parameter files
+    ],
 )
 ```
 
@@ -855,20 +867,25 @@ fire/
 ├── MODULE.bazel              # Bazel module definition
 ├── BUILD.bazel               # Root build file
 ├── README.md                 # This file
+├── requirements.txt          # Python pip dependencies (pyyaml)
 ├── fire/
 │   └── starlark/             # Starlark implementation
-│       ├── validator.bzl     # Parameter validation logic
-│       ├── validator_test.bzl # Validator unit tests
 │       ├── parameters.bzl    # Multi-language parameter library rules
 │       ├── requirements.bzl  # requirement_library rule
+│       ├── reports.bzl       # Report generation rules
+│       ├── generate_code.py  # Code generator (reads YAML)
+│       ├── validate_parameters.py  # YAML parameter validator
+│       ├── validate_cross_references.py  # Cross-reference validator
+│       ├── parameter_schema.json  # JSON schema for YAML validation
 │       └── BUILD.bazel
 └── examples/                 # Example usage
-    ├── vehicle_params.bzl    # Example parameter definitions
-    ├── vehicle_params_test.cc  # Integration test
+    ├── vehicle_params.yaml   # Example parameter definitions (YAML)
+    ├── vehicle_params_test.cc  # C++ integration test
+    ├── vehicle_params_test.py  # Python integration test
     ├── requirements/         # Example requirements
-    │   ├── REQ-VEL-001.md    # (parent requirement with version)
-    │   ├── REQ-BRK-001.md    # (derived requirement tracking parent version)
-    │   └── REQ-WHEEL-001.md  # (with cross-references)
+    │   ├── velocity_requirements.sysreq.md
+    │   ├── braking_requirements.sysreq.md
+    │   └── wheel_requirements.sysreq.md
     └── BUILD.bazel
 ```
 
@@ -920,13 +937,13 @@ bazel test //examples:vehicle_params_test
 
 ### Parameter Validation
 
-1. **Required Fields**: `namespace` and `parameters` in `parameter_library()`
-2. **Namespace Format**: Must be dot-separated identifiers (e.g., `vehicle.dynamics`)
-3. **Parameter Types**: Only `float`, `integer`, `string`, `boolean`, `table` are valid
-4. **Type Checking**: Values must match their declared types
-5. **Table Consistency**: All rows must have the same number of columns as defined
-6. **Unique Names**: Parameter names must be unique
-7. **Required Parameter Fields**: Each parameter needs `name`, `type`, `description`
+1. **YAML Format**: Parameters defined in YAML files validated against JSON schema
+2. **Required Fields**: `src` in `parameter_library()`, each parameter needs `type` and `description`
+3. **Namespace Format**: Must be dot-separated identifiers (e.g., `vehicle.dynamics`)
+4. **Parameter Types**: Only `float`, `integer`, `string`, `boolean`, `table` are valid
+5. **Type Checking**: Values must match their declared types
+6. **Table Consistency**: All rows must have the same number of columns as defined
+7. **Unique Names**: Parameter names must be unique within a file
 
 ### Requirement Validation
 
@@ -949,7 +966,7 @@ bazel test //examples:vehicle_params_test
 
 ### Markdown Reference Validation
 
-1. **Parameter Links**: `[@parameter_name](repo/relative/path/file.bzl#parameter_name)` syntax with repository-relative path
+1. **Parameter Links**: `[@parameter_name](repo/relative/path/file.yaml#parameter_name)` syntax with repository-relative path
 2. **Requirement Links**: `[REQ-ID](repo/relative/path/REQ-ID.md)` syntax with repository-relative path
 3. **Test Links**: `[test_name](//package:target)` syntax using Bazel labels
 4. **Body-Frontmatter Match**: Bi-directional validation ensures all body references are declared in frontmatter, and all frontmatter references are used in body
@@ -982,7 +999,7 @@ Fire follows these principles:
 ## Future Work
 
 - IDE integration for enhanced developer experience
-- Additional language targets (Rust, TypeScript, etc.)
+- Additional language targets (TypeScript, etc.)
 - Performance optimization for large requirement sets
 - Interactive compliance dashboards
 
