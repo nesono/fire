@@ -3,8 +3,8 @@
 def _generate_report_impl(ctx):
     """Implementation of the generate_report rule."""
 
-    # Get the Python script file
-    script = ctx.file._script
+    # Get the Python script executable
+    script = ctx.executable._script
 
     # Prepare arguments
     args = ctx.actions.args()
@@ -23,12 +23,15 @@ def _generate_report_impl(ctx):
     if ctx.attr.critical_type:
         args.add("--critical-type=" + ctx.attr.critical_type)
 
+    # Get runfiles for the script
+    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
+
     # Run the Python script
     ctx.actions.run(
-        inputs = ctx.files.srcs + [script],
+        inputs = ctx.files.srcs + [script] + script_runfiles,
         outputs = [ctx.outputs.out],
-        executable = "python3",
-        arguments = [script.path] + [args],
+        executable = script,
+        arguments = [args],
         mnemonic = "GenerateReport",
         progress_message = "Generating %s report for %s" % (ctx.attr.report_type, ctx.label.name),
     )
@@ -59,8 +62,9 @@ generate_report = rule(
             doc = "Standard name for compliance reports (e.g., 'ISO 26262', 'IEC 61508')",
         ),
         "_script": attr.label(
-            default = Label("//fire/starlark:generate_report.py"),
-            allow_single_file = True,
+            default = Label("//fire/starlark:generate_report_script"),
+            executable = True,
+            cfg = "exec",
         ),
     },
     doc = """Generates requirement reports in markdown format.

@@ -30,5 +30,21 @@ py_binary(
     deps = ["@pip//pyyaml"],
 )
 
+# Python script for validating cross-references in requirements
+py_binary(
+    name = "validate_cross_references_script",
+    srcs = ["validate_cross_references.py"],
+    main = "validate_cross_references.py",
+    visibility = ["//visibility:public"],
+)
+
+# Python script for generating reports
+py_binary(
+    name = "generate_report_script",
+    srcs = ["generate_report.py"],
+    main = "generate_report.py",
+    visibility = ["//visibility:public"],
+)
+
 # Unit tests for validator
 validator_test_suite(name = "validator_test")

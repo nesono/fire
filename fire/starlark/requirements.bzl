@@ -2,7 +2,7 @@
 
 def _validate_requirements_impl(ctx):
     """Implementation of requirement validation rule."""
-    script = ctx.file._script
+    script = ctx.executable._script
 
     # Output validation marker file
     output = ctx.outputs.out
@@ -10,31 +10,44 @@ def _validate_requirements_impl(ctx):
     # Use "." as workspace root - the sandbox will have the right structure
     workspace_root = "."
 
-    # Build command with --allowed-deps flag (always pass it to enable strict checking)
-    cmd = "python3 {script} {workspace} --allowed-deps".format(
-        script = script.path,
-        workspace = workspace_root,
-    )
+    # Build arguments list
+    args = ctx.actions.args()
+    args.add(workspace_root)
+    args.add("--allowed-deps")
 
     # Add allowed dependency paths (short_path format)
     # Include srcs in allowed deps (requirements in same target can reference each other)
     for src in ctx.files.srcs:
-        cmd += " " + src.short_path
+        args.add(src.short_path)
     for dep in ctx.files.deps:
-        cmd += " " + dep.short_path
+        args.add(dep.short_path)
 
     # Add requirement files (using short_path which is relative to workspace)
-    cmd += " --"
+    args.add("--")
     for src in ctx.files.srcs:
-        cmd += " " + src.short_path
-    cmd += " && touch " + output.path
+        args.add(src.short_path)
+
+    # Create a wrapper script that runs the validator and touches the output
+    wrapper_script = ctx.actions.declare_file(ctx.label.name + "_wrapper.sh")
+    ctx.actions.write(
+        output = wrapper_script,
+        content = """#!/bin/bash
+"$@" && touch {output}
+""".format(output = output.path),
+        is_executable = True,
+    )
+
+    # Get runfiles for the script
+    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
 
     # Run validation script
     # Note: We need to disable sandbox or make all potential reference targets available
-    ctx.actions.run_shell(
-        inputs = ctx.files.srcs + ctx.files.deps + [script],
+    ctx.actions.run(
+        inputs = ctx.files.srcs + ctx.files.deps + script_runfiles,
         outputs = [output],
-        command = cmd,
+        executable = wrapper_script,
+        arguments = [script.path, args],
+        tools = [script],
         mnemonic = "ValidateRequirements",
         progress_message = "Validating cross-references in %s" % ctx.label.name,
         use_default_shell_env = True,
@@ -62,8 +75,9 @@ _validate_requirements = rule(
             doc = "List of requirement markdown files to validate",
         ),
         "_script": attr.label(
-            default = Label("//fire/starlark:validate_cross_references.py"),
-            allow_single_file = True,
+            default = Label("//fire/starlark:validate_cross_references_script"),
+            executable = True,
+            cfg = "exec",
         ),
     },
     doc = "Validates cross-references in requirement documents",
