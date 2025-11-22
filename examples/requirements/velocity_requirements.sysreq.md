@@ -6,7 +6,7 @@ SIL: ASIL-D | Sec: false | Version: 2
 
 **Maximum Vehicle Velocity**
 
-The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](/examples/vehicle_params.bzl#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
+The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](/examples/vehicle_params.yaml#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
 
 ### Rationale
 

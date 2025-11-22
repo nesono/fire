@@ -7,15 +7,14 @@ load(
     "rust_parameter_library",
 )
 load("@fire//fire/starlark:reports.bzl", "generate_report")
-load(":test_params.bzl", "TEST_PARAMS")
 
-exports_files(["test_params.bzl"])
+exports_files(["test_params.yaml"])
 
 # Validate and create parameter library
-# Creates test_params.json containing validated parameter data
+# Validates test_params.yaml and makes it available for code generation
 parameter_library(
     name = "test_params",
-    parameters = TEST_PARAMS,
+    src = "test_params.yaml",
 )
 
 # Generate C++ library with parameters

@@ -178,7 +178,7 @@ SIL: ASIL-C | Sec: true | Version: 1
 
 The vehicle SHALL be capable of performing emergency braking from any velocity up to
 maximum design velocity (see [REQ-VEL-001](/examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001)),
-achieving deceleration according to [@braking_distance_table](/examples/vehicle_params.bzl#braking_distance_table).
+achieving deceleration according to [@braking_distance_table](/examples/vehicle_params.yaml#braking_distance_table).
 
 ### Changelog
 

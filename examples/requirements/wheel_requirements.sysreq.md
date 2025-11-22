@@ -6,7 +6,7 @@ SIL: QM | Sec: false | Version: 1
 
 **Wheel Count Configuration**
 
-The vehicle SHALL be configured with exactly [@wheel_count](/examples/vehicle_params.bzl#wheel_count) wheels as specified in the vehicle parameters.
+The vehicle SHALL be configured with exactly [@wheel_count](/examples/vehicle_params.yaml#wheel_count) wheels as specified in the vehicle parameters.
 
 ### Rationale
 
@@ -18,7 +18,7 @@ The vehicle dynamics model, control algorithms, and safety systems are designed 
 
 ### Constraints
 
-- Physical wheel count MUST match parameter [@wheel_count](/examples/vehicle_params.bzl#wheel_count)
+- Physical wheel count MUST match parameter [@wheel_count](/examples/vehicle_params.yaml#wheel_count)
 - Each wheel MUST have independent sensor monitoring
 - Wheel failure detection MUST account for all 4 wheels
 

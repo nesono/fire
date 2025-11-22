@@ -9,14 +9,25 @@ exports_files([
     "generate_report.py",
     "generate_code.py",
     "validate_cross_references.py",
+    "parameter_schema.json",
 ])
 
-# Python script for generating code from JSON
+# Python script for generating code from YAML
 py_binary(
     name = "generate_code_script",
     srcs = ["generate_code.py"],
     main = "generate_code.py",
     visibility = ["//visibility:public"],
+    deps = ["@pip//pyyaml"],
+)
+
+# Python script for validating parameter YAML files
+py_binary(
+    name = "validate_parameters_script",
+    srcs = ["validate_parameters.py"],
+    main = "validate_parameters.py",
+    visibility = ["//visibility:public"],
+    deps = ["@pip//pyyaml"],
 )
 
 # Unit tests for validator

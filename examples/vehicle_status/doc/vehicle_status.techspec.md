@@ -51,7 +51,7 @@ flowchart LR
 - `wheel_radius`: Effective wheel radius in meters
 - `wheel_count`: Number of wheels (must be 4)
 - Loaded at startup from vehicle parameters
-- References: [@wheel_count](/examples/vehicle_params.bzl#wheel_count)
+- References: [@wheel_count](/examples/vehicle_params.yaml#wheel_count)
 
 ### Outputs
 
@@ -171,7 +171,7 @@ The component operates within a trusted execution environment and assumes:
 
 The component loads configuration from:
 
-- Vehicle parameters file: `vehicle_params.bzl`
+- Vehicle parameters file: `vehicle_params.yaml`
 
 File is read-only and validated with checksums at load time.
 

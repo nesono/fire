@@ -5,7 +5,7 @@ load("@fire//fire/starlark:requirements.bzl", "requirement_library")
 # Export parameter file for dependency tracking
 filegroup(
     name = "test_params",
-    srcs = ["//:test_params.bzl"],
+    srcs = ["//:test_params.yaml"],
 )
 
 # System requirements

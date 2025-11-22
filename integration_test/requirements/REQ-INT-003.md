@@ -6,7 +6,7 @@ SIL: ASIL-D | Version: 1
 
 **System Update Rate**
 
-The system SHALL process sensor data and update control outputs at [@update_rate](test_params.bzl#update_rate) Hz.
+The system SHALL process sensor data and update control outputs at [@update_rate](test_params.yaml#update_rate) Hz.
 
 ### Verification
 

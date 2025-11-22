@@ -56,7 +56,7 @@ flowchart LR
 
 - `braking_distance_table`: Lookup table mapping (speed, friction) → braking_distance
 - Loaded at startup from vehicle parameters
-- References: [@braking_distance_table](/examples/vehicle_params.bzl#braking_distance_table)
+- References: [@braking_distance_table](/examples/vehicle_params.yaml#braking_distance_table)
 
 ### Outputs
 
@@ -180,7 +180,7 @@ The component does not require specific security controls as it operates within 
 
 The component loads configuration from:
 
-- Vehicle parameters file: `vehicle_params.bzl`
+- Vehicle parameters file: `vehicle_params.yaml`
 - Braking calibration: `brake_calibration.yaml`
 
 All files are read-only and validated with checksums at load time.
