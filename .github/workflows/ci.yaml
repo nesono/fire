@@ -47,7 +47,7 @@ jobs:
         with:
           path: |
             ~/.cache/bazel
-          key: bazel-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'WORKSPACE', '**/*.bzl') }}
+          key: bazel-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'WORKSPACE', '**/*.bzl', 'fire/starlark/*.py', 'requirements.txt') }}
           restore-keys: |
             bazel-${{ runner.os }}-
 
@@ -82,7 +82,7 @@ jobs:
         with:
           path: |
             ~/.cache/bazel
-          key: bazel-integration-${{ hashFiles('MODULE.bazel', 'WORKSPACE', '**/*.bzl') }}
+          key: bazel-integration-${{ hashFiles('MODULE.bazel', 'WORKSPACE', '**/*.bzl', 'fire/starlark/*.py', 'requirements.txt') }}
           restore-keys: |
             bazel-integration-
 
