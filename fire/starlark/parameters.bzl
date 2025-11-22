@@ -141,7 +141,7 @@ def cc_parameter_library(
     # Derive base_name if not provided
     if not base_name:
         # Strip common suffixes
-        base_name = name.removesuffix("_cc").removesuffix("_cpp")
+        base_name = name
 
     # Get namespace from package if not provided
     if namespace == None:
@@ -201,7 +201,7 @@ def python_parameter_library(
     # Derive base_name if not provided
     if not base_name:
         # Strip common suffixes
-        base_name = name.removesuffix("_py").removesuffix("_python")
+        base_name = name
 
     # Get namespace from package
     namespace = _derive_namespace_from_package()
@@ -256,7 +256,7 @@ def java_parameter_library(
     # Derive class_name if not provided
     if not class_name:
         # Strip common suffixes and convert to PascalCase
-        base_name = name.removesuffix("_java")
+        base_name = name
         parts = base_name.split("_")
         class_name = "".join([word.capitalize() for word in parts])
 
@@ -317,7 +317,7 @@ def go_parameter_library(
     # Derive base_name if not provided
     if not base_name:
         # Strip common suffixes
-        base_name = name.removesuffix("_go").removesuffix("_golang")
+        base_name = name
 
     # Derive importpath if not provided
     if not importpath:
@@ -377,7 +377,7 @@ def rust_parameter_library(
     # Derive base_name if not provided
     if not base_name:
         # Strip common suffixes
-        base_name = name.removesuffix("_rs").removesuffix("_rust")
+        base_name = name
 
     # Get namespace from package
     namespace = _derive_namespace_from_package()
