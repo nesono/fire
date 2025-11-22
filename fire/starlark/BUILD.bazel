@@ -27,7 +27,10 @@ py_binary(
     srcs = ["validate_parameters.py"],
     main = "validate_parameters.py",
     visibility = ["//visibility:public"],
-    deps = ["@pip//pyyaml"],
+    deps = [
+        "@pip//jsonschema",
+        "@pip//pyyaml",
+    ],
 )
 
 # Python script for validating cross-references in requirements

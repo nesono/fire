@@ -3,13 +3,16 @@ parameters:
     type: float
     value: 30.0
     description: Maximum allowed speed in m/s
+    version: 1
 
   min_braking_distance:
     type: float
     value: 50.0
     description: Minimum braking distance in meters
+    version: 1
 
   update_rate:
     type: integer
     value: 100
     description: System update rate in Hz
+    version: 1

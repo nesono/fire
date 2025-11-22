@@ -202,6 +202,10 @@ def generate_cpp(param_data, cpp_namespace=None):
             # Add size constant
             lines.append(f"constexpr size_t {const_name}_SIZE = {len(rows)};")
 
+            # Add version constant for table
+            version = param.get("version", 1)
+            lines.append(f"constexpr int {const_name}_VERSION = {version};")
+
         else:
             # Simple parameter
             value = param["value"]
@@ -215,6 +219,10 @@ def generate_cpp(param_data, cpp_namespace=None):
                 lines.append(f"constexpr {cpp_type} {const_name} = {bool_val};")
             else:
                 lines.append(f"constexpr {cpp_type} {const_name} = {value};")
+
+            # Add version constant for simple parameter
+            version = param.get("version", 1)
+            lines.append(f"constexpr int {const_name}_VERSION = {version};")
 
         lines.append("")
 
@@ -293,12 +301,18 @@ def generate_python(param_data):
                         values.append(f'{col["name"]}={val}')
                 lines.append(f"    {class_name}({', '.join(values)}),")
             lines.append("]")
+            # Add version constant for table
+            version = param.get("version", 1)
+            lines.append(f"{const_name}_VERSION = {version}")
         else:
             value = param["value"]
             if param_type == "string":
                 lines.append(f'{const_name} = "{value}"')
             else:
                 lines.append(f"{const_name} = {value}")
+            # Add version constant for simple parameter
+            version = param.get("version", 1)
+            lines.append(f"{const_name}_VERSION = {version}")
 
         lines.append("")
 
@@ -370,6 +384,9 @@ def generate_go(param_data):
                         values.append(f"{col_name}: {val}")
                 lines.append(f"    {{{', '.join(values)}}},")
             lines.append("}")
+            # Add version constant for table
+            version = param.get("version", 1)
+            lines.append(f"const {const_name}Version = {version}")
         else:
             value = param["value"]
             if param_type == "string":
@@ -379,6 +396,9 @@ def generate_go(param_data):
                 lines.append(f"const {const_name} = {bool_val}")
             else:
                 lines.append(f"const {const_name} = {value}")
+            # Add version constant for simple parameter
+            version = param.get("version", 1)
+            lines.append(f"const {const_name}Version = {version}")
 
         lines.append("")
 
@@ -458,11 +478,16 @@ def generate_rust(param_data):
 
         lines.append("")
 
-    # Add size constants for tables
+    # Add size and version constants for tables, version constants for simple params
     for param in parameters:
+        const_name = param["name"].upper()
+        version = param.get("version", 1)
         if param["type"] == "table":
-            const_name = param["name"].upper()
             lines.append(f"pub const {const_name}_SIZE: usize = {len(param['rows'])};")
+            lines.append(f"pub const {const_name}_VERSION: i32 = {version};")
+            lines.append("")
+        else:
+            lines.append(f"pub const {const_name}_VERSION: i32 = {version};")
             lines.append("")
 
     return "\n".join(lines)
@@ -556,6 +581,9 @@ def generate_java(param_data):
                         values.append(str(val))
                 lines.append(f"        new {record_name}({', '.join(values)}),")
             lines.append("    };")
+            # Add version constant for table
+            version = param.get("version", 1)
+            lines.append(f"    public static final int {const_name}_VERSION = {version};")
         else:
             # Simple constant
             value = param["value"]
@@ -577,6 +605,9 @@ def generate_java(param_data):
                 lines.append(f"    public static final {java_type} {const_name} = {bool_val};")
             else:
                 lines.append(f"    public static final {java_type} {const_name} = {value};")
+            # Add version constant for simple parameter
+            version = param.get("version", 1)
+            lines.append(f"    public static final int {const_name}_VERSION = {version};")
 
         lines.append("")
 
