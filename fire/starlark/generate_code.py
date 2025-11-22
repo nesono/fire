@@ -1,37 +1,89 @@
 #!/usr/bin/env python3
-"""Generate code from parameter JSON file."""
+"""Generate code from parameter YAML file."""
 
-import json
 import sys
 from pathlib import Path
+
+import yaml
 
 # Import existing generators
 sys.path.insert(0, str(Path(__file__).parent))
 
-def load_starlark_module(module_path):
-    """Load a Starlark module and extract its generate function."""
-    # For now, we'll inline the logic here since we can't directly import Starlark
-    # We'll call the existing generator .bzl files indirectly
-    pass
+
+def load_parameters(file_path):
+    """Load parameters from YAML file.
+
+    Returns parameter data in the internal format expected by generators.
+    """
+    with open(file_path, 'r') as f:
+        data = yaml.safe_load(f)
+        return yaml_to_internal_format(data)
+
+
+def yaml_to_internal_format(yaml_data):
+    """Convert YAML parameter format to internal format for generators.
+
+    Converts from:
+        parameters:
+          param_name:
+            type: float
+            value: 1.0
+            ...
+
+    To:
+        {
+          "namespace": "",
+          "parameters": [
+            {"name": "param_name", "type": "float", "value": 1.0, ...},
+            ...
+          ]
+        }
+    """
+    params = yaml_data.get('parameters', {})
+    parameters = []
+
+    for name, param_def in params.items():
+        param = {'name': name}
+        param.update(param_def)
+        parameters.append(param)
+
+    return {
+        'namespace': '',  # Will be set via command line
+        'parameters': parameters,
+    }
+
 
 def main():
     if len(sys.argv) < 4:
-        print("Usage: generate_code.py <json_file> <language> <output_file> [--namespace=...]", file=sys.stderr)
+        print("Usage: generate_code.py <yaml_or_json_file> <language> <output_file> [--namespace=...]", file=sys.stderr)
         sys.exit(1)
 
-    json_file = sys.argv[1]
+    input_file = sys.argv[1]
     language = sys.argv[2]
     output_file = sys.argv[3]
 
     # Parse optional arguments
     cpp_namespace = None
+    namespace = None
+    class_name = None
     for arg in sys.argv[4:]:
         if arg.startswith("--namespace="):
+            namespace = arg.split("=", 1)[1]
+        if arg.startswith("--cpp-namespace="):
             cpp_namespace = arg.split("=", 1)[1]
+        if arg.startswith("--class-name="):
+            class_name = arg.split("=", 1)[1]
 
-    # Read JSON parameter data
-    with open(json_file, 'r') as f:
-        param_data = json.load(f)
+    # Read parameter data
+    param_data = load_parameters(input_file)
+
+    # Set namespace if provided
+    if namespace:
+        param_data['namespace'] = namespace
+
+    # Set class name if provided (for Java)
+    if class_name:
+        param_data['class_name'] = class_name
 
     # Generate code based on language
     if language == "cpp":
@@ -431,20 +483,12 @@ def generate_java(param_data):
     """Generate Java class from parameter data."""
     namespace = param_data["namespace"]
     parameters = param_data["parameters"]
-    source_label = param_data.get("source_label", "")
 
-    # Extract class name from source label or use default
-    # Source label format: //package:target_name
-    class_name = "Parameters"
-    if source_label and ":" in source_label:
-        target_name = source_label.split(":")[-1]
-        # Convert to PascalCase
-        class_name = "".join(word.capitalize() for word in target_name.split("_"))
+    # Get class name from param_data or use default
+    class_name = param_data.get("class_name", "Parameters")
 
     lines = []
     lines.append("// This file is auto-generated. Do not edit manually.")
-    if source_label:
-        lines.append(f"// Generated from: {source_label}")
     lines.append(f"package {namespace};")
     lines.append("")
     lines.append("/**")

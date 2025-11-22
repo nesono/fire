@@ -14,25 +14,17 @@ load(
 )
 load("//fire/starlark:reports.bzl", "generate_report")
 load("//fire/starlark:requirements.bzl", "requirement_library")
-load(":vehicle_params.bzl", "VEHICLE_PARAMS")
 
-# Export parameter source file for dependency tracking
-filegroup(
-    name = "vehicle_params_bzl",
-    srcs = ["vehicle_params.bzl"],
-)
-
-# Validate and create parameter library (loaded from separate .bzl file for better organization)
+# Validate and create parameter library from YAML file
 # Namespace is auto-derived from package path: examples -> examples
-# Creates vehicle_params.json containing validated parameter data
 parameter_library(
     name = "vehicle_params",
-    parameters = VEHICLE_PARAMS,
+    src = "vehicle_params.yaml",
 )
 
 # Generate C++ library with parameters
-# Consumes vehicle_params.json and generates vehicle_params.h
-# Uses default namespace from parameter_library (examples)
+# Consumes vehicle_params.yaml and generates vehicle_params.h
+# Uses default namespace from package path (examples)
 cc_parameter_library(
     name = "vehicle_params_cc",
     parameter_library = ":vehicle_params",
@@ -60,7 +52,7 @@ cc_parameter_library(
 )
 
 # Generate Python library with parameters
-# Consumes vehicle_params.json and generates vehicle_params.py
+# Consumes vehicle_params.yaml and generates vehicle_params.py
 python_parameter_library(
     name = "vehicle_params_py",
     parameter_library = ":vehicle_params",
@@ -74,7 +66,7 @@ python_parameter_library(
 )
 
 # Generate Java parameters
-# Consumes vehicle_params.json and generates VehicleParams.java
+# Consumes vehicle_params.yaml and generates VehicleParams.java
 java_parameter_library(
     name = "vehicle_params_java",
     class_name = "VehicleParams",
@@ -83,7 +75,7 @@ java_parameter_library(
 )
 
 # Generate Go library with parameters
-# Consumes vehicle_params.json and generates vehicle_params.go
+# Consumes vehicle_params.yaml and generates vehicle_params.go
 go_parameter_library(
     name = "vehicle_params_go",
     parameter_library = ":vehicle_params",
@@ -97,7 +89,7 @@ go_parameter_library(
 )
 
 # Generate Rust parameters
-# Consumes vehicle_params.json and generates vehicle_params.rs
+# Consumes vehicle_params.yaml and generates vehicle_params.rs
 rust_parameter_library(
     name = "vehicle_params_rs",
     parameter_library = ":vehicle_params",
@@ -151,11 +143,17 @@ rust_test(
     edition = "2021",
 )
 
+# Export parameter YAML file for dependency tracking
+filegroup(
+    name = "vehicle_params_yaml",
+    srcs = ["vehicle_params.yaml"],
+)
+
 # Validate requirement documents (system requirements)
 requirement_library(
     name = "vehicle_requirements",
     srcs = glob(["requirements/*.md"]),
-    deps = [":vehicle_params_bzl"],  # System requirements reference parameter files
+    deps = [":vehicle_params_yaml"],  # System requirements reference parameter files
 )
 
 # Validate software component requirement documents
@@ -167,7 +165,7 @@ requirement_library(
         "vehicle_status/doc/*.swreq.md",
     ]),
     deps = [
-        ":vehicle_params_bzl",  # Component requirements also reference parameter files
+        ":vehicle_params_yaml",  # Component requirements also reference parameter files
         ":vehicle_requirements",  # Component requirements reference system requirements
     ],
 )

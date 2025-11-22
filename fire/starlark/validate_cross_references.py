@@ -151,7 +151,7 @@ def validate_parameter_reference(param_name, param_path, workspace_root):
         file_path = param_path
         anchor = param_name
 
-    # Strip leading slash for repository-relative paths (e.g., /examples/foo.bzl -> examples/foo.bzl)
+    # Strip leading slash for repository-relative paths (e.g., /examples/foo.yaml -> examples/foo.yaml)
     # Markdown uses /path for repository-relative, but os.path.join treats it as absolute
     if file_path.startswith('/'):
         file_path = file_path[1:]
@@ -172,9 +172,10 @@ def validate_parameter_reference(param_name, param_path, workspace_root):
         with open(abs_path, 'r') as f:
             content = f.read()
 
-        # Look for parameter definition (simple check for the parameter name)
-        # In Starlark, parameters are defined like: "param_name": {...}
-        if f'"{anchor}"' in content or f"'{anchor}'" in content:
+        # Look for parameter definition
+        # In YAML, parameters are defined as keys under 'parameters:'
+        # e.g., "  param_name:" at the start of a line
+        if f'{anchor}:' in content:
             return True, None
         else:
             return False, f"Parameter '{anchor}' not found in {file_path}"

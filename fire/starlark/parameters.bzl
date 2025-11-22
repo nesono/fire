@@ -1,14 +1,13 @@
 """Bazel rules for parameter management.
 
-Parameters can be defined inline in BUILD files or loaded from separate .bzl files.
-Validation happens at load time, and code is generated at build time for multiple languages.
+Parameters are defined in YAML files and validated at build time using JSON schema.
+Code is generated for multiple languages from the validated YAML.
 """
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_go//go:def.bzl", "go_library")
 load("@rules_java//java:defs.bzl", "java_library")
 load("@rules_python//python:defs.bzl", "py_library")
-load("//fire/starlark:validator.bzl", "validator")
 
 def _derive_namespace_from_package():
     """Derive namespace from Bazel package path.
@@ -26,56 +25,38 @@ def _derive_namespace_from_package():
         return "root"
     return pkg.replace("/", ".")
 
-def _get_source_label(name):
-    """Get the source Bazel label for traceability.
-
-    Args:
-        name: Target name
-
-    Returns:
-        Bazel label string (e.g., "//vehicle/dynamics:vehicle_params")
-    """
-    pkg = native.package_name()
-    if pkg:
-        return "//{pkg}:{name}".format(pkg = pkg, name = name)
-    return "//:{name}".format(name = name)
-
 def parameter_library(
         name,
-        schema_version = "1.0",
+        src,
         namespace = None,
-        parameters = []):
-    """Define and validate a parameter library, creating a JSON data file.
+        visibility = None):
+    """Define and validate a parameter library from a YAML file.
 
-    This macro validates parameters at load time and creates a JSON file
-    containing the parameter data. Language-specific libraries consume
-    this target to generate code.
+    This macro validates the YAML file at build time against a JSON schema
+    and makes it available for code generation.
 
     Args:
-        name: Name of the library (creates a .json file)
-        schema_version: Schema version (default "1.0")
+        name: Name of the library
+        src: Path to the parameter YAML file (e.g., "vehicle_params.yaml")
         namespace: Namespace for parameters (optional, derived from package path if not provided)
-        parameters: List of parameter dictionaries
+        visibility: Visibility of the target
 
     Example:
-        # Define parameters in a .bzl file
-        VEHICLE_PARAMS = [
-            {
-                "name": "max_velocity",
-                "type": "float",
-                "unit": "m/s",
-                "value": 55.0,
-                "description": "Maximum velocity",
-            },
-        ]
+        # Define parameters in a YAML file (vehicle_params.yaml):
+        # parameters:
+        #   max_velocity:
+        #     type: float
+        #     value: 55.0
+        #     unit: m/s
+        #     description: Maximum velocity
 
-        # Create parameter library (generates JSON)
+        # Create parameter library
         parameter_library(
             name = "vehicle_params",
-            parameters = VEHICLE_PARAMS,
+            src = "vehicle_params.yaml",
         )
 
-        # Generate code for different languages (consume the JSON)
+        # Generate code for different languages
         cc_parameter_library(
             name = "vehicle_params_cc",
             parameter_library = ":vehicle_params",
@@ -86,30 +67,40 @@ def parameter_library(
     if not namespace:
         namespace = _derive_namespace_from_package()
 
-    # Get source label for traceability
-    source_label = _get_source_label(name)
-
-    param_data = {
-        "namespace": namespace,
-        "parameters": parameters,
-        "schema_version": schema_version,
-        "source_label": source_label,
-    }
-
-    # Validate at load time
-    validation_error = validator.validate(param_data)
-    if validation_error:
-        fail("Parameter validation failed for {}: {}".format(name, validation_error))
-
-    # Create a genrule that uses Python to output JSON
-    # We pass the parameter data as a Python literal and use json.dumps
-    param_data_repr = str(param_data)
-
+    # Create validation target
+    validation_name = name + "_validation"
     native.genrule(
+        name = validation_name,
+        srcs = [src],
+        outs = [name + "_validated.yaml"],
+        cmd = """
+            $(location @fire//fire/starlark:validate_parameters_script) \
+                $< \
+                --schema=$(location @fire//fire/starlark:parameter_schema.json) && \
+            cp $< $@
+        """,
+        tools = [
+            "@fire//fire/starlark:validate_parameters_script",
+            "@fire//fire/starlark:parameter_schema.json",
+        ],
+        visibility = visibility if visibility else ["//visibility:public"],
+    )
+
+    # Create a filegroup that exposes both the namespace and the validated YAML
+    # We store namespace in a separate file for code generators to consume
+    namespace_file = name + "_namespace"
+    native.genrule(
+        name = namespace_file,
+        outs = [name + ".namespace"],
+        cmd = "echo '{}' > $@".format(namespace),
+        visibility = ["//visibility:private"],
+    )
+
+    # Main target is a filegroup containing the validated YAML
+    native.filegroup(
         name = name,
-        outs = [name + ".json"],
-        cmd = """python3 -c 'import json; print(json.dumps({}))' > $@""".format(param_data_repr),
-        visibility = ["//visibility:public"],
+        srcs = [":" + validation_name],
+        visibility = visibility if visibility else ["//visibility:public"],
     )
 
 def cc_parameter_library(
@@ -122,7 +113,7 @@ def cc_parameter_library(
 
     Args:
         name: Name of the cc_library
-        parameter_library: Label of the parameter_library target (the .json file)
+        parameter_library: Label of the parameter_library target (the YAML file)
         base_name: Base name for output file (optional, defaults to name with _cc suffix removed)
         namespace: Optional C++ namespace (use :: for nested namespaces, e.g., "outer::inner")
         **kwargs: Additional arguments for cc_library
@@ -130,7 +121,7 @@ def cc_parameter_library(
     Example:
         parameter_library(
             name = "vehicle_params",
-            parameters = VEHICLE_PARAMS,
+            src = "vehicle_params.yaml",
         )
 
         cc_parameter_library(
@@ -152,13 +143,15 @@ def cc_parameter_library(
         # Strip common suffixes
         base_name = name.removesuffix("_cc").removesuffix("_cpp")
 
-    # Build command with optional namespace
+    # Get namespace from package if not provided
     if namespace == None:
-        # No namespace parameter provided - use default from JSON
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< cpp $@"
-    else:
-        # Namespace explicitly provided (could be empty string for no namespace)
+        namespace = _derive_namespace_from_package()
+
+    # Build command with namespace
+    if namespace:
         cmd = "$(location @fire//fire/starlark:generate_code_script) $< cpp $@ --namespace='{}'".format(namespace)
+    else:
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< cpp $@ --namespace=''"
 
     # Create a generated header file using the Python script
     header_target = name + "_header"
@@ -187,14 +180,14 @@ def python_parameter_library(
 
     Args:
         name: Name of the py_library
-        parameter_library: Label of the parameter_library target (the .json file)
+        parameter_library: Label of the parameter_library target (the YAML file)
         base_name: Base name for output file (optional, defaults to name with _py suffix removed)
         **kwargs: Additional arguments for py_library
 
     Example:
         parameter_library(
             name = "vehicle_params",
-            parameters = VEHICLE_PARAMS,
+            src = "vehicle_params.yaml",
         )
 
         python_parameter_library(
@@ -210,13 +203,16 @@ def python_parameter_library(
         # Strip common suffixes
         base_name = name.removesuffix("_py").removesuffix("_python")
 
+    # Get namespace from package
+    namespace = _derive_namespace_from_package()
+
     # Create a generated Python file using the Python script
     py_file_target = name + "_file"
     native.genrule(
         name = py_file_target,
         srcs = [parameter_library],
         outs = [base_name + ".py"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< python $@",
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< python $@ --namespace='{}'".format(namespace),
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
@@ -238,14 +234,14 @@ def java_parameter_library(
 
     Args:
         name: Name of the Bazel target
-        parameter_library: Label of the parameter_library target (the .json file)
+        parameter_library: Label of the parameter_library target (the YAML file)
         class_name: Name of the generated class (optional, derived from target name if not provided)
         package_prefix: Optional package prefix (e.g., "com.example")
 
     Example:
         parameter_library(
             name = "vehicle_params",
-            parameters = VEHICLE_PARAMS,
+            src = "vehicle_params.yaml",
         )
 
         java_parameter_library(
@@ -264,47 +260,20 @@ def java_parameter_library(
         parts = base_name.split("_")
         class_name = "".join([word.capitalize() for word in parts])
 
-    # Create a generated Java file using the Python script
-    # Note: The namespace with package_prefix will be handled in parameter_library
-    # We need to create a custom JSON that includes the package_prefix
-    # For now, we'll use a wrapper script or pass it as an environment variable
-
-    # Actually, we need to handle package_prefix differently since parameter_library
-    # already set the namespace. Let me use a different approach:
-    # Generate with script, but we need to modify the namespace in the JSON
-
-    # For simplicity, let's generate using the script and handle package_prefix
-    # by modifying the parameter_library's namespace at this level
+    # Determine namespace
+    base_namespace = _derive_namespace_from_package()
+    if package_prefix:
+        namespace = "{}.{}".format(package_prefix, base_namespace)
+    else:
+        namespace = base_namespace
 
     java_file_target = name + "_file"
 
-    if package_prefix:
-        # Need to create a modified JSON with package prefix
-        # Use a genrule to modify the JSON
-        modified_json = name + "_json"
-        native.genrule(
-            name = modified_json,
-            srcs = [parameter_library],
-            outs = [name + "_modified.json"],
-            cmd = """python3 -c '
-import json, sys
-with open("$<", "r") as f:
-    data = json.load(f)
-base_ns = data["namespace"]
-data["namespace"] = "{}.{{}}".format(base_ns)
-with open("$@", "w") as f:
-    json.dump(data, f)
-' """.format(package_prefix),
-        )
-        json_input = ":" + modified_json
-    else:
-        json_input = parameter_library
-
     native.genrule(
         name = java_file_target,
-        srcs = [json_input],
+        srcs = [parameter_library],
         outs = [class_name + ".java"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< java $@",
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< java $@ --namespace='{}' --class-name='{}'".format(namespace, class_name),
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
@@ -326,7 +295,7 @@ def go_parameter_library(
 
     Args:
         name: Name of the go_library
-        parameter_library: Label of the parameter_library target (the .json file)
+        parameter_library: Label of the parameter_library target (the YAML file)
         base_name: Base name for output file (optional, defaults to name with _go suffix removed)
         importpath: Go import path (optional, defaults to package path + "/" + base_name)
         **kwargs: Additional arguments for go_library
@@ -334,7 +303,7 @@ def go_parameter_library(
     Example:
         parameter_library(
             name = "vehicle_params",
-            parameters = VEHICLE_PARAMS,
+            src = "vehicle_params.yaml",
         )
 
         go_parameter_library(
@@ -358,13 +327,16 @@ def go_parameter_library(
         else:
             importpath = base_name
 
+    # Get namespace from package
+    namespace = _derive_namespace_from_package()
+
     # Create a generated Go file using the Python script
     go_file_target = name + "_file"
     native.genrule(
         name = go_file_target,
         srcs = [parameter_library],
         outs = [base_name + ".go"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< go $@",
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< go $@ --namespace='{}'".format(namespace),
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
@@ -385,13 +357,13 @@ def rust_parameter_library(
 
     Args:
         name: Name of the Bazel target (use directly in rust_test srcs)
-        parameter_library: Label of the parameter_library target (the .json file)
+        parameter_library: Label of the parameter_library target (the YAML file)
         base_name: Base name for output file (optional, defaults to name with _rs suffix removed)
 
     Example:
         parameter_library(
             name = "vehicle_params",
-            parameters = VEHICLE_PARAMS,
+            src = "vehicle_params.yaml",
         )
 
         rust_parameter_library(
@@ -407,12 +379,15 @@ def rust_parameter_library(
         # Strip common suffixes
         base_name = name.removesuffix("_rs").removesuffix("_rust")
 
+    # Get namespace from package
+    namespace = _derive_namespace_from_package()
+
     # Create a generated Rust file using the Python script
     native.genrule(
         name = name,
         srcs = [parameter_library],
         outs = [base_name + ".rs"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< rust $@",
+        cmd = "$(location @fire//fire/starlark:generate_code_script) $< rust $@ --namespace='{}'".format(namespace),
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )

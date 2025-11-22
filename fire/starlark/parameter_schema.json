@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fire.dev/schemas/parameters.json",
+  "title": "Fire Parameters Schema",
+  "description": "Schema for validating Fire parameter YAML files",
+  "type": "object",
+  "required": ["parameters"],
+  "additionalProperties": false,
+  "properties": {
+    "parameters": {
+      "type": "object",
+      "description": "Map of parameter names to their definitions",
+      "additionalProperties": {
+        "$ref": "#/$defs/parameter"
+      },
+      "minProperties": 1
+    }
+  },
+  "$defs": {
+    "parameter": {
+      "type": "object",
+      "required": ["type", "value", "description"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["integer", "float", "string", "boolean", "table"],
+          "description": "The data type of the parameter"
+        },
+        "value": {
+          "description": "The parameter value (type depends on 'type' field)"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement (optional, not applicable for boolean/string)"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable description of the parameter"
+        },
+        "columns": {
+          "type": "array",
+          "description": "Column definitions for table type",
+          "items": {
+            "$ref": "#/$defs/column"
+          },
+          "minItems": 1
+        },
+        "rows": {
+          "type": "array",
+          "description": "Data rows for table type",
+          "items": {
+            "type": "array",
+            "description": "A single row of values"
+          },
+          "minItems": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "integer" } }
+          },
+          "then": {
+            "properties": {
+              "value": { "type": "integer" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "float" } }
+          },
+          "then": {
+            "properties": {
+              "value": { "type": "number" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "string" } }
+          },
+          "then": {
+            "properties": {
+              "value": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "boolean" } }
+          },
+          "then": {
+            "properties": {
+              "value": { "type": "boolean" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "table" } }
+          },
+          "then": {
+            "required": ["type", "description", "columns", "rows"],
+            "properties": {
+              "value": false
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "column": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Column name (lowercase, underscores)"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["integer", "float", "string", "boolean"],
+          "description": "Data type of values in this column"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement for this column"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

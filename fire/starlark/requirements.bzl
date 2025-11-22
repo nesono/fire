@@ -49,7 +49,8 @@ _validate_requirements = rule(
     implementation = _validate_requirements_impl,
     attrs = {
         "deps": attr.label_list(
-            allow_files = [".md", ".bzl"],
+            # TODO: do we need to keep .bzl in this list?
+            allow_files = [".md", ".bzl", ".yaml", ".yml"],
             default = [],
             doc = "Dependencies: other requirement files and parameter files referenced by srcs",
         ),
