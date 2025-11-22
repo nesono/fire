@@ -6,7 +6,7 @@ SIL: ASIL-C | Version: 1
 
 **Minimum Braking Distance**
 
-The system SHALL maintain a minimum braking distance of [@min_braking_distance](test_params.bzl#min_braking_distance) when operating at maximum speed [REQ-INT-001](requirements/REQ-INT-001.md?version=1#REQ-INT-001).
+The system SHALL maintain a minimum braking distance of [@min_braking_distance](test_params.yaml#min_braking_distance) when operating at maximum speed [REQ-INT-001](requirements/REQ-INT-001.md?version=1#REQ-INT-001).
 
 ### Rationale
 

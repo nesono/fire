@@ -6,7 +6,7 @@ SIL: ASIL-B | Version: 1
 
 **Maximum Speed Constraint**
 
-The system SHALL NOT exceed the maximum speed defined by [@max_speed](test_params.bzl#max_speed).
+The system SHALL NOT exceed the maximum speed defined by [@max_speed](test_params.yaml#max_speed).
 
 This requirement ensures safe operation within design limits.
 
