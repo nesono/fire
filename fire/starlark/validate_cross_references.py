@@ -163,9 +163,18 @@ def validate_parameter_reference(param_name, param_path, workspace_root):
     # Convert to absolute path
     abs_path = os.path.join(workspace_root, file_path)
 
-    # Check if file exists
+    # Check if file exists, or try the _validated.yaml version from parameter_library
     if not os.path.exists(abs_path):
-        return False, f"Parameter file does not exist: {file_path}"
+        # parameter_library outputs foo_validated.yaml from foo.yaml
+        if file_path.endswith('.yaml'):
+            validated_path = file_path[:-5] + '_validated.yaml'
+            validated_abs_path = os.path.join(workspace_root, validated_path)
+            if os.path.exists(validated_abs_path):
+                abs_path = validated_abs_path
+            else:
+                return False, f"Parameter file does not exist: {file_path}"
+        else:
+            return False, f"Parameter file does not exist: {file_path}"
 
     # Read file and check if parameter is defined
     try:
@@ -309,7 +318,12 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
             # Remove fragment if present
             normalized_path = normalized_path.split('#')[0] if '#' in normalized_path else normalized_path
 
-            if normalized_path not in allowed_deps:
+            # Check both the original path and the _validated.yaml version from parameter_library
+            validated_path = None
+            if normalized_path.endswith('.yaml'):
+                validated_path = normalized_path[:-5] + '_validated.yaml'
+
+            if normalized_path not in allowed_deps and (validated_path is None or validated_path not in allowed_deps):
                 errors.append(
                     f"{file_path}: References parameter file '{param_path}' which is not in declared dependencies.\n"
                     f"       Add the target containing '{normalized_path}' to 'deps' in your requirement_library().\n"

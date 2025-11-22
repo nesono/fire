@@ -143,17 +143,11 @@ rust_test(
     edition = "2021",
 )
 
-# Export parameter YAML file for dependency tracking
-filegroup(
-    name = "vehicle_params_yaml",
-    srcs = ["vehicle_params.yaml"],
-)
-
 # Validate requirement documents (system requirements)
 requirement_library(
     name = "vehicle_requirements",
     srcs = glob(["requirements/*.md"]),
-    deps = [":vehicle_params_yaml"],  # System requirements reference parameter files
+    deps = [":vehicle_params"],  # System requirements reference parameter files
 )
 
 # Validate software component requirement documents
@@ -165,7 +159,7 @@ requirement_library(
         "vehicle_status/doc/*.swreq.md",
     ]),
     deps = [
-        ":vehicle_params_yaml",  # Component requirements also reference parameter files
+        ":vehicle_params",  # Component requirements also reference parameter files
         ":vehicle_requirements",  # Component requirements reference system requirements
     ],
 )
