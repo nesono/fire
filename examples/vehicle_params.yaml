@@ -1,13 +1,13 @@
 parameters:
   maximum_vehicle_velocity:
-    type: float
+    type: f64
     value: 55.0
     unit: m/s
     description: Maximum design velocity for the vehicle
     version: 1
 
   wheel_count:
-    type: integer
+    type: i32
     value: 4
     description: Number of wheels on the vehicle
     version: 1
@@ -19,7 +19,7 @@ parameters:
     version: 1
 
   debug_mode:
-    type: boolean
+    type: bool
     value: false
     description: Enable debug output
     version: 1
@@ -30,13 +30,13 @@ parameters:
     version: 1
     columns:
       - name: velocity
-        type: float
+        type: f64
         unit: m/s
       - name: friction_coefficient
-        type: float
+        type: f64
         unit: dimensionless
       - name: braking_distance
-        type: float
+        type: f64
         unit: m
     rows:
       - [10.0, 0.7, 7.1]

@@ -137,6 +137,7 @@ def generate_cpp(param_data, cpp_namespace=None):
     lines.append(f"#define {guard_name}")
     lines.append("")
     lines.append("#include <cstddef>  // for size_t")
+    lines.append("#include <cstdint>  // for int32_t, int64_t, uint32_t, uint64_t")
     lines.append("")
 
     # Only add namespace declaration if namespace is provided
@@ -238,7 +239,7 @@ def generate_cpp(param_data, cpp_namespace=None):
             # Internal constant
             if param_type == "string":
                 lines.append(f"namespace detail {{ constexpr const char* {const_name}_VALUE = \"{value}\"; }}")
-            elif param_type in ["bool", "boolean"]:
+            elif param_type == "bool":
                 bool_val = "true" if value else "false"
                 lines.append(f"namespace detail {{ constexpr {cpp_type} {const_name}_VALUE = {bool_val}; }}")
             else:
@@ -283,12 +284,14 @@ def generate_cpp(param_data, cpp_namespace=None):
 def _get_cpp_type(param_type):
     """Map parameter type to C++ type."""
     type_map = {
-        "float": "double",
-        "int": "int",
-        "integer": "int",
+        "i32": "int32_t",
+        "i64": "int64_t",
+        "u32": "uint32_t",
+        "u64": "uint64_t",
+        "f32": "float",
+        "f64": "double",
         "string": "const char*",
         "bool": "bool",
-        "boolean": "bool",
     }
     return type_map.get(param_type, param_type)
 
@@ -396,12 +399,14 @@ def generate_python(param_data):
 def _get_python_type(param_type):
     """Map parameter type to Python type."""
     type_map = {
-        "float": "float",
-        "int": "int",
-        "integer": "int",
+        "i32": "int",
+        "i64": "int",
+        "u32": "int",
+        "u64": "int",
+        "f32": "float",
+        "f64": "float",
         "string": "str",
         "bool": "bool",
-        "boolean": "bool",
     }
     return type_map.get(param_type, param_type)
 
@@ -485,7 +490,7 @@ def generate_go(param_data):
             # Internal value
             if param_type == "string":
                 lines.append(f'var {const_name.lower()}Value = "{value}"')
-            elif param_type in ["bool", "boolean"]:
+            elif param_type == "bool":
                 bool_val = "true" if value else "false"
                 lines.append(f"var {const_name.lower()}Value = {bool_val}")
             else:
@@ -511,12 +516,14 @@ def generate_go(param_data):
 def _get_go_type(param_type):
     """Map parameter type to Go type."""
     type_map = {
-        "float": "float64",
-        "int": "int",
-        "integer": "int",
+        "i32": "int32",
+        "i64": "int64",
+        "u32": "uint32",
+        "u64": "uint64",
+        "f32": "float32",
+        "f64": "float64",
         "string": "string",
         "bool": "bool",
-        "boolean": "bool",
     }
     return type_map.get(param_type, param_type)
 
@@ -644,12 +651,14 @@ def generate_rust(param_data):
 def _get_rust_type(param_type):
     """Map parameter type to Rust type."""
     type_map = {
-        "float": "f64",
-        "int": "i32",
-        "integer": "i32",
+        "i32": "i32",
+        "i64": "i64",
+        "u32": "u32",
+        "u64": "u64",
+        "f32": "f32",
+        "f64": "f64",
         "string": "&'static str",
         "bool": "bool",
-        "boolean": "bool",
     }
     return type_map.get(param_type, param_type)
 
@@ -729,7 +738,7 @@ def generate_java(param_data):
                     val = row[i]
                     if col["type"] == "string":
                         values.append(f'"{val}"')
-                    elif col["type"] in ["bool", "boolean"]:
+                    elif col["type"] == "bool":
                         values.append("true" if val else "false")
                     else:
                         values.append(str(val))
@@ -762,7 +771,7 @@ def generate_java(param_data):
             # Internal value
             if param_type == "string":
                 lines.append(f'    private static final {java_type} {const_name}_VALUE = "{value}";')
-            elif param_type in ["bool", "boolean"]:
+            elif param_type == "bool":
                 bool_val = "true" if value else "false"
                 lines.append(f"    private static final {java_type} {const_name}_VALUE = {bool_val};")
             else:
@@ -801,12 +810,14 @@ def generate_java(param_data):
 def _get_java_type(param_type):
     """Map parameter type to Java type."""
     type_map = {
-        "float": "double",
-        "int": "int",
-        "integer": "int",
+        "i32": "int",
+        "i64": "long",
+        "u32": "int",  # Java doesn't have unsigned, use int
+        "u64": "long",  # Java doesn't have unsigned, use long
+        "f32": "float",
+        "f64": "double",
         "string": "String",
         "bool": "boolean",
-        "boolean": "boolean",
     }
     return type_map.get(param_type, param_type)
 
