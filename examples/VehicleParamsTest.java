@@ -12,17 +12,17 @@ public class VehicleParamsTest {
 
     @Test
     public void testSimpleParameters() {
-        // Access simple parameters
-        assertEquals(55.0, VehicleParams.MAXIMUM_VEHICLE_VELOCITY, 0.001);
-        assertEquals(4, VehicleParams.WHEEL_COUNT);
-        assertEquals("TestVehicle", VehicleParams.VEHICLE_NAME);
-        assertEquals(false, VehicleParams.DEBUG_MODE);
+        // Access simple parameters with version check
+        assertEquals(55.0, VehicleParams.maximumVehicleVelocity(1), 0.001);
+        assertEquals(4, VehicleParams.wheelCount(1));
+        assertEquals("TestVehicle", VehicleParams.vehicleName(1));
+        assertEquals(false, VehicleParams.debugMode(1));
     }
 
     @Test
     public void testTableParameters() {
-        // Access table parameter
-        VehicleParams.BrakingDistanceTableRow[] table = VehicleParams.BRAKING_DISTANCE_TABLE;
+        // Access table parameter with version check
+        VehicleParams.BrakingDistanceTableRow[] table = VehicleParams.brakingDistanceTable(1);
 
         // Check we have the expected number of rows
         assertEquals(6, table.length);
@@ -48,7 +48,7 @@ public class VehicleParamsTest {
     public void testRecordImmutability() {
         // Records are immutable by design in Java
         // This is enforced at compile time
-        VehicleParams.BrakingDistanceTableRow row = VehicleParams.BRAKING_DISTANCE_TABLE[0];
+        VehicleParams.BrakingDistanceTableRow row = VehicleParams.brakingDistanceTable(1)[0];
 
         // row.velocity = 999.0;  // Would not compile - records are immutable
 

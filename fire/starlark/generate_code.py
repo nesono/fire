@@ -144,22 +144,10 @@ def generate_cpp(param_data, cpp_namespace=None):
         lines.append(f"namespace {namespace} {{")
         lines.append("")
 
-    # Generate constants for simple parameters and struct definitions for tables
+    # Generate struct definitions for tables first
     for param in parameters:
-        param_name = param["name"]
-        param_type = param["type"]
-        description = param.get("description", "")
-        unit = param.get("unit", "")
-
-        # Add documentation comment
-        if description:
-            doc = description
-            if unit:
-                doc += f" - Unit: {unit}"
-            lines.append(f"/// {doc}")
-
-        if param_type == "table":
-            # Generate struct for table
+        if param["type"] == "table":
+            param_name = param["name"]
             columns = param["columns"]
             struct_name = "".join(word.capitalize() for word in param_name.split("_")) + "Row"
 
@@ -176,16 +164,31 @@ def generate_cpp(param_data, cpp_namespace=None):
             lines.append("};")
             lines.append("")
 
-            if description:
-                lines.append(f"/// {description}")
+    # Generate internal constants and accessor functions for each parameter
+    for param in parameters:
+        param_name = param["name"]
+        param_type = param["type"]
+        description = param.get("description", "")
+        unit = param.get("unit", "")
+        version = param.get("version", 1)
+        const_name = param_name.upper()
 
-            # Generate array constant
-            const_name = param_name.upper()
-            lines.append(f"constexpr {struct_name} {const_name}[] = {{")
+        # Add documentation comment
+        if description:
+            doc = description
+            if unit:
+                doc += f" - Unit: {unit}"
+            lines.append(f"/// {doc}")
 
+        if param_type == "table":
+            struct_name = "".join(word.capitalize() for word in param_name.split("_")) + "Row"
             rows = param["rows"]
+            columns = param["columns"]
+
+            # Internal array constant
+            lines.append(f"namespace detail {{")
+            lines.append(f"constexpr {struct_name} {const_name}_DATA[] = {{")
             for row in rows:
-                # rows are arrays, not dicts
                 values = []
                 for i, col in enumerate(columns):
                     val = row[i]
@@ -197,32 +200,45 @@ def generate_cpp(param_data, cpp_namespace=None):
                         values.append(str(val))
                 lines.append(f"    {{{', '.join(values)}}},")
             lines.append("};")
+            lines.append(f"}}  // namespace detail")
             lines.append("")
 
-            # Add size constant
+            # Size constant
             lines.append(f"constexpr size_t {const_name}_SIZE = {len(rows)};")
+            lines.append("")
 
-            # Add version constant for table
-            version = param.get("version", 1)
-            lines.append(f"constexpr int {const_name}_VERSION = {version};")
+            # Version-checked accessor function
+            lines.append(f"/// Access {param_name} with version check (current version: {version})")
+            lines.append(f"template<int ExpectedVersion>")
+            lines.append(f"[[nodiscard]] constexpr const {struct_name}* {param_name}() {{")
+            lines.append(f"    static_assert(ExpectedVersion <= {version},")
+            lines.append(f'        "Parameter {param_name} version {version} is older than expected version");')
+            lines.append(f"    return detail::{const_name}_DATA;")
+            lines.append(f"}}")
 
         else:
             # Simple parameter
             value = param["value"]
             cpp_type = _get_cpp_type(param_type)
-            const_name = param_name.upper()
 
+            # Internal constant
             if param_type == "string":
-                lines.append(f"constexpr const char* {const_name} = \"{value}\";")
+                lines.append(f"namespace detail {{ constexpr const char* {const_name}_VALUE = \"{value}\"; }}")
             elif param_type in ["bool", "boolean"]:
                 bool_val = "true" if value else "false"
-                lines.append(f"constexpr {cpp_type} {const_name} = {bool_val};")
+                lines.append(f"namespace detail {{ constexpr {cpp_type} {const_name}_VALUE = {bool_val}; }}")
             else:
-                lines.append(f"constexpr {cpp_type} {const_name} = {value};")
+                lines.append(f"namespace detail {{ constexpr {cpp_type} {const_name}_VALUE = {value}; }}")
+            lines.append("")
 
-            # Add version constant for simple parameter
-            version = param.get("version", 1)
-            lines.append(f"constexpr int {const_name}_VERSION = {version};")
+            # Version-checked accessor function
+            lines.append(f"/// Access {param_name} with version check (current version: {version})")
+            lines.append(f"template<int ExpectedVersion>")
+            lines.append(f"[[nodiscard]] constexpr {cpp_type} {param_name}() {{")
+            lines.append(f"    static_assert(ExpectedVersion <= {version},")
+            lines.append(f'        "Parameter {param_name} version {version} is older than expected version");')
+            lines.append(f"    return detail::{const_name}_VALUE;")
+            lines.append(f"}}")
 
         lines.append("")
 
@@ -255,9 +271,10 @@ def generate_python(param_data):
     source_label = param_data.get("source_label", "")
 
     lines = []
-    lines.append('"""Generated parameter constants."""')
+    lines.append('"""Generated parameter constants with version checking."""')
     lines.append("")
     lines.append("from dataclasses import dataclass")
+    lines.append("import warnings")
     lines.append("")
 
     # Generate dataclasses for tables
@@ -278,20 +295,21 @@ def generate_python(param_data):
 
             lines.append("")
 
-    # Generate constants
+    # Generate internal data and accessor functions
     for param in parameters:
         param_name = param["name"]
         param_type = param["type"]
         const_name = param_name.upper()
+        version = param.get("version", 1)
 
         if param_type == "table":
             class_name = "".join(word.capitalize() for word in param_name.split("_")) + "Row"
             rows = param["rows"]
             columns = param["columns"]
 
-            lines.append(f"{const_name}_DATA = [")
+            # Internal data
+            lines.append(f"_{const_name}_DATA = [")
             for row in rows:
-                # rows are arrays, not dicts
                 values = []
                 for i, col in enumerate(columns):
                     val = row[i]
@@ -301,18 +319,47 @@ def generate_python(param_data):
                         values.append(f'{col["name"]}={val}')
                 lines.append(f"    {class_name}({', '.join(values)}),")
             lines.append("]")
-            # Add version constant for table
-            version = param.get("version", 1)
-            lines.append(f"{const_name}_VERSION = {version}")
+            lines.append("")
+
+            # Version-checked accessor function
+            lines.append(f"def {param_name}(expected_version: int) -> list[{class_name}]:")
+            lines.append(f'    """Access {param_name} with version check (current version: {version})."""')
+            lines.append(f"    if expected_version > {version}:")
+            lines.append(f'        raise RuntimeError(')
+            lines.append(f'            f"Parameter {param_name} version {version} is older than expected version {{expected_version}}"')
+            lines.append(f'        )')
+            lines.append(f"    if expected_version < {version}:")
+            lines.append(f'        warnings.warn(')
+            lines.append(f'            f"Parameter {param_name} has been updated to version {version}, expected {{expected_version}}",')
+            lines.append(f'            DeprecationWarning,')
+            lines.append(f'            stacklevel=2')
+            lines.append(f'        )')
+            lines.append(f"    return _{const_name}_DATA")
         else:
             value = param["value"]
+            py_type = _get_python_type(param_type)
+
+            # Internal value
             if param_type == "string":
-                lines.append(f'{const_name} = "{value}"')
+                lines.append(f'_{const_name}_VALUE = "{value}"')
             else:
-                lines.append(f"{const_name} = {value}")
-            # Add version constant for simple parameter
-            version = param.get("version", 1)
-            lines.append(f"{const_name}_VERSION = {version}")
+                lines.append(f"_{const_name}_VALUE = {value}")
+            lines.append("")
+
+            # Version-checked accessor function
+            lines.append(f"def {param_name}(expected_version: int) -> {py_type}:")
+            lines.append(f'    """Access {param_name} with version check (current version: {version})."""')
+            lines.append(f"    if expected_version > {version}:")
+            lines.append(f'        raise RuntimeError(')
+            lines.append(f'            f"Parameter {param_name} version {version} is older than expected version {{expected_version}}"')
+            lines.append(f'        )')
+            lines.append(f"    if expected_version < {version}:")
+            lines.append(f'        warnings.warn(')
+            lines.append(f'            f"Parameter {param_name} has been updated to version {version}, expected {{expected_version}}",')
+            lines.append(f'            DeprecationWarning,')
+            lines.append(f'            stacklevel=2')
+            lines.append(f'        )')
+            lines.append(f"    return _{const_name}_VALUE")
 
         lines.append("")
 
@@ -341,6 +388,10 @@ def generate_go(param_data):
     lines = []
     lines.append(f"package {package_name}")
     lines.append("")
+    lines.append("import (")
+    lines.append('    "fmt"')
+    lines.append(")")
+    lines.append("")
 
     # Generate structs for tables
     for param in parameters:
@@ -360,20 +411,22 @@ def generate_go(param_data):
             lines.append("}")
             lines.append("")
 
-    # Generate constants
+    # Generate internal data and accessor functions
     for param in parameters:
         param_name = param["name"]
         param_type = param["type"]
-        const_name = "".join(word.capitalize() for word in param_name.split("_"))
+        func_name = "".join(word.capitalize() for word in param_name.split("_"))
+        const_name = param_name.upper()
+        version = param.get("version", 1)
 
         if param_type == "table":
             struct_name = "".join(word.capitalize() for word in param_name.split("_")) + "Row"
             rows = param["rows"]
             columns = param["columns"]
 
-            lines.append(f"var {const_name} = []{struct_name}{{")
+            # Internal data
+            lines.append(f"var {const_name.lower()}Data = []{struct_name}{{")
             for row in rows:
-                # rows are arrays, not dicts
                 values = []
                 for i, col in enumerate(columns):
                     col_name = "".join(word.capitalize() for word in col["name"].split("_"))
@@ -384,21 +437,44 @@ def generate_go(param_data):
                         values.append(f"{col_name}: {val}")
                 lines.append(f"    {{{', '.join(values)}}},")
             lines.append("}")
-            # Add version constant for table
-            version = param.get("version", 1)
-            lines.append(f"const {const_name}Version = {version}")
+            lines.append("")
+
+            # Version-checked accessor function
+            lines.append(f"// {func_name} returns {param_name} with version check (current version: {version})")
+            lines.append(f"func {func_name}(expectedVersion int) []{struct_name} {{")
+            lines.append(f"    if expectedVersion > {version} {{")
+            lines.append(f'        panic(fmt.Sprintf("Parameter {param_name} version {version} is older than expected version %d", expectedVersion))')
+            lines.append(f"    }}")
+            lines.append(f"    if expectedVersion < {version} {{")
+            lines.append(f'        fmt.Printf("Warning: Parameter {param_name} has been updated to version {version}, expected %d\\n", expectedVersion)')
+            lines.append(f"    }}")
+            lines.append(f"    return {const_name.lower()}Data")
+            lines.append("}")
         else:
             value = param["value"]
+            go_type = _get_go_type(param_type)
+
+            # Internal value
             if param_type == "string":
-                lines.append(f'const {const_name} = "{value}"')
+                lines.append(f'var {const_name.lower()}Value = "{value}"')
             elif param_type in ["bool", "boolean"]:
                 bool_val = "true" if value else "false"
-                lines.append(f"const {const_name} = {bool_val}")
+                lines.append(f"var {const_name.lower()}Value = {bool_val}")
             else:
-                lines.append(f"const {const_name} = {value}")
-            # Add version constant for simple parameter
-            version = param.get("version", 1)
-            lines.append(f"const {const_name}Version = {version}")
+                lines.append(f"var {const_name.lower()}Value {go_type} = {value}")
+            lines.append("")
+
+            # Version-checked accessor function
+            lines.append(f"// {func_name} returns {param_name} with version check (current version: {version})")
+            lines.append(f"func {func_name}(expectedVersion int) {go_type} {{")
+            lines.append(f"    if expectedVersion > {version} {{")
+            lines.append(f'        panic(fmt.Sprintf("Parameter {param_name} version {version} is older than expected version %d", expectedVersion))')
+            lines.append(f"    }}")
+            lines.append(f"    if expectedVersion < {version} {{")
+            lines.append(f'        fmt.Printf("Warning: Parameter {param_name} has been updated to version {version}, expected %d\\n", expectedVersion)')
+            lines.append(f"    }}")
+            lines.append(f"    return {const_name.lower()}Value")
+            lines.append("}")
 
         lines.append("")
 
@@ -422,7 +498,7 @@ def generate_rust(param_data):
     parameters = param_data["parameters"]
 
     lines = []
-    lines.append("// Generated parameter constants")
+    lines.append("// Generated parameter constants with version checking")
     lines.append("")
 
     # Generate structs for tables
@@ -444,20 +520,21 @@ def generate_rust(param_data):
             lines.append("}")
             lines.append("")
 
-    # Generate constants
+    # Generate internal data and accessor functions
     for param in parameters:
         param_name = param["name"]
         param_type = param["type"]
         const_name = param_name.upper()
+        version = param.get("version", 1)
 
         if param_type == "table":
             struct_name = "".join(word.capitalize() for word in param_name.split("_")) + "Row"
             rows = param["rows"]
             columns = param["columns"]
 
-            lines.append(f"pub const {const_name}: [{struct_name}; {len(rows)}] = [")
+            # Internal data
+            lines.append(f"const {const_name}_DATA: [{struct_name}; {len(rows)}] = [")
             for row in rows:
-                # rows are arrays, not dicts
                 values = []
                 for i, col in enumerate(columns):
                     col_name = col["name"]
@@ -468,27 +545,43 @@ def generate_rust(param_data):
                         values.append(f"{col_name}: {val}")
                 lines.append(f"    {struct_name} {{ {', '.join(values)} }},")
             lines.append("];")
+            lines.append("")
+
+            # Size constant
+            lines.append(f"pub const {const_name}_SIZE: usize = {len(rows)};")
+            lines.append("")
+
+            # Version-checked accessor function using const generics
+            lines.append(f"/// Access {param_name} with version check (current version: {version})")
+            lines.append(f"pub const fn {param_name}<const EXPECTED_VERSION: i32>() -> &'static [{struct_name}; {len(rows)}] {{")
+            lines.append(f"    const CURRENT_VERSION: i32 = {version};")
+            lines.append(f"    assert!(EXPECTED_VERSION <= CURRENT_VERSION,")
+            lines.append(f'        "Parameter {param_name} version is older than expected version");')
+            lines.append(f"    // Note: Rust doesn't have compile-time warnings, version upgrade notices should be handled by tooling")
+            lines.append(f"    &{const_name}_DATA")
+            lines.append("}")
         else:
             value = param["value"]
             rust_type = _get_rust_type(param_type)
+
+            # Internal value
             if param_type == "string":
-                lines.append(f'pub const {const_name}: &str = "{value}";')
+                lines.append(f'const {const_name}_VALUE: &str = "{value}";')
             else:
-                lines.append(f"pub const {const_name}: {rust_type} = {str(value).lower()};")
+                lines.append(f"const {const_name}_VALUE: {rust_type} = {str(value).lower()};")
+            lines.append("")
+
+            # Version-checked accessor function using const generics
+            lines.append(f"/// Access {param_name} with version check (current version: {version})")
+            lines.append(f"pub const fn {param_name}<const EXPECTED_VERSION: i32>() -> {rust_type} {{")
+            lines.append(f"    const CURRENT_VERSION: i32 = {version};")
+            lines.append(f"    assert!(EXPECTED_VERSION <= CURRENT_VERSION,")
+            lines.append(f'        "Parameter {param_name} version is older than expected version");')
+            lines.append(f"    // Note: Rust doesn't have compile-time warnings, version upgrade notices should be handled by tooling")
+            lines.append(f"    {const_name}_VALUE")
+            lines.append("}")
 
         lines.append("")
-
-    # Add size and version constants for tables, version constants for simple params
-    for param in parameters:
-        const_name = param["name"].upper()
-        version = param.get("version", 1)
-        if param["type"] == "table":
-            lines.append(f"pub const {const_name}_SIZE: usize = {len(param['rows'])};")
-            lines.append(f"pub const {const_name}_VERSION: i32 = {version};")
-            lines.append("")
-        else:
-            lines.append(f"pub const {const_name}_VERSION: i32 = {version};")
-            lines.append("")
 
     return "\n".join(lines)
 
@@ -517,7 +610,7 @@ def generate_java(param_data):
     lines.append(f"package {namespace};")
     lines.append("")
     lines.append("/**")
-    lines.append(" * Generated parameter definitions.")
+    lines.append(" * Generated parameter definitions with version checking.")
     lines.append(" */")
     lines.append(f"public final class {class_name} {{")
     lines.append("")
@@ -553,13 +646,18 @@ def generate_java(param_data):
             lines.append(f"    public record {record_name}({', '.join(fields)}) {{}}")
             lines.append("")
 
-    # Generate constants
+    # Generate internal data and accessor methods
     for param in parameters:
         param_name = param["name"]
         param_type = param["type"]
         description = param.get("description", "")
         unit = param.get("unit", "")
         const_name = param_name.upper()
+        version = param.get("version", 1)
+
+        # Method name in camelCase
+        method_name_parts = param_name.split("_")
+        method_name = method_name_parts[0] + "".join(word.capitalize() for word in method_name_parts[1:])
 
         if param_type == "table":
             # Generate array of records
@@ -567,9 +665,9 @@ def generate_java(param_data):
             rows = param["rows"]
             columns = param["columns"]
 
-            lines.append(f"    public static final {record_name}[] {const_name} = {{")
+            # Internal data
+            lines.append(f"    private static final {record_name}[] {const_name}_DATA = {{")
             for row in rows:
-                # rows are arrays, not dicts
                 values = []
                 for i, col in enumerate(columns):
                     val = row[i]
@@ -581,33 +679,61 @@ def generate_java(param_data):
                         values.append(str(val))
                 lines.append(f"        new {record_name}({', '.join(values)}),")
             lines.append("    };")
-            # Add version constant for table
-            version = param.get("version", 1)
-            lines.append(f"    public static final int {const_name}_VERSION = {version};")
+            lines.append("")
+
+            # Version-checked accessor method
+            lines.append("    /**")
+            lines.append(f"     * Access {param_name} with version check (current version: {version}).")
+            lines.append("     * @param expectedVersion the expected version")
+            lines.append(f"     * @return the {param_name} data")
+            lines.append(f"     * @throws IllegalArgumentException if expected version is newer than current version {version}")
+            lines.append("     */")
+            lines.append(f"    public static {record_name}[] {method_name}(int expectedVersion) {{")
+            lines.append(f"        if (expectedVersion > {version}) {{")
+            lines.append(f'            throw new IllegalArgumentException(')
+            lines.append(f'                "Parameter {param_name} version {version} is older than expected version " + expectedVersion);')
+            lines.append(f"        }}")
+            lines.append(f"        if (expectedVersion < {version}) {{")
+            lines.append(f'            System.err.println("Warning: Parameter {param_name} has been updated to version {version}, expected " + expectedVersion);')
+            lines.append(f"        }}")
+            lines.append(f"        return {const_name}_DATA;")
+            lines.append("    }")
         else:
-            # Simple constant
+            # Simple parameter
             value = param["value"]
             java_type = _get_java_type(param_type)
 
-            # Add documentation
-            if description or unit:
-                lines.append("    /**")
-                if description:
-                    lines.append(f"     * {description}")
-                if unit:
-                    lines.append(f"     * Unit: {unit}")
-                lines.append("     */")
-
+            # Internal value
             if param_type == "string":
-                lines.append(f'    public static final {java_type} {const_name} = "{value}";')
+                lines.append(f'    private static final {java_type} {const_name}_VALUE = "{value}";')
             elif param_type in ["bool", "boolean"]:
                 bool_val = "true" if value else "false"
-                lines.append(f"    public static final {java_type} {const_name} = {bool_val};")
+                lines.append(f"    private static final {java_type} {const_name}_VALUE = {bool_val};")
             else:
-                lines.append(f"    public static final {java_type} {const_name} = {value};")
-            # Add version constant for simple parameter
-            version = param.get("version", 1)
-            lines.append(f"    public static final int {const_name}_VERSION = {version};")
+                lines.append(f"    private static final {java_type} {const_name}_VALUE = {value};")
+            lines.append("")
+
+            # Version-checked accessor method
+            lines.append("    /**")
+            if description:
+                lines.append(f"     * {description}")
+            if unit:
+                lines.append(f"     * Unit: {unit}")
+            lines.append(f"     * Access {param_name} with version check (current version: {version}).")
+            lines.append("     * @param expectedVersion the expected version")
+            lines.append(f"     * @return the {param_name} value")
+            lines.append(f"     * @throws IllegalArgumentException if expected version is newer than current version {version}")
+            lines.append("     */")
+            lines.append(f"    public static {java_type} {method_name}(int expectedVersion) {{")
+            lines.append(f"        if (expectedVersion > {version}) {{")
+            lines.append(f'            throw new IllegalArgumentException(')
+            lines.append(f'                "Parameter {param_name} version {version} is older than expected version " + expectedVersion);')
+            lines.append(f"        }}")
+            lines.append(f"        if (expectedVersion < {version}) {{")
+            lines.append(f'            System.err.println("Warning: Parameter {param_name} has been updated to version {version}, expected " + expectedVersion);')
+            lines.append(f"        }}")
+            lines.append(f"        return {const_name}_VALUE;")
+            lines.append("    }")
 
         lines.append("")
 
