@@ -1,0 +1,162 @@
+"""Tests for parameter version checking.
+
+These tests verify that version mismatch detection works correctly:
+- Version too old (expected > actual): should fail at compile/runtime
+- Version upgraded (expected < actual): should emit warning
+
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_go//go:def.bzl", "go_binary")
+load("@rules_java//java:defs.bzl", "java_binary")
+load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("//fire/starlark:parameters.bzl", "cc_parameter_library", "go_parameter_library", "java_parameter_library", "parameter_library", "python_parameter_library", "rust_parameter_library")
+
+# Generate parameter library from test YAML
+parameter_library(
+    name = "test_params",
+    src = "test_params.yaml",
+)
+
+# Generate code for each language
+cc_parameter_library(
+    name = "test_params_cc",
+    base_name = "test_params",
+    namespace = "test",
+    parameter_library = ":test_params",
+)
+
+python_parameter_library(
+    name = "test_params_py",
+    base_name = "test_params",
+    parameter_library = ":test_params",
+)
+
+go_parameter_library(
+    name = "test_params_go",
+    base_name = "test_params",
+    parameter_library = ":test_params",
+)
+
+rust_parameter_library(
+    name = "test_params_rust",
+    base_name = "test_params",
+    parameter_library = ":test_params",
+)
+
+java_parameter_library(
+    name = "test_params_java",
+    class_name = "TestParams",
+    parameter_library = ":test_params",
+)
+
+# =============================================================================
+# Version Too Old Tests (expected > actual) - Should FAIL
+# =============================================================================
+
+# C++ - should fail to compile with static_assert
+cc_binary(
+    name = "test_version_too_old_cpp",
+    srcs = ["test_version_too_old_cpp.cc"],
+    tags = [
+        "failure_test",
+        "manual",
+        "version_too_old",
+    ],
+    deps = [":test_params_cc"],
+)
+
+# Python - should fail at runtime with RuntimeError
+py_binary(
+    name = "test_version_too_old_py",
+    srcs = ["test_version_too_old_py.py"],
+    tags = [
+        "failure_test",
+        "manual",
+        "version_too_old",
+    ],
+    deps = [":test_params_py"],
+)
+
+# Go - should panic at runtime
+go_binary(
+    name = "test_version_too_old_go",
+    srcs = ["test_version_too_old_go.go"],
+    tags = [
+        "failure_test",
+        "manual",
+        "version_too_old",
+    ],
+    deps = [":test_params_go"],
+)
+
+# Rust - should fail to compile with const assert
+rust_binary(
+    name = "test_version_too_old_rust",
+    srcs = [
+        "test_version_too_old_rust.rs",
+        ":test_params_rust",
+    ],
+    edition = "2021",
+    tags = [
+        "failure_test",
+        "manual",
+        "version_too_old",
+    ],
+)
+
+# Java - should fail at runtime with IllegalArgumentException
+java_binary(
+    name = "test_version_too_old_java",
+    srcs = ["TestVersionTooOld.java"],
+    main_class = "fire.starlark.failure_test.parameter_version.TestVersionTooOld",
+    tags = [
+        "failure_test",
+        "manual",
+        "version_too_old",
+    ],
+    deps = [":test_params_java"],
+)
+
+# =============================================================================
+# Version Upgraded Tests (expected < actual) - Should WARN
+# =============================================================================
+
+# Python - should emit DeprecationWarning
+py_binary(
+    name = "test_version_upgraded_py",
+    srcs = ["test_version_upgraded_py.py"],
+    tags = [
+        "failure_test",
+        "manual",
+        "version_upgraded",
+    ],
+    deps = [":test_params_py"],
+)
+
+# Go - should print warning to stdout
+go_binary(
+    name = "test_version_upgraded_go",
+    srcs = ["test_version_upgraded_go.go"],
+    tags = [
+        "failure_test",
+        "manual",
+        "version_upgraded",
+    ],
+    deps = [":test_params_go"],
+)
+
+# Java - should print warning to stderr
+java_binary(
+    name = "test_version_upgraded_java",
+    srcs = ["TestVersionUpgraded.java"],
+    main_class = "fire.starlark.failure_test.parameter_version.TestVersionUpgraded",
+    tags = [
+        "failure_test",
+        "manual",
+        "version_upgraded",
+    ],
+    deps = [":test_params_java"],
+)
