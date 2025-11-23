@@ -86,13 +86,13 @@ Parameters are defined in YAML files with an ergonomic format where the paramete
 ```yaml
 parameters:
   maximum_vehicle_velocity:
-    type: float
+    type: f64
     unit: m/s
     value: 55.0
     description: Maximum design velocity for the vehicle
 
   wheel_count:
-    type: integer
+    type: i32
     value: 4
     description: Number of wheels on the vehicle
 
@@ -101,13 +101,13 @@ parameters:
     description: Braking distances under various conditions
     columns:
       - name: velocity
-        type: float
+        type: f64
         unit: m/s
       - name: friction_coefficient
-        type: float
+        type: f64
         unit: dimensionless
       - name: braking_distance
-        type: float
+        type: f64
         unit: m
     rows:
       - [10.0, 0.7, 7.1]
@@ -398,7 +398,10 @@ parameter_library(
 
 Parameters are defined in YAML with the following fields:
 
-- `type` (required): One of `float`, `integer`, `string`, `boolean`, `table`
+- `type` (required): One of:
+  - Integer types: `i32`, `i64` (signed), `u32`, `u64` (unsigned)
+  - Floating-point types: `f32`, `f64`
+  - Other types: `string`, `bool`, `table`
 - `value` (required for non-table types): The parameter value
 - `description` (required): Human-readable description
 - `unit` (optional): Physical unit for the parameter
@@ -408,7 +411,7 @@ Example:
 ```yaml
 parameters:
   max_temperature:
-    type: float
+    type: f64
     unit: celsius
     value: 85.0
     description: Maximum operating temperature
@@ -425,11 +428,11 @@ parameters:
     description: Gear ratios by gear number
     columns:
       - name: gear
-        type: integer
+        type: i32
       - name: ratio
-        type: float
+        type: f64
       - name: max_speed
-        type: float
+        type: f64
         unit: km/h
     rows:
       - [1, 3.5, 40.0]
@@ -442,7 +445,7 @@ Generated C++ code:
 
 ```cpp
 struct GearRatiosRow {
-    int gear;
+    int32_t gear;
     double ratio;
     double max_speed;  // Unit: km/h
 };

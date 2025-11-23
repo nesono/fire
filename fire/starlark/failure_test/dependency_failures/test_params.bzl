@@ -4,7 +4,7 @@ TEST_PARAMS = [
     {
         "description": "A test parameter",
         "name": "test_parameter",
-        "type": "integer",
+        "type": "i32",
         "value": 42,
     },
 ]

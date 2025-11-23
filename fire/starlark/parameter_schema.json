@@ -23,7 +23,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["integer", "float", "string", "boolean", "table"],
+          "enum": ["i32", "i64", "u32", "u64", "f32", "f64", "string", "bool", "table"],
           "description": "The data type of the parameter"
         },
         "value": {
@@ -64,7 +64,7 @@
       "allOf": [
         {
           "if": {
-            "properties": { "type": { "const": "integer" } }
+            "properties": { "type": { "const": "i32" } }
           },
           "then": {
             "required": ["value"],
@@ -75,7 +75,51 @@
         },
         {
           "if": {
-            "properties": { "type": { "const": "float" } }
+            "properties": { "type": { "const": "i64" } }
+          },
+          "then": {
+            "required": ["value"],
+            "properties": {
+              "value": { "type": "integer" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "u32" } }
+          },
+          "then": {
+            "required": ["value"],
+            "properties": {
+              "value": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "u64" } }
+          },
+          "then": {
+            "required": ["value"],
+            "properties": {
+              "value": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "f32" } }
+          },
+          "then": {
+            "required": ["value"],
+            "properties": {
+              "value": { "type": "number" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "f64" } }
           },
           "then": {
             "required": ["value"],
@@ -97,7 +141,7 @@
         },
         {
           "if": {
-            "properties": { "type": { "const": "boolean" } }
+            "properties": { "type": { "const": "bool" } }
           },
           "then": {
             "required": ["value"],
@@ -131,7 +175,7 @@
         },
         "type": {
           "type": "string",
-          "enum": ["integer", "float", "string", "boolean"],
+          "enum": ["i32", "i64", "u32", "u64", "f32", "f64", "string", "bool"],
           "description": "Data type of values in this column"
         },
         "unit": {

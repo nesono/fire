@@ -1,6 +1,6 @@
 parameters:
   test_value:
-    type: float
+    type: f64
     value: 42.0
     description: Test parameter at version 2
     version: 2
