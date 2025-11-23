@@ -207,13 +207,27 @@ def generate_cpp(param_data, cpp_namespace=None):
             lines.append(f"constexpr size_t {const_name}_SIZE = {len(rows)};")
             lines.append("")
 
+            # Deprecated helper for version upgrade warning
+            lines.append(f"template<int ExpectedVersion>")
+            lines.append(f'[[deprecated("Parameter {param_name} has been updated to version {version}")]]')
+            lines.append(f"constexpr const {struct_name}* {param_name}_outdated() {{")
+            lines.append(f"    return detail::{const_name}_DATA;")
+            lines.append(f"}}")
+            lines.append("")
+
             # Version-checked accessor function
             lines.append(f"/// Access {param_name} with version check (current version: {version})")
             lines.append(f"template<int ExpectedVersion>")
             lines.append(f"[[nodiscard]] constexpr const {struct_name}* {param_name}() {{")
-            lines.append(f"    static_assert(ExpectedVersion <= {version},")
-            lines.append(f'        "Parameter {param_name} version {version} is older than expected version");')
-            lines.append(f"    return detail::{const_name}_DATA;")
+            lines.append(f"    if constexpr (ExpectedVersion > {version}) {{")
+            lines.append(f"        static_assert(ExpectedVersion <= {version},")
+            lines.append(f'            "Parameter {param_name} version {version} is older than expected version");')
+            lines.append(f"        return nullptr;  // Never reached")
+            lines.append(f"    }} else if constexpr (ExpectedVersion < {version}) {{")
+            lines.append(f"        return {param_name}_outdated<ExpectedVersion>();")
+            lines.append(f"    }} else {{")
+            lines.append(f"        return detail::{const_name}_DATA;")
+            lines.append(f"    }}")
             lines.append(f"}}")
 
         else:
@@ -231,13 +245,27 @@ def generate_cpp(param_data, cpp_namespace=None):
                 lines.append(f"namespace detail {{ constexpr {cpp_type} {const_name}_VALUE = {value}; }}")
             lines.append("")
 
+            # Deprecated helper for version upgrade warning
+            lines.append(f"template<int ExpectedVersion>")
+            lines.append(f'[[deprecated("Parameter {param_name} has been updated to version {version}")]]')
+            lines.append(f"constexpr {cpp_type} {param_name}_outdated() {{")
+            lines.append(f"    return detail::{const_name}_VALUE;")
+            lines.append(f"}}")
+            lines.append("")
+
             # Version-checked accessor function
             lines.append(f"/// Access {param_name} with version check (current version: {version})")
             lines.append(f"template<int ExpectedVersion>")
             lines.append(f"[[nodiscard]] constexpr {cpp_type} {param_name}() {{")
-            lines.append(f"    static_assert(ExpectedVersion <= {version},")
-            lines.append(f'        "Parameter {param_name} version {version} is older than expected version");')
-            lines.append(f"    return detail::{const_name}_VALUE;")
+            lines.append(f"    if constexpr (ExpectedVersion > {version}) {{")
+            lines.append(f"        static_assert(ExpectedVersion <= {version},")
+            lines.append(f'            "Parameter {param_name} version {version} is older than expected version");')
+            lines.append(f"        return {{}};  // Never reached")
+            lines.append(f"    }} else if constexpr (ExpectedVersion < {version}) {{")
+            lines.append(f"        return {param_name}_outdated<ExpectedVersion>();")
+            lines.append(f"    }} else {{")
+            lines.append(f"        return detail::{const_name}_VALUE;")
+            lines.append(f"    }}")
             lines.append(f"}}")
 
         lines.append("")
@@ -553,13 +581,27 @@ def generate_rust(param_data):
 
             # Version-checked accessor function using const generics
             lines.append(f"/// Access {param_name} with version check (current version: {version})")
-            lines.append(f"pub const fn {param_name}<const EXPECTED_VERSION: i32>() -> &'static [{struct_name}; {len(rows)}] {{")
-            lines.append(f"    const CURRENT_VERSION: i32 = {version};")
-            lines.append(f"    assert!(EXPECTED_VERSION <= CURRENT_VERSION,")
-            lines.append(f'        "Parameter {param_name} version is older than expected version");')
-            lines.append(f"    // Note: Rust doesn't have compile-time warnings, version upgrade notices should be handled by tooling")
-            lines.append(f"    &{const_name}_DATA")
-            lines.append("}")
+            if version > 1:
+                # Deprecated helper for version upgrade warning (only if there are older versions)
+                lines.append(f'#[deprecated(note = "Parameter {param_name} has been updated to version {version}")]')
+                lines.append(f"const fn {param_name}_outdated() -> &'static [{struct_name}; {len(rows)}] {{")
+                lines.append(f"    &{const_name}_DATA")
+                lines.append("}")
+                lines.append("")
+                lines.append("#[allow(unreachable_patterns)]")
+                lines.append(f"pub const fn {param_name}<const EXPECTED_VERSION: i32>() -> &'static [{struct_name}; {len(rows)}] {{")
+                lines.append("    match EXPECTED_VERSION {")
+                lines.append(f'        {version + 1}.. => panic!("Parameter {param_name} version {version} is older than expected version"),')
+                lines.append(f"        ..={version - 1} => {param_name}_outdated(),")
+                lines.append(f"        _ => &{const_name}_DATA,")
+                lines.append("    }")
+                lines.append("}")
+            else:
+                # Version 1 - no older versions to warn about
+                lines.append(f"pub const fn {param_name}<const EXPECTED_VERSION: i32>() -> &'static [{struct_name}; {len(rows)}] {{")
+                lines.append(f'    assert!(EXPECTED_VERSION <= {version}, "Parameter {param_name} version {version} is older than expected version");')
+                lines.append(f"    &{const_name}_DATA")
+                lines.append("}")
         else:
             value = param["value"]
             rust_type = _get_rust_type(param_type)
@@ -573,13 +615,27 @@ def generate_rust(param_data):
 
             # Version-checked accessor function using const generics
             lines.append(f"/// Access {param_name} with version check (current version: {version})")
-            lines.append(f"pub const fn {param_name}<const EXPECTED_VERSION: i32>() -> {rust_type} {{")
-            lines.append(f"    const CURRENT_VERSION: i32 = {version};")
-            lines.append(f"    assert!(EXPECTED_VERSION <= CURRENT_VERSION,")
-            lines.append(f'        "Parameter {param_name} version is older than expected version");')
-            lines.append(f"    // Note: Rust doesn't have compile-time warnings, version upgrade notices should be handled by tooling")
-            lines.append(f"    {const_name}_VALUE")
-            lines.append("}")
+            if version > 1:
+                # Deprecated helper for version upgrade warning (only if there are older versions)
+                lines.append(f'#[deprecated(note = "Parameter {param_name} has been updated to version {version}")]')
+                lines.append(f"const fn {param_name}_outdated() -> {rust_type} {{")
+                lines.append(f"    {const_name}_VALUE")
+                lines.append("}")
+                lines.append("")
+                lines.append("#[allow(unreachable_patterns)]")
+                lines.append(f"pub const fn {param_name}<const EXPECTED_VERSION: i32>() -> {rust_type} {{")
+                lines.append("    match EXPECTED_VERSION {")
+                lines.append(f'        {version + 1}.. => panic!("Parameter {param_name} version {version} is older than expected version"),')
+                lines.append(f"        ..={version - 1} => {param_name}_outdated(),")
+                lines.append(f"        _ => {const_name}_VALUE,")
+                lines.append("    }")
+                lines.append("}")
+            else:
+                # Version 1 - no older versions to warn about
+                lines.append(f"pub const fn {param_name}<const EXPECTED_VERSION: i32>() -> {rust_type} {{")
+                lines.append(f'    assert!(EXPECTED_VERSION <= {version}, "Parameter {param_name} version {version} is older than expected version");')
+                lines.append(f"    {const_name}_VALUE")
+                lines.append("}")
 
         lines.append("")
 
