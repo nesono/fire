@@ -15,7 +15,15 @@ exports_files([
 # Python script for generating code from YAML
 py_binary(
     name = "generate_code_script",
-    srcs = ["generate_code.py"],
+    srcs = [
+        "generate_code.py",
+        "generators/base.py",
+        "generators/cpp.py",
+        "generators/go.py",
+        "generators/java.py",
+        "generators/python.py",
+        "generators/rust.py",
+    ],
     main = "generate_code.py",
     visibility = ["//visibility:public"],
     deps = ["@pip//pyyaml"],
