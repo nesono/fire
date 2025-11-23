@@ -9,22 +9,6 @@ load("@rules_go//go:def.bzl", "go_library")
 load("@rules_java//java:defs.bzl", "java_library")
 load("@rules_python//python:defs.bzl", "py_library")
 
-def _derive_namespace_from_package():
-    """Derive namespace from Bazel package path.
-
-    Converts package path to namespace format:
-    - "vehicle/dynamics" -> "vehicle.dynamics"
-    - "" (root) -> "root"
-    - "foo/bar/baz" -> "foo.bar.baz"
-
-    Returns:
-        Namespace string with dots
-    """
-    pkg = native.package_name()
-    if not pkg:
-        return "root"
-    return pkg.replace("/", ".")
-
 def parameter_library(
         name,
         src,
@@ -63,9 +47,9 @@ def parameter_library(
         )
     """
 
-    # Derive namespace from package path if not provided
+    # Use empty namespace if not provided
     if not namespace:
-        namespace = _derive_namespace_from_package()
+        namespace = ""
 
     # Create validation target
     validation_name = name + "_validation"
@@ -143,11 +127,7 @@ def cc_parameter_library(
         # Strip common suffixes
         base_name = name
 
-    # Get namespace from package if not provided
-    if namespace == None:
-        namespace = _derive_namespace_from_package()
-
-    # Build command with namespace
+    # Build command with namespace (only if explicitly provided)
     if namespace:
         cmd = "$(location @fire//fire/starlark:generate_code_script) cpp $< $@ --namespace='{}'".format(namespace)
     else:
@@ -257,20 +237,19 @@ def java_parameter_library(
         parts = base_name.split("_")
         class_name = "".join([word.capitalize() for word in parts])
 
-    # Determine namespace
-    base_namespace = _derive_namespace_from_package()
-    if package_prefix:
-        namespace = "{}.{}".format(package_prefix, base_namespace)
-    else:
-        namespace = base_namespace
-
     java_file_target = name + "_file"
+
+    # Build command with namespace (only if explicitly provided)
+    if package_prefix:
+        cmd = "$(location @fire//fire/starlark:generate_code_script) java $< $@ --class-name='{}' --namespace='{}'".format(class_name, package_prefix)
+    else:
+        cmd = "$(location @fire//fire/starlark:generate_code_script) java $< $@ --class-name='{}'".format(class_name)
 
     native.genrule(
         name = java_file_target,
         srcs = [parameter_library],
         outs = [class_name + ".java"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) java $< $@ --class-name='{}' --namespace='{}'".format(class_name, namespace),
+        cmd = cmd,
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
@@ -324,8 +303,8 @@ def go_parameter_library(
         else:
             importpath = base_name
 
-    # Get namespace from package
-    namespace = _derive_namespace_from_package()
+    # Use base_name as Go package name
+    go_package = base_name.replace("_", "")
 
     # Create a generated Go file using the Python script
     go_file_target = name + "_file"
@@ -333,7 +312,7 @@ def go_parameter_library(
         name = go_file_target,
         srcs = [parameter_library],
         outs = [base_name + ".go"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) go $< $@ --namespace='{}'".format(namespace),
+        cmd = "$(location @fire//fire/starlark:generate_code_script) go $< $@ --namespace='{}'".format(go_package),
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )

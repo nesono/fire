@@ -6,7 +6,6 @@
 #include <iostream>
 
 int main() {
-    using namespace examples;
 
     // Test simple float parameter with version check
     auto max_velocity = maximum_vehicle_velocity<1>();
