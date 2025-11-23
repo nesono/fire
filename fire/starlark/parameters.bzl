@@ -149,9 +149,9 @@ def cc_parameter_library(
 
     # Build command with namespace
     if namespace:
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< cpp $@ --namespace='{}'".format(namespace)
+        cmd = "$(location @fire//fire/starlark:generate_code_script) cpp $< $@ --namespace='{}'".format(namespace)
     else:
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< cpp $@ --namespace=''"
+        cmd = "$(location @fire//fire/starlark:generate_code_script) cpp $< $@"
 
     # Create a generated header file using the Python script
     header_target = name + "_header"
@@ -203,16 +203,13 @@ def python_parameter_library(
         # Strip common suffixes
         base_name = name
 
-    # Get namespace from package
-    namespace = _derive_namespace_from_package()
-
     # Create a generated Python file using the Python script
     py_file_target = name + "_file"
     native.genrule(
         name = py_file_target,
         srcs = [parameter_library],
         outs = [base_name + ".py"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< python $@ --namespace='{}'".format(namespace),
+        cmd = "$(location @fire//fire/starlark:generate_code_script) python $< $@",
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
@@ -273,7 +270,7 @@ def java_parameter_library(
         name = java_file_target,
         srcs = [parameter_library],
         outs = [class_name + ".java"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< java $@ --namespace='{}' --class-name='{}'".format(namespace, class_name),
+        cmd = "$(location @fire//fire/starlark:generate_code_script) java $< $@ --class-name='{}' --namespace='{}'".format(class_name, namespace),
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
@@ -336,7 +333,7 @@ def go_parameter_library(
         name = go_file_target,
         srcs = [parameter_library],
         outs = [base_name + ".go"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< go $@ --namespace='{}'".format(namespace),
+        cmd = "$(location @fire//fire/starlark:generate_code_script) go $< $@ --namespace='{}'".format(namespace),
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
@@ -379,15 +376,12 @@ def rust_parameter_library(
         # Strip common suffixes
         base_name = name
 
-    # Get namespace from package
-    namespace = _derive_namespace_from_package()
-
     # Create a generated Rust file using the Python script
     native.genrule(
         name = name,
         srcs = [parameter_library],
         outs = [base_name + ".rs"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) $< rust $@ --namespace='{}'".format(namespace),
+        cmd = "$(location @fire//fire/starlark:generate_code_script) rust $< $@",
         tools = ["@fire//fire/starlark:generate_code_script"],
         visibility = ["//visibility:public"],
     )
