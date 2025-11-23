@@ -17,7 +17,6 @@ py_binary(
     name = "generate_code_script",
     srcs = [
         "generate_code.py",
-        "generators/__init__.py",
         "generators/base.py",
         "generators/cpp.py",
         "generators/go.py",
