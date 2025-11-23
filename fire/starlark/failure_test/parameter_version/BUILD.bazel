@@ -124,6 +124,18 @@ java_binary(
 # Version Upgraded Tests (expected < actual) - Should WARN
 # =============================================================================
 
+# C++ - should emit deprecation warning at compile time
+cc_binary(
+    name = "test_version_upgraded_cpp",
+    srcs = ["test_version_upgraded_cpp.cc"],
+    tags = [
+        "failure_test",
+        "manual",
+        "version_upgraded",
+    ],
+    deps = [":test_params_cc"],
+)
+
 # Python - should emit DeprecationWarning
 py_binary(
     name = "test_version_upgraded_py",

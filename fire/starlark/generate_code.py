@@ -207,13 +207,27 @@ def generate_cpp(param_data, cpp_namespace=None):
             lines.append(f"constexpr size_t {const_name}_SIZE = {len(rows)};")
             lines.append("")
 
+            # Deprecated helper for version upgrade warning
+            lines.append(f"template<int ExpectedVersion>")
+            lines.append(f'[[deprecated("Parameter {param_name} has been updated to version {version}")]]')
+            lines.append(f"constexpr const {struct_name}* {param_name}_outdated() {{")
+            lines.append(f"    return detail::{const_name}_DATA;")
+            lines.append(f"}}")
+            lines.append("")
+
             # Version-checked accessor function
             lines.append(f"/// Access {param_name} with version check (current version: {version})")
             lines.append(f"template<int ExpectedVersion>")
             lines.append(f"[[nodiscard]] constexpr const {struct_name}* {param_name}() {{")
-            lines.append(f"    static_assert(ExpectedVersion <= {version},")
-            lines.append(f'        "Parameter {param_name} version {version} is older than expected version");')
-            lines.append(f"    return detail::{const_name}_DATA;")
+            lines.append(f"    if constexpr (ExpectedVersion > {version}) {{")
+            lines.append(f"        static_assert(ExpectedVersion <= {version},")
+            lines.append(f'            "Parameter {param_name} version {version} is older than expected version");')
+            lines.append(f"        return nullptr;  // Never reached")
+            lines.append(f"    }} else if constexpr (ExpectedVersion < {version}) {{")
+            lines.append(f"        return {param_name}_outdated<ExpectedVersion>();")
+            lines.append(f"    }} else {{")
+            lines.append(f"        return detail::{const_name}_DATA;")
+            lines.append(f"    }}")
             lines.append(f"}}")
 
         else:
@@ -231,13 +245,27 @@ def generate_cpp(param_data, cpp_namespace=None):
                 lines.append(f"namespace detail {{ constexpr {cpp_type} {const_name}_VALUE = {value}; }}")
             lines.append("")
 
+            # Deprecated helper for version upgrade warning
+            lines.append(f"template<int ExpectedVersion>")
+            lines.append(f'[[deprecated("Parameter {param_name} has been updated to version {version}")]]')
+            lines.append(f"constexpr {cpp_type} {param_name}_outdated() {{")
+            lines.append(f"    return detail::{const_name}_VALUE;")
+            lines.append(f"}}")
+            lines.append("")
+
             # Version-checked accessor function
             lines.append(f"/// Access {param_name} with version check (current version: {version})")
             lines.append(f"template<int ExpectedVersion>")
             lines.append(f"[[nodiscard]] constexpr {cpp_type} {param_name}() {{")
-            lines.append(f"    static_assert(ExpectedVersion <= {version},")
-            lines.append(f'        "Parameter {param_name} version {version} is older than expected version");')
-            lines.append(f"    return detail::{const_name}_VALUE;")
+            lines.append(f"    if constexpr (ExpectedVersion > {version}) {{")
+            lines.append(f"        static_assert(ExpectedVersion <= {version},")
+            lines.append(f'            "Parameter {param_name} version {version} is older than expected version");')
+            lines.append(f"        return {{}};  // Never reached")
+            lines.append(f"    }} else if constexpr (ExpectedVersion < {version}) {{")
+            lines.append(f"        return {param_name}_outdated<ExpectedVersion>();")
+            lines.append(f"    }} else {{")
+            lines.append(f"        return detail::{const_name}_VALUE;")
+            lines.append(f"    }}")
             lines.append(f"}}")
 
         lines.append("")

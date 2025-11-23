@@ -88,24 +88,30 @@ for target in $FAILURE_TARGETS; do
             echo "$output" | head -20
             FAILURES=$((FAILURES + 1))
         else
-            # Run and check for warning
-            set +e
-            run_output=$(bazel run "$target" 2>&1)
-            run_exit_code=$?
-            set -e
-
-            if echo "$run_output" | grep -qiE "warning.*updated to version|DeprecationWarning|has been updated"; then
-                echo "✅ PASS: Runtime produced version upgrade warning"
+            # Check for compile-time deprecation warning (C++)
+            if echo "$output" | grep -qiE "warning.*deprecated|has been updated to version"; then
+                echo "✅ PASS: Build produced deprecation warning"
                 SUCCESSES=$((SUCCESSES + 1))
-            elif [ $run_exit_code -eq 0 ]; then
-                echo "❌ FAIL: Should have produced version upgrade warning"
-                echo "Output excerpt:"
-                echo "$run_output" | head -20
-                FAILURES=$((FAILURES + 1))
             else
-                echo "❌ FAIL: Runtime should not fail for version upgraded test"
-                echo "Exit code: $run_exit_code"
-                FAILURES=$((FAILURES + 1))
+                # Run and check for runtime warning
+                set +e
+                run_output=$(bazel run "$target" 2>&1)
+                run_exit_code=$?
+                set -e
+
+                if echo "$run_output" | grep -qiE "warning.*updated to version|DeprecationWarning|has been updated"; then
+                    echo "✅ PASS: Runtime produced version upgrade warning"
+                    SUCCESSES=$((SUCCESSES + 1))
+                elif [ $run_exit_code -eq 0 ]; then
+                    echo "❌ FAIL: Should have produced version upgrade warning"
+                    echo "Output excerpt:"
+                    echo "$run_output" | head -20
+                    FAILURES=$((FAILURES + 1))
+                else
+                    echo "❌ FAIL: Runtime should not fail for version upgraded test"
+                    echo "Exit code: $run_exit_code"
+                    FAILURES=$((FAILURES + 1))
+                fi
             fi
         fi
 
