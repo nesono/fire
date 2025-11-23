@@ -1,0 +1,5 @@
+{
+  "integrity": "sha256-<INTEGRITY_HASH>",
+  "strip_prefix": "fire-<VERSION>",
+  "url": "https://github.com/nesono/fire/releases/download/v<VERSION>/fire-<VERSION>.tar.gz"
+}

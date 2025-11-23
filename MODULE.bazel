@@ -8,33 +8,32 @@ module(
     compatibility_level = 1,
 )
 
-# C++ rules for generated code
-bazel_dep(name = "rules_cc", version = "0.1.1")
+# =============================================================================
+# Production dependencies - required by consumers of this module
+# =============================================================================
 
-# Python rules for generated code
-bazel_dep(name = "rules_python", version = "0.36.0")
+# Python rules for validation scripts and code generation
+bazel_dep(name = "rules_python", version = "0.40.0")
 
-# Go rules for generated code
-bazel_dep(name = "rules_go", version = "0.50.1")
-
-# Rust rules for generated code
-bazel_dep(name = "rules_rust", version = "0.54.1")
-
-# Java rules for generated code
-bazel_dep(name = "rules_java", version = "7.11.1")
-
-# Configure Java toolchain for Java 17 (supports records)
-java_toolchains = use_extension("@rules_java//java:extensions.bzl", "toolchains")
-use_repo(java_toolchains, "remote_java_tools")
-
-# Skylib for unittest framework
+# Skylib for starlark utilities
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 
-# Python pip dependencies
-python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+# Language rules - consumers need these if they use the corresponding *_parameter_library rules
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_go", version = "0.50.1")
+bazel_dep(name = "rules_rust", version = "0.54.1")
+bazel_dep(name = "rules_java", version = "8.14.0")
+
+# =============================================================================
+# Development dependencies - only needed for developing/testing this module
+# =============================================================================
+
+# Python toolchain for running tests
+python = use_extension("@rules_python//python/extensions:python.bzl", "python", dev_dependency = True)
 python.toolchain(python_version = "3.11")
 
-pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+# Pip dependencies for validation scripts (PyYAML, jsonschema)
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip", dev_dependency = True)
 pip.parse(
     hub_name = "pip",
     python_version = "3.11",
@@ -42,7 +41,11 @@ pip.parse(
 )
 use_repo(pip, "pip")
 
-# Rust toolchain setup
-rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+# Rust toolchain for running Rust tests
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust", dev_dependency = True)
 rust.toolchain(edition = "2021")
 use_repo(rust, "rust_toolchains")
+
+# Java toolchain for Java 17 (supports records)
+java_toolchains = use_extension("@rules_java//java:extensions.bzl", "toolchains", dev_dependency = True)
+use_repo(java_toolchains, "remote_java_tools")
