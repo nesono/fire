@@ -76,8 +76,9 @@ for target in $FAILURE_TARGETS; do
 
     elif has_tag "$target" "version_upgraded"; then
         # Version upgraded tests should succeed but emit warning
+        # Use --nouse_action_cache to force rebuild and see compile-time warnings
         set +e
-        output=$(bazel build "$target" 2>&1)
+        output=$(bazel build --nouse_action_cache "$target" 2>&1)
         build_exit_code=$?
         set -e
 
@@ -117,8 +118,9 @@ for target in $FAILURE_TARGETS; do
 
     else
         # Legacy tests - check for dependency errors or VERSION MISMATCH
+        # Use --nouse_action_cache to force rebuild and see warnings
         set +e
-        output=$(bazel build "$target" 2>&1)
+        output=$(bazel build --nouse_action_cache "$target" 2>&1)
         build_exit_code=$?
         set -e
 
