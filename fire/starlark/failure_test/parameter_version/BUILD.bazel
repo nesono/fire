@@ -136,6 +136,21 @@ cc_binary(
     deps = [":test_params_cc"],
 )
 
+# Rust - should emit deprecation warning at compile time
+rust_binary(
+    name = "test_version_upgraded_rust",
+    srcs = [
+        "test_version_upgraded_rust.rs",
+        ":test_params_rust",
+    ],
+    edition = "2021",
+    tags = [
+        "failure_test",
+        "manual",
+        "version_upgraded",
+    ],
+)
+
 # Python - should emit DeprecationWarning
 py_binary(
     name = "test_version_upgraded_py",
