@@ -75,7 +75,6 @@ def main():
             print(f"  ERROR: {error}")
         sys.exit(1)
 
-    print(f"Parameter validation passed for {args.yaml_file}")
     sys.exit(0)
 
 

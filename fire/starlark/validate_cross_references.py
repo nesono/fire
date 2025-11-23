@@ -392,7 +392,6 @@ def main():
             print(f"  ERROR: {error}")
         sys.exit(1)
     else:
-        print(f"Cross-reference validation passed for {len(requirement_files)} requirement(s)")
         sys.exit(0)
 
 
