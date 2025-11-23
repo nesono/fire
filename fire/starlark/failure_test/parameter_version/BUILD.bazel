@@ -49,6 +49,7 @@ rust_parameter_library(
 java_parameter_library(
     name = "test_params_java",
     class_name = "TestParams",
+    package_prefix = "fire.starlark.failure_test.parameter_version",
     parameter_library = ":test_params",
 )
 

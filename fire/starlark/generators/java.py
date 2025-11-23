@@ -3,9 +3,23 @@
 from fire.starlark.generators.base import get_type, pascal_case, camel_case, format_value
 
 # Templates for Java code generation
-HEADER_TEMPLATE = '''\
+HEADER_WITH_PACKAGE_TEMPLATE = '''\
 // This file is auto-generated. Do not edit manually.
 package ${namespace};
+
+/**
+ * Generated parameter definitions with version checking.
+ */
+public final class ${class_name} {
+
+    private ${class_name}() {
+        // Utility class, no instantiation
+    }
+
+'''
+
+HEADER_NO_PACKAGE_TEMPLATE = '''\
+// This file is auto-generated. Do not edit manually.
 
 /**
  * Generated parameter definitions with version checking.
@@ -82,9 +96,12 @@ def generate_java(param_data: dict) -> str:
     parameters = param_data["parameters"]
     class_name = param_data.get("class_name", "Parameters")
 
-    output = [HEADER_TEMPLATE
-        .replace("${namespace}", namespace)
-        .replace("${class_name}", class_name)]
+    # Choose header template based on namespace
+    if namespace:
+        header = HEADER_WITH_PACKAGE_TEMPLATE.replace("${namespace}", namespace)
+    else:
+        header = HEADER_NO_PACKAGE_TEMPLATE
+    output = [header.replace("${class_name}", class_name)]
 
     # Generate records and accessors
     for param in parameters:

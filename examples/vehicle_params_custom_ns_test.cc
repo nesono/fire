@@ -1,11 +1,12 @@
-// Integration test for parameter code generation
+// Test for parameter code generation with custom namespace
 
-#include "examples/vehicle_params.h"
+#include "examples/vehicle_params_custom_ns.h"
 #include <cassert>
 #include <cstring>
 #include <iostream>
 
 int main() {
+    using namespace my_project::vehicle::params;
 
     // Test simple float parameter with version check
     auto max_velocity = maximum_vehicle_velocity<1>();
@@ -41,22 +42,6 @@ int main() {
               << table[0].friction_coefficient << ", "
               << table[0].braking_distance << "}" << std::endl;
 
-    // Test last row of table
-    assert(table[5].velocity == 30.0);
-    assert(table[5].friction_coefficient == 0.3);
-    assert(table[5].braking_distance == 150.0);
-    std::cout << "✓ braking_distance_table<1>()[5] = {"
-              << table[5].velocity << ", "
-              << table[5].friction_coefficient << ", "
-              << table[5].braking_distance << "}" << std::endl;
-
-    // Test iteration over table
-    double total_distance = 0.0;
-    for (size_t i = 0; i < BRAKING_DISTANCE_TABLE_SIZE; ++i) {
-        total_distance += table[i].braking_distance;
-    }
-    std::cout << "✓ Total braking distance across all entries = " << total_distance << " m" << std::endl;
-
-    std::cout << "\nAll tests passed!" << std::endl;
+    std::cout << "\nAll custom namespace tests passed!" << std::endl;
     return 0;
 }

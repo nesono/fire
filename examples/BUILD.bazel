@@ -39,21 +39,6 @@ cc_parameter_library(
     parameter_library = ":vehicle_params",
 )
 
-# Example: C++ library with no namespace
-cc_parameter_library(
-    name = "vehicle_params_cc_no_ns",
-    base_name = "vehicle_params_no_ns",
-    namespace = "",  # Empty string means no namespace
-    parameter_library = ":vehicle_params",
-)
-
-# Example: C++ library with custom base name
-cc_parameter_library(
-    name = "vehicle_params_cc_custom_name",
-    base_name = "custom_vehicle_config",  # Generates custom_vehicle_config.h
-    parameter_library = ":vehicle_params",
-)
-
 # Generate Python library with parameters
 # Consumes vehicle_params.yaml and generates vehicle_params.py
 python_parameter_library(
@@ -62,10 +47,9 @@ python_parameter_library(
     parameter_library = ":vehicle_params",
 )
 
-# Example: Python library with custom base name
+# Example: Second Python library (demonstrates multiple targets from same params)
 python_parameter_library(
-    name = "vehicle_params_py_custom_name",
-    base_name = "custom_vehicle_config",  # Generates custom_vehicle_config.py
+    name = "vehicle_params_py_alt",
     parameter_library = ":vehicle_params",
 )
 
@@ -74,7 +58,7 @@ python_parameter_library(
 java_parameter_library(
     name = "vehicle_params_java",
     class_name = "VehicleParams",
-    package_prefix = "com.example",  # Results in: com.example.examples
+    package_prefix = "com.example",
     parameter_library = ":vehicle_params",
 )
 
@@ -86,10 +70,9 @@ go_parameter_library(
     parameter_library = ":vehicle_params",
 )
 
-# Example: Go library with custom base name
+# Example: Second Go library (demonstrates multiple targets from same params)
 go_parameter_library(
-    name = "vehicle_params_go_custom_name",
-    base_name = "custom_vehicle_config",  # Generates custom_vehicle_config.go
+    name = "vehicle_params_go_alt",
     parameter_library = ":vehicle_params",
 )
 
@@ -101,10 +84,9 @@ rust_parameter_library(
     parameter_library = ":vehicle_params",
 )
 
-# Example: Rust library with custom base name
+# Example: Second Rust library (demonstrates multiple targets from same params)
 rust_parameter_library(
-    name = "vehicle_params_rs_custom_name",
-    base_name = "custom_vehicle_config",  # Generates custom_vehicle_config.rs
+    name = "vehicle_params_rs_alt",
     parameter_library = ":vehicle_params",
 )
 
@@ -115,6 +97,13 @@ cc_test(
     deps = [":vehicle_params_cc"],
 )
 
+# C++ test that uses the generated parameters with custom namespace
+cc_test(
+    name = "vehicle_params_cc_custom_ns_test",
+    srcs = ["vehicle_params_custom_ns_test.cc"],
+    deps = [":vehicle_params_cc_custom_ns"],
+)
+
 # Python test that uses the generated parameters
 py_test(
     name = "vehicle_params_py_test",
@@ -123,11 +112,19 @@ py_test(
     deps = [":vehicle_params_py"],
 )
 
+# Python test for alternate library
+py_test(
+    name = "vehicle_params_py_alt_test",
+    srcs = ["vehicle_params_alt_test.py"],
+    main = "vehicle_params_alt_test.py",
+    deps = [":vehicle_params_py_alt"],
+)
+
 # Java test that uses the generated parameters
 java_test(
     name = "vehicle_params_java_test",
     srcs = ["VehicleParamsTest.java"],
-    test_class = "com.example.examples.VehicleParamsTest",
+    test_class = "com.example.VehicleParamsTest",
     deps = [":vehicle_params_java"],
 )
 
@@ -138,6 +135,13 @@ go_test(
     deps = [":vehicle_params_go"],
 )
 
+# Go test for alternate library
+go_test(
+    name = "vehicle_params_go_alt_test",
+    srcs = ["vehicle_params_alt_test.go"],
+    deps = [":vehicle_params_go_alt"],
+)
+
 # Rust test that uses the generated parameters
 rust_test(
     name = "vehicle_params_rust_test",
@@ -146,6 +150,17 @@ rust_test(
         ":vehicle_params_rs",
     ],
     crate_root = "vehicle_params_test.rs",
+    edition = "2021",
+)
+
+# Rust test for alternate library
+rust_test(
+    name = "vehicle_params_rust_alt_test",
+    srcs = [
+        "vehicle_params_alt_test.rs",
+        ":vehicle_params_rs_alt",
+    ],
+    crate_root = "vehicle_params_alt_test.rs",
     edition = "2021",
 )
 
