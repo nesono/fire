@@ -4,25 +4,30 @@ parameters:
     value: 55.0
     unit: m/s
     description: Maximum design velocity for the vehicle
+    version: 1
 
   wheel_count:
     type: integer
     value: 4
     description: Number of wheels on the vehicle
+    version: 1
 
   vehicle_name:
     type: string
     value: TestVehicle
     description: Vehicle identifier for testing
+    version: 1
 
   debug_mode:
     type: boolean
     value: false
     description: Enable debug output
+    version: 1
 
   braking_distance_table:
     type: table
     description: Braking distances under various conditions
+    version: 1
     columns:
       - name: velocity
         type: float

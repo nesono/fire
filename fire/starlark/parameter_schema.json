@@ -19,7 +19,7 @@
   "$defs": {
     "parameter": {
       "type": "object",
-      "required": ["type", "value", "description"],
+      "required": ["type", "description", "version"],
       "properties": {
         "type": {
           "type": "string",
@@ -37,6 +37,11 @@
           "type": "string",
           "minLength": 1,
           "description": "Human-readable description of the parameter"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Version number of this parameter (positive integer)"
         },
         "columns": {
           "type": "array",
@@ -62,6 +67,7 @@
             "properties": { "type": { "const": "integer" } }
           },
           "then": {
+            "required": ["value"],
             "properties": {
               "value": { "type": "integer" }
             }
@@ -72,6 +78,7 @@
             "properties": { "type": { "const": "float" } }
           },
           "then": {
+            "required": ["value"],
             "properties": {
               "value": { "type": "number" }
             }
@@ -82,6 +89,7 @@
             "properties": { "type": { "const": "string" } }
           },
           "then": {
+            "required": ["value"],
             "properties": {
               "value": { "type": "string" }
             }
@@ -92,6 +100,7 @@
             "properties": { "type": { "const": "boolean" } }
           },
           "then": {
+            "required": ["value"],
             "properties": {
               "value": { "type": "boolean" }
             }
@@ -102,7 +111,7 @@
             "properties": { "type": { "const": "table" } }
           },
           "then": {
-            "required": ["type", "description", "columns", "rows"],
+            "required": ["columns", "rows"],
             "properties": {
               "value": false
             }
