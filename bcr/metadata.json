@@ -1,0 +1,15 @@
+{
+  "homepage": "https://github.com/nesono/fire",
+  "maintainers": [
+    {
+      "name": "Jochen Issing",
+      "email": "c.333+git@nesono.com",
+      "github": "nesono"
+    }
+  ],
+  "repository": [
+    "github:nesono/fire"
+  ],
+  "versions": [],
+  "yanked_versions": {}
+}
