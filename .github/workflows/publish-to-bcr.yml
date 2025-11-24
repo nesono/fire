@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: bazel-contrib/publish-to-bcr@v0.2.0
         with:
-          # The name of the module as it appears in MODULE.bazel
-          moduleName: fire
-          # GitHub token for creating the PR
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # GitHub token for creating the PR to BCR
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          # Local registry path (defaults to bazel-central-registry fork)
+          local-registry: bazel-central-registry
