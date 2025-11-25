@@ -16,12 +16,12 @@ module(
 bazel_dep(name = "rules_python", version = "0.40.0")
 
 # Skylib for starlark utilities
-bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
 
 # Language rules - consumers need these if they use the corresponding *_parameter_library rules
 bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "rules_go", version = "0.50.1")
-bazel_dep(name = "rules_rust", version = "0.54.1")
+bazel_dep(name = "rules_rust", version = "0.67.0")
 bazel_dep(name = "rules_java", version = "8.14.0")
 
 # Python toolchain and pip dependencies for validation scripts

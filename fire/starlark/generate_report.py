@@ -176,7 +176,7 @@ def generate_traceability_matrix(requirements_data):
     lines = []
     lines.append("# Traceability Matrix")
     lines.append("")
-    lines.append("## Requirements → Parameters")
+    lines.append("## Requirements -> Parameters")
     lines.append("")
     lines.append("| Requirement | Title | Parameters |")
     lines.append("|-------------|-------|------------|")
@@ -192,7 +192,7 @@ def generate_traceability_matrix(requirements_data):
         lines.append(f"| {req_id} | {title} | {params_str} |")
 
     lines.append("")
-    lines.append("## Requirements → Requirements")
+    lines.append("## Requirements -> Requirements")
     lines.append("")
     lines.append("| Requirement | Version | Title | Parent Requirements (Version) |")
     lines.append("|-------------|---------|-------|-------------------------------|")
@@ -217,7 +217,7 @@ def generate_traceability_matrix(requirements_data):
         lines.append(f"| {req_id} | {version} | {title} | {reqs_str} |")
 
     lines.append("")
-    lines.append("## Requirements → Tests")
+    lines.append("## Requirements -> Tests")
     lines.append("")
     lines.append("| Requirement | Title | Tests |")
     lines.append("|-------------|-------|-------|")
@@ -233,7 +233,7 @@ def generate_traceability_matrix(requirements_data):
         lines.append(f"| {req_id} | {title} | {tests_str} |")
 
     lines.append("")
-    lines.append("## Requirements → Standards")
+    lines.append("## Requirements -> Standards")
     lines.append("")
     lines.append("| Requirement | Title | Standards |")
     lines.append("|-------------|-------|-----------|")
@@ -378,7 +378,7 @@ def generate_change_impact(requirements_data):
             })
 
     if stale_requirements:
-        lines.append("## ⚠️ Requirements with Stale Parent References")
+        lines.append("## WARNING: Requirements with Stale Parent References")
         lines.append("")
         lines.append("The following requirements track parent versions that have changed:")
         lines.append("")
@@ -396,7 +396,7 @@ def generate_change_impact(requirements_data):
             lines.append("**Action Required**: Review and update this requirement to align with parent changes, then update the parent version reference.")
             lines.append("")
     else:
-        lines.append("## ✅ All Requirements Up-to-Date")
+        lines.append("## SUCCRESS: All Requirements Up-to-Date")
         lines.append("")
         lines.append("No requirements found with stale parent references. All tracked parent versions match current versions.")
         lines.append("")
@@ -456,7 +456,7 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
         count = type_counts[req_type]
         percentage = (count * 100) // total_reqs if total_reqs > 0 else 0
         type_label = req_type.capitalize() if req_type != "unspecified" else "Unspecified Type"
-        marker = " ⚠️" if critical_type and req_type == critical_type else ""
+        marker = " WARNING" if critical_type and req_type == critical_type else ""
         lines.append(f"| {type_label} Requirements{marker} | {count} | {percentage}% |")
 
     lines.append(f"| Requirements Referencing {standard_name} | {len(reqs_with_standard)} | {(len(reqs_with_standard) * 100) // total_reqs if total_reqs > 0 else 0}% |")
@@ -495,22 +495,22 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
             title = frontmatter.get("title", "")
             status = frontmatter.get("status", "-")
 
-            has_tests = "✅"
+            has_tests = "SUCCESS"
             if "references" in frontmatter and isinstance(frontmatter["references"], dict):
                 if "tests" in frontmatter["references"] and frontmatter["references"]["tests"]:
-                    has_tests = "✅"
+                    has_tests = "SUCCESS"
                 else:
-                    has_tests = "❌"
+                    has_tests = "FAILURE"
             else:
-                has_tests = "❌"
+                has_tests = "FAILURE"
 
-            has_standard = "❌"
+            has_standard = "FAILURE"
             if "references" in frontmatter and isinstance(frontmatter["references"], dict):
                 if "standards" in frontmatter["references"]:
                     standards = frontmatter["references"]["standards"]
                     for std in standards:
                         if standard_name.lower() in std.lower():
-                            has_standard = "✅"
+                            has_standard = "SUCCESS"
                             break
 
             lines.append(f"| {req_id} | {title} | {status} | {has_tests} | {has_standard} |")
@@ -533,13 +533,13 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
                 critical_without_tests.append((req_id, frontmatter.get("title", "")))
 
         if critical_without_tests:
-            lines.append(f"### ⚠️ {critical_type.capitalize()} Requirements without Linked Tests")
+            lines.append(f"### WARNING: {critical_type.capitalize()} Requirements without Linked Tests")
             lines.append("")
             for req_id, title in critical_without_tests:
                 lines.append(f"- **{req_id}**: {title}")
             lines.append("")
         else:
-            lines.append(f"### ✅ All {critical_type.capitalize()} Requirements have Linked Tests")
+            lines.append(f"### SUCCESS All {critical_type.capitalize()} Requirements have Linked Tests")
             lines.append("")
 
         # Critical type requirements without standard reference
@@ -557,13 +557,13 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
                 critical_without_standard.append((req_id, frontmatter.get("title", "")))
 
         if critical_without_standard:
-            lines.append(f"### ⚠️ {critical_type.capitalize()} Requirements without {standard_name} Reference")
+            lines.append(f"### WARNING: {critical_type.capitalize()} Requirements without {standard_name} Reference")
             lines.append("")
             for req_id, title in critical_without_standard:
                 lines.append(f"- **{req_id}**: {title}")
             lines.append("")
         else:
-            lines.append(f"### ✅ All {critical_type.capitalize()} Requirements reference {standard_name}")
+            lines.append(f"### SUCCESS: All {critical_type.capitalize()} Requirements reference {standard_name}")
             lines.append("")
 
     # General gaps (all requirements)
