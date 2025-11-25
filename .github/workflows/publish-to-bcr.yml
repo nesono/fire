@@ -22,6 +22,7 @@ on:
 
 jobs:
   publish:
+    runs-on: ubuntu-latest
     uses: bazel-contrib/publish-to-bcr/.github/workflows/publish.yaml@v1.0.0
     with:
       draft: false
