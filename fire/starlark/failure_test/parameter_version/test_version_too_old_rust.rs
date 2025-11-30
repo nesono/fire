@@ -8,6 +8,6 @@ use test_params::*;
 fn main() {
     // Parameter is at version 2, but we request version 3
     // This should cause a compile-time assert failure
-    const VALUE: f64 = test_value::<3>();
-    println!("Value: {}", VALUE);
+    let value = test_value::<3>();
+    println!("Value: {}", value);
 }
