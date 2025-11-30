@@ -8,6 +8,6 @@ use test_params::*;
 fn main() {
     // Parameter is at version 2, but we request version 1
     // This should cause a deprecation warning at compile time
-    let value = test_value::<1>();
-    println!("Value: {}", value);
+    const VALUE: f64 = test_value::<1>();
+    println!("Value: {}", VALUE);
 }
