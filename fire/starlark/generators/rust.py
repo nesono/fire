@@ -32,12 +32,16 @@ const fn ${param_name}_outdated() -> &'static [${struct_name}; ${size}] {
     &${const_name}_DATA
 }
 
-#[allow(unreachable_patterns)]
 pub const fn ${param_name}<const EXPECTED_VERSION: i32>() -> &'static [${struct_name}; ${size}] {
-    match EXPECTED_VERSION {
-        ${version_plus}.. => panic!("Parameter ${param_name} version ${version} is older than expected version"),
-        ..=${version_minus} => ${param_name}_outdated(),
-        _ => &${const_name}_DATA,
+    // Compile-time assertion: fail if expected version is newer than actual
+    if EXPECTED_VERSION > ${version} {
+        panic!("Parameter ${param_name} version ${version} is older than expected version");
+    }
+
+    if EXPECTED_VERSION <= ${version_minus} {
+        ${param_name}_outdated()
+    } else {
+        &${const_name}_DATA
     }
 }
 
@@ -69,12 +73,16 @@ const fn ${param_name}_outdated() -> ${rust_type} {
     ${const_name}_VALUE
 }
 
-#[allow(unreachable_patterns)]
 pub const fn ${param_name}<const EXPECTED_VERSION: i32>() -> ${rust_type} {
-    match EXPECTED_VERSION {
-        ${version_plus}.. => panic!("Parameter ${param_name} version ${version} is older than expected version"),
-        ..=${version_minus} => ${param_name}_outdated(),
-        _ => ${const_name}_VALUE,
+    // Compile-time assertion: fail if expected version is newer than actual
+    if EXPECTED_VERSION > ${version} {
+        panic!("Parameter ${param_name} version ${version} is older than expected version");
+    }
+
+    if EXPECTED_VERSION <= ${version_minus} {
+        ${param_name}_outdated()
+    } else {
+        ${const_name}_VALUE
     }
 }
 
