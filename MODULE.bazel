@@ -4,7 +4,7 @@ Fire - Requirements Management System for Bazel
 
 module(
     name = "fire",
-    version = "0.1.0",
+    version = "0.1.1",
     compatibility_level = 1,
 )
 
@@ -13,16 +13,16 @@ module(
 # =============================================================================
 
 # Python rules for validation scripts and code generation
-bazel_dep(name = "rules_python", version = "0.40.0")
+bazel_dep(name = "rules_python", version = "1.7.0")
 
 # Skylib for starlark utilities
-bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
 
 # Language rules - consumers need these if they use the corresponding *_parameter_library rules
-bazel_dep(name = "rules_cc", version = "0.1.1")
-bazel_dep(name = "rules_go", version = "0.50.1")
-bazel_dep(name = "rules_rust", version = "0.67.0")
-bazel_dep(name = "rules_java", version = "8.14.0")
+bazel_dep(name = "rules_cc", version = "0.2.16")
+bazel_dep(name = "rules_go", version = "0.59.0")
+bazel_dep(name = "rules_rust", version = "0.68.1")
+bazel_dep(name = "rules_java", version = "9.3.0")
 
 # Python toolchain and pip dependencies for validation scripts
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
