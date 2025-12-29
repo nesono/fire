@@ -88,7 +88,7 @@ cc_test(
 )
 ```
 
-### For Example: Use in C++ Code
+### Example Consumption in C++ Code
 
 The generated header provides type-safe access to parameters:
 
