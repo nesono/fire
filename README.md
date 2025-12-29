@@ -4,84 +4,28 @@
 
 Fire is a Bazel module for managing safety-critical system requirements, parameters, and their relationships through Bazel's dependency graph.
 
-**Pure Starlark implementation** - no runtime dependencies, validation at load time, type-safe code generation.
+It is based on the following basic concepts:
 
-## Features
+- Parameters (e.g. max speed) are defined in YAML files
+- System or Software Component Requirements are specified in Markdown files
+- References from Markdown files are all using Markdown link syntax
+- References support versioning, to flag affected downstream consumers
+- Parameters can be consumed from source code through code generated libraries
+- Support for reporting, e.g. for notified bodies
 
-### Parameter System
+## Usage
 
-- **YAML-Based Definitions**: Parameters defined in ergonomic YAML format
-- **JSON Schema Validation**: Parameters validated at build time against JSON schema
-- **Type System**: Support for `float`, `integer`, `string`, `boolean`, and `table` types
-- **Units**: Associate physical units with parameters
-- **Tables**: Define multi-column tabular data with typed columns
-- **Bazel Integration**: Native Starlark rules for seamless integration
-- **No Dependencies**: Zero runtime dependencies (only pyyaml for build-time validation)
+### Consume Fire
 
-### Requirements Management
+```starlark
+bazel_dep(name = "fire", version = "0.1.2")
+```
 
-- **Markdown Requirements**: Requirements documents with YAML frontmatter
-- **Requirement Validation**: Enforce structure, types, and mandatory fields at build time
-- **Requirement Metadata**: ID, title, type, status, priority, tags
-- **Template System**: Predefined requirement types (functional, safety, interface, etc.)
-- **Pure Starlark Validation**: All validation logic in Starlark (testable and reusable)
+### Define Parameter Libraries
 
-### Cross-References & Traceability
+Add parameters to a yaml file, e.g. like the following:
 
-- **Cross-References**: Link requirements to parameters, other requirements, tests, and standards
-- **Repository-Relative Paths**: Explicit paths that work across the repository
-- **Parameter References**: `[@parameter_name](path/to/file.bzl#parameter_name)` syntax
-- **Requirement References**: `[REQ-ID](path/to/REQ-ID.md)` with mandatory version tracking
-- **Test References**: `[test_name](//package:target)` syntax (Bazel labels)
-- **Reference Validation**: Format validation, existence checking, and link text matching
-- **Bi-directional Validation**: Body markdown references must match frontmatter declarations
-- **Lexicographic Sorting**: References sorted alphabetically for consistency
-- **Traceability Matrix**: Generate matrices showing requirement relationships
-- **Coverage Reports**: Track which requirements have parameter references, linked tests, and standard references
-
-### Version Tracking & Change Management
-
-- **Simple Integer Versioning**: Requirements track version with positive integers (1, 2, 3, ...)
-- **Optional Changelog**: Track version changes with integer + description
-- **Parent Version Tracking**: Derived requirements must track parent requirement version
-- **Stale Requirement Detection**: Immediately identify when parent requirement changes
-- **Mandatory Version References**: All requirement references must include version
-- **Git for Full History**: Complete change history in Git (changelog just summarizes versions)
-
-### Multi-Language Code Generation
-
-- **C++ Generation**: `constexpr` headers with strong typing
-- **Python Generation**: Dataclasses with type hints and frozen immutability
-- **Java Generation**: Records with immutable data structures
-- **Go Generation**: Constants and structs with type safety
-- **Auto-derived Namespaces**: Namespaces automatically derived from Bazel package paths
-- **Java Package Prefix**: Optional package prefix for Java reverse-domain naming
-- **Source Label Traceability**: All generated files include Bazel source labels
-- **Unified Validation**: Single parameter source validated for all target languages
-
-### Reporting & Compliance
-
-- **Compliance Reports**: Standard-agnostic reports (ISO 26262, IEC 61508, DO-178C, etc.)
-- **Critical Type Highlighting**: Configurable highlighting for safety, security, regulatory requirements
-- **Coverage Reports**: Linked tests and standard references for each requirement
-- **Change Impact Analysis**: Identifies requirements with stale parent version references
-- **Requirements Not Yet Verified**: Table showing all non-verified requirements
-- **Compliance Gap Analysis**: Critical requirements without tests or standards
-
-### Testing
-
-- **124 Unit Tests**: Comprehensive Starlark unit tests using Skylib's unittest framework
-- **Validation Tests**: Tests for parameters, requirements, references, versions, and markdown parsing
-- **Code Generation Tests**: Test examples in all supported languages (C++, Python, Java, Go, Rust)
-- **Traceability Tests**: Verify matrix generation and reporting functionality
-
-## Quick Start
-
-### 1. Define Parameters
-
-Parameters are defined in YAML files with an ergonomic format where the parameter name is the key:
-
-**vehicle_params.yaml**:
+In file `vehicle_params.yaml`
 
 ```yaml
 parameters:
@@ -115,11 +59,11 @@ parameters:
       - [30.0, 0.7, 64.3]
 ```
 
-### 2. Create Bazel Targets
+### Create Bazel Targets
 
 In your `BUILD.bazel` file (e.g., in `vehicle/dynamics/`):
 
-```python
+```starlark
 load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
 load("@rules_cc//cc:defs.bzl", "cc_test")
 
@@ -129,13 +73,6 @@ parameter_library(
     name = "vehicle_params",
     src = "vehicle_params.yaml",
 )
-
-# Or explicitly specify namespace if needed
-# parameter_library(
-#     name = "vehicle_params",
-#     src = "vehicle_params.yaml",
-#     namespace = "vehicle.dynamics",
-# )
 
 # Create C++ library from parameters
 cc_parameter_library(
@@ -151,7 +88,7 @@ cc_test(
 )
 ```
 
-### 3. Use in C++ Code
+### Example Consumption in C++ Code
 
 The generated header provides type-safe access to parameters:
 
@@ -159,17 +96,16 @@ The generated header provides type-safe access to parameters:
 #include "vehicle/dynamics/vehicle_params.h"
 
 int main() {
-    using namespace vehicle::dynamics;
-
-    // Access simple parameters
-    double max_vel = maximum_vehicle_velocity;  // 55.0
-    int wheels = wheel_count;                   // 4
+    // consume max velocity expecting version 1
+    double max_vel = maximum_vehicle_velocity<1>();
+    int wheels = wheel_count<1>;
 
     // Access table data
-    for (size_t i = 0; i < braking_distance_table_size; ++i) {
-        double velocity = braking_distance_table[i].velocity;
-        double friction = braking_distance_table[i].friction_coefficient;
-        double distance = braking_distance_table[i].braking_distance;
+    auto table = braking_distance_table<1>();
+    for (size_t i = 0; i < BRAKING_DISTANCE_TABLE_SIZE; ++i) {
+        double velocity = table[i].velocity;
+        double friction = table[i].friction_coefficient;
+        double distance = table[i].braking_distance;
         // ... use the values
     }
 
@@ -177,11 +113,11 @@ int main() {
 }
 ```
 
-### 4. Multi-Language Support
+### Multi-Language Support
 
 Generate parameters for Python, Java, Go, and Rust (in `vehicle/dynamics/`):
 
-```python
+```starlark
 load(
     "@fire//fire/starlark:parameters.bzl",
     "parameter_library",
@@ -232,17 +168,17 @@ rust_parameter_library(
 
 ```python
 from vehicle_params_py import (
-    MAXIMUM_VEHICLE_VELOCITY,
-    WHEEL_COUNT,
-    BRAKING_DISTANCE_TABLE_DATA,
+    maximum_vehicle_velocity,
+    wheel_count,
+    braking_distance_table_data,
     BrakingDistanceTableRow,
 )
 
 def test_parameters():
-    assert MAXIMUM_VEHICLE_VELOCITY == 55.0
-    assert WHEEL_COUNT == 4
+    assert maximum_vehicle_velocity(1) == 55.0
+    assert wheel_count(1) == 4
 
-    for row in BRAKING_DISTANCE_TABLE_DATA:
+    for row in braking_distance_table(1):
         print(f"v={row.velocity}, μ={row.friction_coefficient}, d={row.braking_distance}")
 ```
 
@@ -254,10 +190,10 @@ import com.example.vehicle.dynamics.VehicleParams;
 public class DynamicsTest {
     @Test
     public void testParameters() {
-        assertEquals(55.0, VehicleParams.MAXIMUM_VEHICLE_VELOCITY);
-        assertEquals(4, VehicleParams.WHEEL_COUNT);
+        assertEquals(55.0, VehicleParams.maximumVehicleVelocity(1));
+        assertEquals(4, VehicleParams.wheelCount(1));
 
-        for (var row : VehicleParams.BRAKING_DISTANCE_TABLE) {
+        for (var row : VehicleParams.brakingDistanceTable) {
             // Access row.velocity(), row.frictionCoefficient(), row.brakingDistance()
         }
     }
@@ -270,11 +206,11 @@ public class DynamicsTest {
 import dynamics "yourproject/vehicle/dynamics"
 
 func TestParameters(t *testing.T) {
-    if dynamics.MaximumVehicleVelocity != 55.0 {
+    if dynamics.MaximumVehicleVelocity(1) != 55.0 {
         t.Error("Unexpected velocity")
     }
 
-    for _, row := range dynamics.BrakingDistanceTable {
+    for _, row := range dynamics.BrakingDistanceTable(1) {
         // Access row.Velocity, row.FrictionCoefficient, row.BrakingDistance
     }
 }
@@ -288,22 +224,22 @@ use vehicle_params_rust::*;
 
 #[test]
 fn test_parameters() {
-    assert_eq!(MAXIMUM_VEHICLE_VELOCITY, 55.0);
-    assert_eq!(WHEEL_COUNT, 4);
+    assert_eq!(maximum_vehicle_velocity::<1>(), 55.0);
+    assert_eq!(wheel_count::<1>(), 4);
     assert_eq!(BRAKING_DISTANCE_TABLE_SIZE, 6);
 
-    for row in BRAKING_DISTANCE_TABLE {
+    for row in braking_distance_table::<1>() {
         // Access row.velocity, row.friction_coefficient, row.braking_distance
         println!("v={}, μ={}, d={}", row.velocity, row.friction_coefficient, row.braking_distance);
     }
 }
 ```
 
-### 5. Define Requirements
+### Define Requirements
 
-Requirements are written in Markdown with YAML code blocks for each requirement:
+Requirements are written in Markdown with a specific structure (that is validated), for instance
 
-**requirements/velocity_requirements.sysreq.md**:
+Let's say we have a requirement file `requirements/velocity_requirements.sysreq.md`:
 
 ````markdown
 # Velocity Requirements
@@ -334,6 +270,7 @@ safety analysis for ASIL-D classification. The maximum velocity is constrained b
 - Hardware-in-the-loop testing with velocity limiting scenarios
 - Vehicle dynamics simulation at boundary conditions
 - Track testing with instrumentation (see [vehicle_params_test](//examples:vehicle_params_test))
+- Potentially link to a test plan
 
 ### Changelog
 
@@ -342,59 +279,22 @@ safety analysis for ASIL-D classification. The maximum velocity is constrained b
 
 ````
 
-### 5. Validate Requirements
+Note that the important part here is the header 2 (`##`), that includes the ID of the requirement and must be followed by a line containing SIL, Sec, and Version separated by `|` characters.
+The header 3 (`###`) sections are free text for now, even though we highly recomment you to use a fixed format for it.
+Note that a requirement file can contain multiple of such requirements.
 
-In your `BUILD.bazel`:
+## How Fire Works
 
-```python
-load("@fire//fire/starlark:requirements.bzl", "requirement_library")
+- Validate requirement links between requirements
+  - Checking existence
+  - Checking version (disallow consuming an older version)
+  - Checking if the consumption expects the right version
+- Validating the parameter files for being well formed
+- Validating links between parameters and
+  - Requirements
+  - Source code
 
-requirement_library(
-    name = "safety_requirements",
-    srcs = glob(["requirements/*.md"]),
-    deps = [":vehicle_params"],  # Depend on parameter_library for parameter references
-)
-```
-
-## Parameter Format
-
-Parameters are defined in YAML files with an ergonomic format where the parameter name is the key.
-
-### Namespace
-
-Namespaces are **auto-derived from the Bazel package path** for consistency with your build structure:
-
-```python
-# In package vehicle/dynamics/braking/BUILD.bazel
-parameter_library(
-    name = "my_params",
-    src = "my_params.yaml",  # Namespace auto-derived as vehicle::dynamics::braking
-)
-```
-
-This generates:
-
-```cpp
-namespace vehicle {
-namespace dynamics {
-namespace braking {
-    // parameters here
-}
-}
-}
-```
-
-You can also **explicitly specify** a namespace if needed:
-
-```python
-parameter_library(
-    name = "my_params",
-    src = "my_params.yaml",
-    namespace = "custom.namespace",
-)
-```
-
-### Simple Parameters
+### Table Parameters
 
 Parameters are defined in YAML with the following fields:
 
@@ -403,62 +303,8 @@ Parameters are defined in YAML with the following fields:
   - Floating-point types: `f32`, `f64`
   - Other types: `string`, `bool`, `table`
 - `value` (required for non-table types): The parameter value
-- `description` (required): Human-readable description
+- `description` (required): Human-readable short description
 - `unit` (optional): Physical unit for the parameter
-
-Example:
-
-```yaml
-parameters:
-  max_temperature:
-    type: f64
-    unit: celsius
-    value: 85.0
-    description: Maximum operating temperature
-```
-
-### Table Parameters
-
-Tables define multi-column tabular data:
-
-```yaml
-parameters:
-  gear_ratios:
-    type: table
-    description: Gear ratios by gear number
-    columns:
-      - name: gear
-        type: i32
-      - name: ratio
-        type: f64
-      - name: max_speed
-        type: f64
-        unit: km/h
-    rows:
-      - [1, 3.5, 40.0]
-      - [2, 2.1, 70.0]
-      - [3, 1.4, 110.0]
-      - [4, 1.0, 160.0]
-```
-
-Generated C++ code:
-
-```cpp
-struct GearRatiosRow {
-    int32_t gear;
-    double ratio;
-    double max_speed;  // Unit: km/h
-};
-
-constexpr GearRatiosRow gear_ratios[] = {
-    {1, 3.5, 40.0},
-    {2, 2.1, 70.0},
-    {3, 1.4, 110.0},
-    {4, 1.0, 160.0},
-};
-
-constexpr size_t gear_ratios_size = 4;
-```
 
 ## Requirement Format
 
@@ -470,21 +316,18 @@ System requirements contain only essential structured data in YAML blocks, with 
 
 **Format:**
 
-- No frontmatter
 - H2 headers (`##`) for requirement IDs
-- YAML code block with 3 fields: `sil`, `sec`, `version`
-- Bold text (`**Title**`) for requirement title
+- Text line with 3 fields: `SIL`, `Sec`, `Version`
+- Bold text (`**Title**`) for human readable requirement title
 - Markdown links for all references (parameters, tests, standards)
 
-**YAML Block Fields:**
+**Text Fields:**
 
-- `sil`: Safety Integrity Level - `ASIL-A/B/C/D`, `SIL-1/2/3/4`, `DAL-A/B/C/D/E`, or `QM`
-- `sec`: Security-related flag - `true` or `false`
-- `version`: Positive integer version number (1, 2, 3, ...)
+- `SIL`: Safety Integrity Level - `ASIL-A/B/C/D`, `SIL-1/2/3/4`, `DAL-A/B/C/D/E`, or `QM`
+- `Sec`: Security-related flag - `true` or `false`
+- `Version`: Positive integer version number (1, 2, 3, ...)
 
-**Example:** (see "Define Requirements" section above for full example)
-
-### Software Requirements (`.swreq.md`)
+### Software Component Requirements (`.swreq.md`)
 
 Software requirements are derived from system requirements and follow a similar minimal format.
 
@@ -492,14 +335,9 @@ Software requirements are derived from system requirements and follow a similar 
 
 - Optional frontmatter: `system_function` (path to `.sysarch.md` file)
 - H2 headers (`##`) for requirement IDs (e.g., `REQ_BC_CALCULATE_FORCE`)
-- YAML code block with 2 fields: `sil`, `sec`
+- Text line with 3 fields: `SIL`, `Sec`, `Version`
 - Description starts with "Derived from [PARENT](path?version=N#PARENT)" link
 - Markdown links for all references
-
-**YAML Block Fields:**
-
-- `sil`: Safety Integrity Level (inherited from parent or refined)
-- `sec`: Security-related flag
 
 **Example:**
 
@@ -540,7 +378,7 @@ All cross-references use standard markdown links with repository-relative paths:
 
 ### Version Tracking
 
-System requirements track their own versions in the YAML block. Software requirements track parent versions in markdown links.
+System requirements track their own versions in text line. Software requirements track parent versions in markdown links.
 
 **Detecting Stale Requirements:**
 
@@ -621,398 +459,9 @@ bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:ch
 
 **Note**: "Linked Tests" refers to requirements with test references in frontmatter, not verified test execution.
 
-### Example
-
-```markdown
----
-sil: ASIL-C
-sec: true
----
-
-# REQ-BRK-001: Emergency Braking Distance
-
-## Description
-
-The vehicle SHALL achieve emergency braking according to
-[@braking_distance_table](examples/vehicle_params.yaml#braking_distance_table).
-This requirement relates to [REQ-VEL-001](examples/requirements/REQ-VEL-001.md).
-
-## Verification
-
-Testing performed by [vehicle_params_test](//examples:vehicle_params_test).
-Compliance verified against [UN ECE R13-H](https://unece.org/r13h).
-```
-
-## Bazel Rules
-
-### `parameter_library()`
-
-Validates parameters from a YAML file against JSON schema and makes them available for code generation.
-
-**Attributes:**
-
-- `name`: Name of the target
-- `src`: Path to the parameter YAML file (required)
-- `namespace`: Namespace for parameters (optional, auto-derived from package path if not provided)
-
-**Example:**
-
-```python
-# Namespace auto-derived from package path
-parameter_library(
-    name = "my_params",
-    src = "my_params.yaml",
-)
-
-# Or explicitly specify namespace
-parameter_library(
-    name = "my_params",
-    src = "my_params.yaml",
-    namespace = "my.namespace",
-)
-```
-
-### `cc_parameter_library()`
-
-Creates a `cc_library` from a parameter library for easy inclusion in C++ targets.
-
-**Attributes:**
-
-- `name`: Name of the `cc_library`
-- `parameter_library`: Label of the `parameter_library` target
-- `namespace`: Optional C++ namespace (use `::` for nested namespaces, e.g., `"outer::inner"`)
-  - If not provided: uses namespace from `parameter_library` (auto-derived from package path)
-  - If empty string `""`: no namespace (constants in global scope)
-  - If custom string: uses that exact namespace
-- `base_name`: Optional base name for output file (defaults to name with `_cc` suffix removed)
-- Additional `cc_library` attributes supported
-
-**Examples:**
-
-```python
-# Use default namespace from package path (e.g., "examples")
-cc_parameter_library(
-    name = "my_params_cc",
-    parameter_library = ":my_params",
-)
-
-# Use custom nested namespace
-cc_parameter_library(
-    name = "my_params_cc_custom",
-    parameter_library = ":my_params",
-    namespace = "my_project::vehicle::params",
-)
-
-# No namespace (global scope)
-cc_parameter_library(
-    name = "my_params_cc_global",
-    parameter_library = ":my_params",
-    namespace = "",
-)
-```
-
-### `python_parameter_library()`
-
-Creates a `py_library` from a parameter library for easy inclusion in Python targets.
-
-**Attributes:**
-
-- `name`: Name of the `py_library`
-- `parameter_library`: Label of the `parameter_library` target
-- `base_name`: Optional base name for output file (defaults to name with `_py` suffix removed)
-- Additional `py_library` attributes supported
-
-**Example:**
-
-```python
-# Default: generates vehicle_params.py
-python_parameter_library(
-    name = "vehicle_params_py",
-    parameter_library = ":vehicle_params",
-)
-
-# Custom base name: generates my_params.py
-python_parameter_library(
-    name = "vehicle_params_py",
-    parameter_library = ":vehicle_params",
-    base_name = "my_params",
-)
-```
-
-### `java_parameter_library()`
-
-Creates a `java_library` from a parameter library for easy inclusion in Java targets.
-
-**Attributes:**
-
-- `name`: Name of the Bazel target
-- `parameter_library`: Label of the `parameter_library` target
-- `class_name`: Name of the generated class (optional, derived from target name if not provided)
-- `package_prefix`: Optional package prefix (e.g., "com.example")
-
-**Example:**
-
-```python
-# Default: derives class name from target name (VehicleParams)
-java_parameter_library(
-    name = "vehicle_params_java",
-    parameter_library = ":vehicle_params",
-    class_name = "VehicleParams",
-    package_prefix = "com.example",
-)
-
-# Custom class name: generates MyParams.java
-java_parameter_library(
-    name = "vehicle_params_java",
-    parameter_library = ":vehicle_params",
-    class_name = "MyParams",
-    package_prefix = "com.example",
-)
-```
-
-### `go_parameter_library()`
-
-Creates a `go_library` from a parameter library for easy inclusion in Go targets.
-
-**Attributes:**
-
-- `name`: Name of the `go_library`
-- `parameter_library`: Label of the `parameter_library` target
-- `base_name`: Optional base name for output file (defaults to name with `_go` suffix removed)
-- `importpath`: Go import path (optional, defaults to package path + "/" + base_name)
-- Additional `go_library` attributes supported
-
-**Example:**
-
-```python
-# Default: generates vehicle_params.go
-go_parameter_library(
-    name = "vehicle_params_go",
-    parameter_library = ":vehicle_params",
-)
-
-# Custom base name: generates my_params.go
-go_parameter_library(
-    name = "vehicle_params_go",
-    parameter_library = ":vehicle_params",
-    base_name = "my_params",
-)
-```
-
-### `rust_parameter_library()`
-
-Generates a Rust module from a parameter library (outputs a `.rs` file to be included in Rust targets).
-
-**Attributes:**
-
-- `name`: Name of the Bazel target (use directly in `rust_test` srcs)
-- `parameter_library`: Label of the `parameter_library` target
-- `base_name`: Optional base name for output file (defaults to name with `_rs` suffix removed)
-
-**Generated code features:**
-
-- Constants use `SCREAMING_SNAKE_CASE` naming convention
-- Table parameters generate structs with `#[derive(Debug, Clone, Copy)]`
-- Table data as `&[StructRow]` slices
-- Size constants for tables (e.g., `TABLE_NAME_SIZE: usize`)
-- Type mapping: `f64` for float, `i32` for integer, `&'static str` for string, `bool` for boolean
-
-**Example:**
-
-```python
-# Default: generates vehicle_params.rs
-rust_parameter_library(
-    name = "vehicle_params_rs",
-    parameter_library = ":vehicle_params",
-)
-
-# Custom base name: generates my_params.rs
-rust_parameter_library(
-    name = "vehicle_params_rs",
-    parameter_library = ":vehicle_params",
-    base_name = "my_params",
-)
-```
-
-### `requirement_library()`
-
-Validates cross-references in requirement documents and creates a filegroup.
-
-**Attributes:**
-
-- `name`: Name of the target
-- `srcs`: List of requirement Markdown files
-- `deps`: List of dependencies (parameter_library targets and other requirement_library targets)
-
-**Example:**
-
-```python
-requirement_library(
-    name = "safety_requirements",
-    srcs = glob(["requirements/safety/*.md"]),
-    deps = [":vehicle_params"],  # parameter_library target
-)
-
-requirement_library(
-    name = "component_requirements",
-    srcs = glob(["components/**/*.swreq.md"]),
-    deps = [
-        ":safety_requirements",  # References system requirements
-        ":vehicle_params",       # References parameter files
-    ],
-)
-```
-
-## Project Structure
-
-```text
-fire/
-├── MODULE.bazel              # Bazel module definition
-├── BUILD.bazel               # Root build file
-├── README.md                 # This file
-├── requirements.txt          # Python pip dependencies (pyyaml)
-├── fire/
-│   └── starlark/             # Starlark implementation
-│       ├── parameters.bzl    # Multi-language parameter library rules
-│       ├── requirements.bzl  # requirement_library rule
-│       ├── reports.bzl       # Report generation rules
-│       ├── generate_code.py  # Code generator (reads YAML)
-│       ├── validate_parameters.py  # YAML parameter validator
-│       ├── validate_cross_references.py  # Cross-reference validator
-│       ├── parameter_schema.json  # JSON schema for YAML validation
-│       └── BUILD.bazel
-└── examples/                 # Example usage
-    ├── vehicle_params.yaml   # Example parameter definitions (YAML)
-    ├── vehicle_params_test.cc  # C++ integration test
-    ├── vehicle_params_test.py  # Python integration test
-    ├── requirements/         # Example requirements
-    │   ├── velocity_requirements.sysreq.md
-    │   ├── braking_requirements.sysreq.md
-    │   └── wheel_requirements.sysreq.md
-    └── BUILD.bazel
-```
-
-## Development
-
-### Pre-commit Hooks
-
-Fire uses [pre-commit](https://pre-commit.com) to ensure code quality. To set up:
-
-```bash
-# Install pre-commit
-pip install pre-commit
-
-# Install the git hooks
-pre-commit install
-
-# Optionally, run on all files
-pre-commit run --all-files
-```
-
-Pre-commit hooks include:
-
-- **Buildifier**: Bazel and Starlark file formatting
-- **Markdownlint**: Markdown linting with auto-fix
-- **General**: Trailing whitespace, EOF fixers, file checks
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
-
-## Testing
-
-Run all tests:
-
-```bash
-bazel test //...
-```
-
-Run specific test suites:
-
-```bash
-# Starlark unit tests
-bazel test //fire/starlark:validator_test
-bazel test //fire/starlark:traceability_test
-
-# Integration tests
-bazel test //examples:vehicle_params_test
-```
-
-## Validation Rules
-
-### Parameter Validation
-
-1. **YAML Format**: Parameters defined in YAML files validated against JSON schema
-2. **Required Fields**: `src` in `parameter_library()`, each parameter needs `type` and `description`
-3. **Namespace Format**: Must be dot-separated identifiers (e.g., `vehicle.dynamics`)
-4. **Parameter Types**: Only `float`, `integer`, `string`, `boolean`, `table` are valid
-5. **Type Checking**: Values must match their declared types
-6. **Table Consistency**: All rows must have the same number of columns as defined
-7. **Unique Names**: Parameter names must be unique within a file
-
-### Requirement Validation
-
-1. **Required Fields**: `id`, `title`, `type`, `status` in frontmatter
-2. **ID Format**: Letters, numbers, hyphens, underscores; must start with letter/underscore
-3. **Type Values**: `functional`, `non-functional`, `safety`, `interface`, `constraint`, `performance`
-4. **Status Values**: `draft`, `proposed`, `approved`, `implemented`, `verified`, `deprecated`
-5. **Priority Values** (optional): `low`, `medium`, `high`, `critical`
-6. **Body Content**: Must be at least 10 characters
-7. **Frontmatter**: Must be valid YAML between `---` markers
-
-### Cross-Reference Validation
-
-1. **Parameter References**: Valid parameter identifiers (letters, numbers, underscores)
-2. **Requirement References**: Valid requirement IDs
-3. **Test References**: Valid Bazel labels (start with `//` or `:`)
-4. **Standard References**: Minimum 3 characters
-5. **Reference Types**: Only `parameters`, `requirements`, `tests`, `standards` allowed
-6. **Reference Format**: Must be lists of strings
-
-### Markdown Reference Validation
-
-1. **Parameter Links**: `[@parameter_name](repo/relative/path/file.yaml#parameter_name)` syntax with repository-relative path
-2. **Requirement Links**: `[REQ-ID](repo/relative/path/REQ-ID.md)` syntax with repository-relative path
-3. **Test Links**: `[test_name](//package:target)` syntax using Bazel labels
-4. **Body-Frontmatter Match**: Bi-directional validation ensures all body references are declared in frontmatter, and all frontmatter references are used in body
-5. **Frontmatter Format**: Frontmatter references use the same repository-relative paths as body references
-6. **Link Text Match**: Link text must match the actual reference name (no typos allowed)
-7. **Lexicographic Sorting**: References within each frontmatter section (parameters, requirements, tests, standards) must be sorted alphabetically
-8. **Validation Timing**: Checked at build time during requirement validation
-
-### Version Tracking Validation
-
-1. **Integer Version**: Must be positive integer (>= 1)
-2. **Changelog Format**: List of `{version, description}` in descending order (newest first)
-3. **Version Consistency**: If both `version` and `changelog` present, version must match latest changelog entry
-4. **Requirement Reference Format**: MUST use dict format with both `path` and `version` keys (e.g., `{path: "examples/requirements/REQ-VEL-001.md", version: 2}`)
-5. **Version Field**: Optional for the requirement itself - only needed if tracking changes or using changelog
-6. **Changelog Field**: Optional - use for quick summary of changes
-7. **Parent Version**: When referencing parent requirements, version must be positive integer
-8. **Backward Compatibility**: All versioning and changelog fields for the requirement itself are optional, but requirement references MUST always include version
-
-## Design Philosophy
-
-Fire follows these principles:
-
-- **Test-Driven Development**: Every implementation file has a corresponding test file
-- **Type Safety**: Generate compile-time checked code where possible
-- **Bazel Integration**: Leverage Bazel's dependency graph for traceability
-- **Validation First**: Catch errors at build time, not runtime
-- **Clear Separation**: Implementation and test files colocated for clarity
-
-## Future Work
-
-- IDE integration for enhanced developer experience
-- Additional language targets (TypeScript, etc.)
-- Performance optimization for large requirement sets
-- Interactive compliance dashboards
-
 ## Contributing
 
-This project follows Test-Driven Development practices:
-
-1. Write tests first:
-   - Starlark unit tests in `*_test.bzl` files using Skylib's `unittest`
-   - C++ integration tests in `*_test.cc` files
-2. Implement functionality to make tests pass
-3. Refactor while keeping tests green
-4. Ensure Buildifier passes on all Starlark code
+1. PRs are welcome, even though we are at a very early stage
+2. Write tests for your features, both good path and bad path
+3. Use `pre-commit.com` and adhere to the checks
+4. Provide integration tests where appropriate
