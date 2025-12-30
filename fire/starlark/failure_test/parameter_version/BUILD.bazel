@@ -7,12 +7,13 @@ These tests verify that version mismatch detection works correctly:
 They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
 """
 
-load("@rules_cc//cc:defs.bzl", "cc_binary")
-load("@rules_go//go:def.bzl", "go_binary")
-load("@rules_java//java:defs.bzl", "java_binary")
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
-load("//fire/starlark:parameters.bzl", "cc_parameter_library", "go_parameter_library", "java_parameter_library", "parameter_library", "python_parameter_library", "rust_parameter_library")
+load("//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_go_parameters", "generate_java_parameters", "generate_python_parameters", "generate_rust_parameters")
+load("//fire/starlark:parameters.bzl", "parameter_library")
 
 # Generate parameter library from test YAML
 parameter_library(
@@ -20,37 +21,62 @@ parameter_library(
     src = "test_params.yaml",
 )
 
-# Generate code for each language
-cc_parameter_library(
-    name = "test_params_cc",
+# Generate C++ code
+generate_cc_parameters(
+    name = "test_params_h",
     base_name = "test_params",
     namespace = "test",
     parameter_library = ":test_params",
 )
 
-python_parameter_library(
+cc_library(
+    name = "test_params_cc",
+    hdrs = [":test_params_h"],
+)
+
+# Generate Python code
+generate_python_parameters(
+    name = "test_params_py_src",
+    base_name = "test_params",
+    parameter_library = ":test_params",
+)
+
+py_library(
     name = "test_params_py",
+    srcs = [":test_params_py_src"],
+)
+
+# Generate Go code
+generate_go_parameters(
+    name = "test_params_go_src",
     base_name = "test_params",
     parameter_library = ":test_params",
 )
 
-go_parameter_library(
+go_library(
     name = "test_params_go",
-    base_name = "test_params",
-    parameter_library = ":test_params",
+    srcs = [":test_params_go_src"],
+    importpath = "fire/starlark/failure_test/parameter_version/test_params",
 )
 
-rust_parameter_library(
+# Generate Rust code
+generate_rust_parameters(
     name = "test_params_rust",
     base_name = "test_params",
     parameter_library = ":test_params",
 )
 
-java_parameter_library(
-    name = "test_params_java",
+# Generate Java code
+generate_java_parameters(
+    name = "test_params_java_src",
     class_name = "TestParams",
     package_prefix = "fire.starlark.failure_test.parameter_version",
     parameter_library = ":test_params",
+)
+
+java_library(
+    name = "test_params_java",
+    srcs = [":test_params_java_src"],
 )
 
 # =============================================================================

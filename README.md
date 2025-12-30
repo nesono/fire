@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/nesono/fire/actions/workflows/ci.yaml/badge.svg)](https://github.com/nesono/fire/actions/workflows/ci.yaml)
 
-Fire is a Bazel module for managing safety-critical system requirements, parameters, and their relationships through Bazel's dependency graph.
+Fire is a Bazel module for managing safety-critical system requirements,
+parameters, and their relationships through Bazel's dependency graph.
 
 It is based on the following basic concepts:
 
@@ -17,9 +18,21 @@ It is based on the following basic concepts:
 
 ### Consume Fire
 
+Add Fire to your `MODULE.bazel`:
+
 ```starlark
 bazel_dep(name = "fire", version = "0.1.2")
+
+# Add language rules for the languages you want to use
+bazel_dep(name = "rules_cc", version = "0.2.16")      # For C++ code generation
+bazel_dep(name = "rules_python", version = "1.7.0")   # For Python code generation
+# Add rules_rust, rules_go, rules_java as needed
 ```
+
+**Important**: Fire provides code generation functions that output source
+files. You are responsible for wrapping these in your language's library rules.
+This keeps Fire's dependencies minimal - Fire only depends on rules_python (for
+YAML validation).
 
 ### Define Parameter Libraries
 
@@ -64,23 +77,30 @@ parameters:
 In your `BUILD.bazel` file (e.g., in `vehicle/dynamics/`):
 
 ```starlark
-load("@fire//fire/starlark:parameters.bzl", "parameter_library", "cc_parameter_library")
-load("@rules_cc//cc:defs.bzl", "cc_test")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library")
+load("@fire//fire/starlark:codegen.bzl", "generate_cc_parameters")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
-# Validate parameters from YAML file
-# Namespace auto-derived from package path: vehicle/dynamics -> vehicle::dynamics
+# Step 1: Validate parameters from YAML file
 parameter_library(
     name = "vehicle_params",
     src = "vehicle_params.yaml",
 )
 
-# Create C++ library from parameters
-cc_parameter_library(
-    name = "vehicle_params_cc",
+# Step 2: Generate C++ header file
+generate_cc_parameters(
+    name = "vehicle_params_h",
     parameter_library = ":vehicle_params",
+    namespace = "vehicle::dynamics",  # Optional namespace
 )
 
-# Use generated parameters in C++ code
+# Step 3: Wrap in cc_library (you control this)
+cc_library(
+    name = "vehicle_params_cc",
+    hdrs = [":vehicle_params_h"],
+)
+
+# Step 4: Use generated parameters in C++ code
 cc_test(
     name = "dynamics_test",
     srcs = ["dynamics_test.cc"],
