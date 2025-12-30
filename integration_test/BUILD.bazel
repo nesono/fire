@@ -1,12 +1,9 @@
 """Integration test for fire requirements management system."""
 
-load(
-    "@fire//fire/starlark:parameters.bzl",
-    "cc_parameter_library",
-    "parameter_library",
-    "rust_parameter_library",
-)
+load("@fire//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_rust_parameters")
+load("@fire//fire/starlark:parameters.bzl", "parameter_library")
 load("@fire//fire/starlark:reports.bzl", "generate_report")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
 exports_files(["test_params.yaml"])
@@ -18,18 +15,24 @@ parameter_library(
     src = "test_params.yaml",
 )
 
-# Generate C++ library with parameters
-# Consumes test_params.json and generates test_params.h
-cc_parameter_library(
-    name = "test_params_cc",
+# Generate C++ header from parameters
+# Consumes test_params (validated YAML) and generates test_params.h
+generate_cc_parameters(
+    name = "test_params_h",
     base_name = "test_params",
     parameter_library = ":test_params",
+)
+
+# Wrap generated header in cc_library
+cc_library(
+    name = "test_params_cc",
+    hdrs = [":test_params_h"],
     visibility = ["//visibility:public"],
 )
 
-# Generate Rust parameters
-# Consumes test_params.json and generates test_params.rs
-rust_parameter_library(
+# Generate Rust module from parameters
+# Consumes test_params (validated YAML) and generates test_params.rs
+generate_rust_parameters(
     name = "test_params_rs",
     base_name = "test_params",
     parameter_library = ":test_params",
