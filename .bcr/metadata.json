@@ -7,9 +7,7 @@
       "github": "nesono"
     }
   ],
-  "repository": [
-    "github:nesono/fire"
-  ],
+  "repository": ["github:nesono/fire"],
   "versions": [],
   "yanked_versions": {}
 }

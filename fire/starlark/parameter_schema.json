@@ -23,7 +23,17 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["i32", "i64", "u32", "u64", "f32", "f64", "string", "bool", "table"],
+          "enum": [
+            "i32",
+            "i64",
+            "u32",
+            "u64",
+            "f32",
+            "f64",
+            "string",
+            "bool",
+            "table"
+          ],
           "description": "The data type of the parameter"
         },
         "value": {

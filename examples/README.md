@@ -169,7 +169,7 @@ bazel build //examples:compliance_report
 
 Example format:
 
-````markdown
+```markdown
 ## REQ-BRK-001
 
 SIL: ASIL-C | Sec: true | Version: 1
@@ -183,7 +183,7 @@ achieving deceleration according to [@braking_distance_table](/examples/vehicle_
 ### Changelog
 
 - **Version 1**: Initial requirement, derived from REQ-VEL-001 v2
-````
+```
 
 ### System Functions (`.sysarch.md`)
 
@@ -202,14 +202,13 @@ achieving deceleration according to [@braking_distance_table](/examples/vehicle_
 
 Example format:
 
-````markdown
+```markdown
 ## REQ_BC_CALCULATE_FORCE
 
 SIL: ASIL-D | Sec: false | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001)
 
 The brake controller component shall calculate the required brake force...
-
-````
+```
 
 ### Technical Specifications (`.techspec.md`)
 

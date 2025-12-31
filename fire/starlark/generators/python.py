@@ -11,19 +11,19 @@ import warnings
 
 '''
 
-TABLE_DATACLASS_TEMPLATE = '''\
+TABLE_DATACLASS_TEMPLATE = """\
 @dataclass(frozen=True)
 class ${class_name}:
 ${fields}
 
-'''
+"""
 
-TABLE_DATA_TEMPLATE = '''\
+TABLE_DATA_TEMPLATE = """\
 _${const_name}_DATA = [
 ${rows}
 ]
 
-'''
+"""
 
 TABLE_ACCESSOR_TEMPLATE = '''\
 def ${param_name}(expected_version: int) -> list[${class_name}]:
@@ -42,10 +42,10 @@ def ${param_name}(expected_version: int) -> list[${class_name}]:
 
 '''
 
-SIMPLE_VALUE_TEMPLATE = '''\
+SIMPLE_VALUE_TEMPLATE = """\
 _${const_name}_VALUE = ${value}
 
-'''
+"""
 
 SIMPLE_ACCESSOR_TEMPLATE = '''\
 def ${param_name}(expected_version: int) -> ${py_type}:
@@ -80,9 +80,11 @@ def generate_python(param_data: dict) -> str:
                 py_type = get_type("python", col["type"])
                 fields.append(f"    {col['name']}: {py_type}")
 
-            output.append(TABLE_DATACLASS_TEMPLATE
-                .replace("${class_name}", class_name)
-                .replace("${fields}", "\n".join(fields)))
+            output.append(
+                TABLE_DATACLASS_TEMPLATE.replace("${class_name}", class_name).replace(
+                    "${fields}", "\n".join(fields)
+                )
+            )
 
     # Generate data and accessors
     for param in parameters:
@@ -108,15 +110,18 @@ def generate_python(param_data: dict) -> str:
                         values.append(f'{col["name"]}={val}')
                 row_strs.append(f"    {class_name}({', '.join(values)}),")
 
-            output.append(TABLE_DATA_TEMPLATE
-                .replace("${const_name}", const_name)
-                .replace("${rows}", "\n".join(row_strs)))
+            output.append(
+                TABLE_DATA_TEMPLATE.replace("${const_name}", const_name).replace(
+                    "${rows}", "\n".join(row_strs)
+                )
+            )
 
-            output.append(TABLE_ACCESSOR_TEMPLATE
-                .replace("${param_name}", param_name)
+            output.append(
+                TABLE_ACCESSOR_TEMPLATE.replace("${param_name}", param_name)
                 .replace("${class_name}", class_name)
                 .replace("${const_name}", const_name)
-                .replace("${version}", str(version)))
+                .replace("${version}", str(version))
+            )
         else:
             # Simple parameter
             value = param["value"]
@@ -127,14 +132,17 @@ def generate_python(param_data: dict) -> str:
             else:
                 value_str = str(value)
 
-            output.append(SIMPLE_VALUE_TEMPLATE
-                .replace("${const_name}", const_name)
-                .replace("${value}", value_str))
+            output.append(
+                SIMPLE_VALUE_TEMPLATE.replace("${const_name}", const_name).replace(
+                    "${value}", value_str
+                )
+            )
 
-            output.append(SIMPLE_ACCESSOR_TEMPLATE
-                .replace("${param_name}", param_name)
+            output.append(
+                SIMPLE_ACCESSOR_TEMPLATE.replace("${param_name}", param_name)
                 .replace("${py_type}", py_type)
                 .replace("${const_name}", const_name)
-                .replace("${version}", str(version)))
+                .replace("${version}", str(version))
+            )
 
     return "".join(output)

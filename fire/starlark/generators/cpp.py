@@ -136,7 +136,11 @@ def generate_cpp(param_data: dict, cpp_namespace: str = None) -> str:
     if namespace:
         guard_name = namespace.upper().replace("::", "_") + "_PARAMS_H"
     else:
-        guard_base = source_label.replace("//", "").replace("/", "_").replace(":", "_") if source_label else "GENERATED"
+        guard_base = (
+            source_label.replace("//", "").replace("/", "_").replace(":", "_")
+            if source_label
+            else "GENERATED"
+        )
         guard_name = guard_base.upper() + "_PARAMS_H"
 
     output = []
@@ -159,9 +163,11 @@ def generate_cpp(param_data: dict, cpp_namespace: str = None) -> str:
                 unit_comment = f"  ///< Unit: {col['unit']}" if col.get("unit") else ""
                 fields.append(f"    {cpp_type} {col['name']};{unit_comment}")
 
-            output.append(TABLE_STRUCT_TEMPLATE
-                .replace("${struct_name}", struct_name)
-                .replace("${fields}", "\n".join(fields)))
+            output.append(
+                TABLE_STRUCT_TEMPLATE.replace("${struct_name}", struct_name).replace(
+                    "${fields}", "\n".join(fields)
+                )
+            )
 
     # Generate constants and accessors
     for param in parameters:
@@ -188,37 +194,45 @@ def generate_cpp(param_data: dict, cpp_namespace: str = None) -> str:
                     values.append(format_value(col["type"], row[i], "cpp"))
                 row_strs.append(f"    {{{', '.join(values)}}},")
 
-            output.append(TABLE_DATA_TEMPLATE
-                .replace("${struct_name}", struct_name)
+            output.append(
+                TABLE_DATA_TEMPLATE.replace("${struct_name}", struct_name)
                 .replace("${const_name}", const_name)
                 .replace("${rows}", "\n".join(row_strs))
-                .replace("${size}", str(len(rows))))
+                .replace("${size}", str(len(rows)))
+            )
 
             # Generate accessor
-            template = TABLE_ACCESSOR_TEMPLATE if version > 1 else TABLE_ACCESSOR_V1_TEMPLATE
-            output.append(template
-                .replace("${struct_name}", struct_name)
+            template = (
+                TABLE_ACCESSOR_TEMPLATE if version > 1 else TABLE_ACCESSOR_V1_TEMPLATE
+            )
+            output.append(
+                template.replace("${struct_name}", struct_name)
                 .replace("${param_name}", param_name)
                 .replace("${const_name}", const_name)
                 .replace("${version}", str(version))
-                .replace("${description}", description))
+                .replace("${description}", description)
+            )
         else:
             # Simple parameter
             cpp_type = get_type("cpp", param_type)
             value = format_value(param_type, param["value"], "cpp")
 
-            output.append(SIMPLE_VALUE_TEMPLATE
-                .replace("${cpp_type}", cpp_type)
+            output.append(
+                SIMPLE_VALUE_TEMPLATE.replace("${cpp_type}", cpp_type)
                 .replace("${const_name}", const_name)
-                .replace("${value}", value))
+                .replace("${value}", value)
+            )
 
-            template = SIMPLE_ACCESSOR_TEMPLATE if version > 1 else SIMPLE_ACCESSOR_V1_TEMPLATE
-            output.append(template
-                .replace("${cpp_type}", cpp_type)
+            template = (
+                SIMPLE_ACCESSOR_TEMPLATE if version > 1 else SIMPLE_ACCESSOR_V1_TEMPLATE
+            )
+            output.append(
+                template.replace("${cpp_type}", cpp_type)
                 .replace("${param_name}", param_name)
                 .replace("${const_name}", const_name)
                 .replace("${version}", str(version))
-                .replace("${description}", description))
+                .replace("${description}", description)
+            )
 
     # Namespace close
     if namespace:

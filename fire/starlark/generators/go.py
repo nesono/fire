@@ -3,30 +3,30 @@
 from fire.starlark.generators.base import get_type, pascal_case, format_value
 
 # Templates for Go code generation
-HEADER_TEMPLATE = '''\
+HEADER_TEMPLATE = """\
 package ${package_name}
 
 import (
     "fmt"
 )
 
-'''
+"""
 
-TABLE_STRUCT_TEMPLATE = '''\
+TABLE_STRUCT_TEMPLATE = """\
 type ${struct_name} struct {
 ${fields}
 }
 
-'''
+"""
 
-TABLE_DATA_TEMPLATE = '''\
+TABLE_DATA_TEMPLATE = """\
 var ${const_name_lower}Data = []${struct_name}{
 ${rows}
 }
 
-'''
+"""
 
-TABLE_ACCESSOR_TEMPLATE = '''\
+TABLE_ACCESSOR_TEMPLATE = """\
 // ${param_name_pascal} returns ${param_name} with version check (current version: ${version})
 func ${param_name_pascal}(expectedVersion int) []${struct_name} {
     if expectedVersion > ${version} {
@@ -38,24 +38,24 @@ func ${param_name_pascal}(expectedVersion int) []${struct_name} {
     return ${const_name_lower}Data
 }
 
-'''
+"""
 
-SIMPLE_VALUE_TEMPLATE_STRING = '''\
+SIMPLE_VALUE_TEMPLATE_STRING = """\
 var ${const_name_lower}Value = "${value}"
 
-'''
+"""
 
-SIMPLE_VALUE_TEMPLATE_BOOL = '''\
+SIMPLE_VALUE_TEMPLATE_BOOL = """\
 var ${const_name_lower}Value = ${value}
 
-'''
+"""
 
-SIMPLE_VALUE_TEMPLATE_NUMERIC = '''\
+SIMPLE_VALUE_TEMPLATE_NUMERIC = """\
 var ${const_name_lower}Value ${go_type} = ${value}
 
-'''
+"""
 
-SIMPLE_ACCESSOR_TEMPLATE = '''\
+SIMPLE_ACCESSOR_TEMPLATE = """\
 // ${param_name_pascal} returns ${param_name} with version check (current version: ${version})
 func ${param_name_pascal}(expectedVersion int) ${go_type} {
     if expectedVersion > ${version} {
@@ -67,7 +67,7 @@ func ${param_name_pascal}(expectedVersion int) ${go_type} {
     return ${const_name_lower}Value
 }
 
-'''
+"""
 
 
 def generate_go(param_data: dict) -> str:
@@ -90,9 +90,11 @@ def generate_go(param_data: dict) -> str:
                 field_name = pascal_case(col["name"])
                 fields.append(f"    {field_name} {go_type}")
 
-            output.append(TABLE_STRUCT_TEMPLATE
-                .replace("${struct_name}", struct_name)
-                .replace("${fields}", "\n".join(fields)))
+            output.append(
+                TABLE_STRUCT_TEMPLATE.replace("${struct_name}", struct_name).replace(
+                    "${fields}", "\n".join(fields)
+                )
+            )
 
     # Generate data and accessors
     for param in parameters:
@@ -117,42 +119,52 @@ def generate_go(param_data: dict) -> str:
                     values.append(f"{field_name}: {val}")
                 row_strs.append(f"    {{{', '.join(values)}}},")
 
-            output.append(TABLE_DATA_TEMPLATE
-                .replace("${const_name_lower}", const_name.lower())
+            output.append(
+                TABLE_DATA_TEMPLATE.replace("${const_name_lower}", const_name.lower())
                 .replace("${struct_name}", struct_name)
-                .replace("${rows}", "\n".join(row_strs)))
+                .replace("${rows}", "\n".join(row_strs))
+            )
 
-            output.append(TABLE_ACCESSOR_TEMPLATE
-                .replace("${param_name}", param_name)
+            output.append(
+                TABLE_ACCESSOR_TEMPLATE.replace("${param_name}", param_name)
                 .replace("${param_name_pascal}", param_name_pascal)
                 .replace("${struct_name}", struct_name)
                 .replace("${const_name_lower}", const_name.lower())
-                .replace("${version}", str(version)))
+                .replace("${version}", str(version))
+            )
         else:
             # Simple parameter
             value = param["value"]
             go_type = get_type("go", param_type)
 
             if param_type == "string":
-                output.append(SIMPLE_VALUE_TEMPLATE_STRING
-                    .replace("${const_name_lower}", const_name.lower())
-                    .replace("${value}", str(value)))
+                output.append(
+                    SIMPLE_VALUE_TEMPLATE_STRING.replace(
+                        "${const_name_lower}", const_name.lower()
+                    ).replace("${value}", str(value))
+                )
             elif param_type == "bool":
                 bool_val = "true" if value else "false"
-                output.append(SIMPLE_VALUE_TEMPLATE_BOOL
-                    .replace("${const_name_lower}", const_name.lower())
-                    .replace("${value}", bool_val))
+                output.append(
+                    SIMPLE_VALUE_TEMPLATE_BOOL.replace(
+                        "${const_name_lower}", const_name.lower()
+                    ).replace("${value}", bool_val)
+                )
             else:
-                output.append(SIMPLE_VALUE_TEMPLATE_NUMERIC
-                    .replace("${const_name_lower}", const_name.lower())
+                output.append(
+                    SIMPLE_VALUE_TEMPLATE_NUMERIC.replace(
+                        "${const_name_lower}", const_name.lower()
+                    )
                     .replace("${go_type}", go_type)
-                    .replace("${value}", str(value)))
+                    .replace("${value}", str(value))
+                )
 
-            output.append(SIMPLE_ACCESSOR_TEMPLATE
-                .replace("${param_name}", param_name)
+            output.append(
+                SIMPLE_ACCESSOR_TEMPLATE.replace("${param_name}", param_name)
                 .replace("${param_name_pascal}", param_name_pascal)
                 .replace("${go_type}", go_type)
                 .replace("${const_name_lower}", const_name.lower())
-                .replace("${version}", str(version)))
+                .replace("${version}", str(version))
+            )
 
     return "".join(output)

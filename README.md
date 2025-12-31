@@ -261,7 +261,7 @@ Requirements are written in Markdown with a specific structure (that is validate
 
 Let's say we have a requirement file `requirements/velocity_requirements.sysreq.md`:
 
-````markdown
+```markdown
 # Velocity Requirements
 
 ## REQ-VEL-001
@@ -296,8 +296,7 @@ safety analysis for ASIL-D classification. The maximum velocity is constrained b
 
 - **Version 2**: Added parent requirement version tracking support
 - **Version 1**: Initial maximum velocity requirement definition
-
-````
+```
 
 Note that the important part here is the header 2 (`##`), that includes the ID of the requirement and must be followed by a line containing SIL, Sec, and Version separated by `|` characters.
 The header 3 (`###`) sections are free text for now, even though we highly recomment you to use a fixed format for it.
@@ -361,7 +360,7 @@ Software requirements are derived from system requirements and follow a similar 
 
 **Example:**
 
-````markdown
+```markdown
 ---
 system_function: /examples/system_functions/braking_control.sysarch.md
 ---
@@ -373,8 +372,7 @@ system_function: /examples/system_functions/braking_control.sysarch.md
 SIL: ASIL-D | Sec: false | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001)
 
 The brake controller component shall calculate the required brake force...
-
-````
+```
 
 ### Markdown References
 
