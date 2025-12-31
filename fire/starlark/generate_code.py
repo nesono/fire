@@ -32,18 +32,15 @@ from fire.starlark.generators.java import generate_java
 
 def yaml_to_internal_format(yaml_data, namespace=""):
     """Convert YAML parameter format to internal format for generators."""
-    params = yaml_data.get('parameters', {})
+    params = yaml_data.get("parameters", {})
     parameters = []
 
     for name, param_def in params.items():
-        param = {'name': name}
+        param = {"name": name}
         param.update(param_def)
         parameters.append(param)
 
-    return {
-        "namespace": namespace,
-        "parameters": parameters
-    }
+    return {"namespace": namespace, "parameters": parameters}
 
 
 def main():
@@ -56,8 +53,11 @@ def main():
     cpp_parser = subparsers.add_parser("cpp", help="Generate C++ header")
     cpp_parser.add_argument("input", help="Input JSON file")
     cpp_parser.add_argument("output", help="Output file path")
-    cpp_parser.add_argument("--namespace", dest="cpp_namespace",
-                           help="C++ namespace (overrides auto-derived)")
+    cpp_parser.add_argument(
+        "--namespace",
+        dest="cpp_namespace",
+        help="C++ namespace (overrides auto-derived)",
+    )
 
     # Python subcommand
     py_parser = subparsers.add_parser("python", help="Generate Python module")
@@ -68,8 +68,9 @@ def main():
     go_parser = subparsers.add_parser("go", help="Generate Go package")
     go_parser.add_argument("input", help="Input YAML file")
     go_parser.add_argument("output", help="Output file path")
-    go_parser.add_argument("--namespace", dest="namespace",
-                          help="Package namespace (e.g., examples)")
+    go_parser.add_argument(
+        "--namespace", dest="namespace", help="Package namespace (e.g., examples)"
+    )
 
     # Rust subcommand
     rust_parser = subparsers.add_parser("rust", help="Generate Rust module")
@@ -80,19 +81,25 @@ def main():
     java_parser = subparsers.add_parser("java", help="Generate Java class")
     java_parser.add_argument("input", help="Input YAML file")
     java_parser.add_argument("output", help="Output file path")
-    java_parser.add_argument("--class-name", dest="class_name",
-                            default="Parameters", help="Java class name")
-    java_parser.add_argument("--namespace", dest="namespace",
-                            help="Java package namespace (e.g., com.example)")
+    java_parser.add_argument(
+        "--class-name", dest="class_name", default="Parameters", help="Java class name"
+    )
+    java_parser.add_argument(
+        "--namespace",
+        dest="namespace",
+        help="Java package namespace (e.g., com.example)",
+    )
 
     args = parser.parse_args()
 
     # Determine namespace
-    namespace = getattr(args, 'namespace', None) or getattr(args, 'cpp_namespace', None) or ""
+    namespace = (
+        getattr(args, "namespace", None) or getattr(args, "cpp_namespace", None) or ""
+    )
 
     # Load parameter data
     try:
-        with open(args.input, 'r') as f:
+        with open(args.input, "r") as f:
             yaml_data = yaml.safe_load(f)
         param_data = yaml_to_internal_format(yaml_data, namespace)
     except FileNotFoundError:
@@ -104,7 +111,7 @@ def main():
 
     # Generate code based on language
     if args.language == "cpp":
-        code = generate_cpp(param_data, getattr(args, 'cpp_namespace', None))
+        code = generate_cpp(param_data, getattr(args, "cpp_namespace", None))
     elif args.language == "python":
         code = generate_python(param_data)
     elif args.language == "go":

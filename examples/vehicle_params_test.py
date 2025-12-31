@@ -16,7 +16,7 @@ def test_simple_parameters():
     assert maximum_vehicle_velocity(1) == 55.0
     assert wheel_count(1) == 4
     assert vehicle_name(1) == "TestVehicle"
-    assert debug_mode(1) == False
+    assert not debug_mode(1)
 
 
 def test_table_parameters():

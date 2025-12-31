@@ -11,34 +11,45 @@ def parse_simple_yaml(yaml_text):
     It remains for backward compatibility with legacy report generation.
     """
     result = {}
-    lines = yaml_text.strip().split('\n')
+    lines = yaml_text.strip().split("\n")
 
     # Parse into a list of (indent, key, value, is_list_item) tuples
     parsed_lines = []
     for line in lines:
-        if not line.strip() or line.strip().startswith('#'):
+        if not line.strip() or line.strip().startswith("#"):
             continue
 
         indent = len(line) - len(line.lstrip())
         stripped = line.strip()
 
-        if stripped.startswith('- '):
+        if stripped.startswith("- "):
             item = stripped[2:].strip()
-            if ': ' in item:
-                key, value = item.split(': ', 1)
-                parsed_lines.append((indent, key.strip(), value.strip().strip('"').strip("'"), 'dict_in_list'))
+            if ": " in item:
+                key, value = item.split(": ", 1)
+                parsed_lines.append(
+                    (
+                        indent,
+                        key.strip(),
+                        value.strip().strip('"').strip("'"),
+                        "dict_in_list",
+                    )
+                )
             else:
-                parsed_lines.append((indent, None, item.strip('"').strip("'"), 'list_item'))
-        elif ': ' in line:
-            key, value = line.split(': ', 1)
+                parsed_lines.append(
+                    (indent, None, item.strip('"').strip("'"), "list_item")
+                )
+        elif ": " in line:
+            key, value = line.split(": ", 1)
             value = value.strip().strip('"').strip("'")
-            if value.startswith('[') and value.endswith(']'):
+            if value.startswith("[") and value.endswith("]"):
                 # Inline list
-                items = value[1:-1].split(',')
-                items = [item.strip().strip('"').strip("'") for item in items if item.strip()]
-                parsed_lines.append((indent, key.strip(), items, 'inline_list'))
+                items = value[1:-1].split(",")
+                items = [
+                    item.strip().strip('"').strip("'") for item in items if item.strip()
+                ]
+                parsed_lines.append((indent, key.strip(), items, "inline_list"))
             else:
-                parsed_lines.append((indent, key.strip(), value, 'key_value'))
+                parsed_lines.append((indent, key.strip(), value, "key_value"))
 
     # Build the structure
     stack = [(0, result, None)]  # (indent, object, key)
@@ -53,20 +64,22 @@ def parse_simple_yaml(yaml_text):
 
         parent_indent, parent_obj, parent_key = stack[-1]
 
-        if line_type == 'key_value':
+        if line_type == "key_value":
             if not value:
                 # Empty value - peek ahead to see if next is list or dict
                 if i + 1 < len(parsed_lines):
                     next_indent, next_key, next_value, next_type = parsed_lines[i + 1]
                     if next_indent > indent:
-                        if next_type in ('list_item', 'dict_in_list'):
+                        if next_type in ("list_item", "dict_in_list"):
                             # It's a list
                             if isinstance(parent_obj, dict):
                                 if parent_key:
                                     if parent_key not in parent_obj:
                                         parent_obj[parent_key] = {}
                                     parent_obj[parent_key][key] = []
-                                    stack.append((next_indent - 1, parent_obj[parent_key], key))
+                                    stack.append(
+                                        (next_indent - 1, parent_obj[parent_key], key)
+                                    )
                                 else:
                                     parent_obj[key] = []
                                     stack.append((next_indent - 1, parent_obj, key))
@@ -77,10 +90,18 @@ def parse_simple_yaml(yaml_text):
                                     if parent_key not in parent_obj:
                                         parent_obj[parent_key] = {}
                                     parent_obj[parent_key][key] = {}
-                                    stack.append((next_indent - 1, parent_obj[parent_key][key], None))
+                                    stack.append(
+                                        (
+                                            next_indent - 1,
+                                            parent_obj[parent_key][key],
+                                            None,
+                                        )
+                                    )
                                 else:
                                     parent_obj[key] = {}
-                                    stack.append((next_indent - 1, parent_obj[key], None))
+                                    stack.append(
+                                        (next_indent - 1, parent_obj[key], None)
+                                    )
                     else:
                         if isinstance(parent_obj, dict):
                             if parent_key and parent_key in parent_obj:
@@ -100,26 +121,34 @@ def parse_simple_yaml(yaml_text):
                 except ValueError:
                     pass
                 if isinstance(parent_obj, dict):
-                    if parent_key and parent_key in parent_obj and isinstance(parent_obj[parent_key], dict):
+                    if (
+                        parent_key
+                        and parent_key in parent_obj
+                        and isinstance(parent_obj[parent_key], dict)
+                    ):
                         parent_obj[parent_key][key] = value
                     else:
                         parent_obj[key] = value
 
-        elif line_type == 'inline_list':
+        elif line_type == "inline_list":
             parent_obj[key] = value
 
-        elif line_type == 'list_item':
+        elif line_type == "list_item":
             if parent_key and isinstance(parent_obj, dict):
                 if parent_key not in parent_obj:
                     parent_obj[parent_key] = []
                 parent_obj[parent_key].append(value)
 
-        elif line_type == 'dict_in_list':
+        elif line_type == "dict_in_list":
             if parent_key and isinstance(parent_obj, dict):
                 if parent_key not in parent_obj:
                     parent_obj[parent_key] = []
                 # Check if we need a new dict
-                if not parent_obj[parent_key] or not isinstance(parent_obj[parent_key][-1], dict) or key in parent_obj[parent_key][-1]:
+                if (
+                    not parent_obj[parent_key]
+                    or not isinstance(parent_obj[parent_key][-1], dict)
+                    or key in parent_obj[parent_key][-1]
+                ):
                     parent_obj[parent_key].append({})
                 # Parse value as int if possible
                 try:
@@ -140,16 +169,16 @@ def parse_requirement_file(file_path):
     Requirements now use inline metadata (pipe-separated format after ## REQ-ID).
     This remains for backward compatibility with legacy report generation.
     """
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         content = f.read()
 
     # Find frontmatter boundaries
-    lines = content.split('\n')
+    lines = content.split("\n")
     first_delimiter = None
     second_delimiter = None
 
     for i, line in enumerate(lines):
-        if line.strip() == '---':
+        if line.strip() == "---":
             if first_delimiter is None:
                 first_delimiter = i
             elif second_delimiter is None:
@@ -160,15 +189,15 @@ def parse_requirement_file(file_path):
         return None
 
     # Extract and parse frontmatter
-    frontmatter_lines = lines[first_delimiter + 1:second_delimiter]
-    frontmatter_text = '\n'.join(frontmatter_lines)
+    frontmatter_lines = lines[first_delimiter + 1 : second_delimiter]
+    frontmatter_text = "\n".join(frontmatter_lines)
 
     frontmatter = parse_simple_yaml(frontmatter_text)
 
-    if not frontmatter or 'id' not in frontmatter:
+    if not frontmatter or "id" not in frontmatter:
         return None
 
-    return (frontmatter['id'], frontmatter)
+    return (frontmatter["id"], frontmatter)
 
 
 def generate_traceability_matrix(requirements_data):
@@ -256,8 +285,12 @@ def generate_coverage_report(requirements_data):
     lines = []
     lines.append("# Traceability Coverage Report")
     lines.append("")
-    lines.append("This report shows which requirements have references to parameters, tests, and standards.")
-    lines.append("Note: 'Linked Tests' indicates requirements with test references in frontmatter, not verified test execution.")
+    lines.append(
+        "This report shows which requirements have references to parameters, tests, and standards."
+    )
+    lines.append(
+        "Note: 'Linked Tests' indicates requirements with test references in frontmatter, not verified test execution."
+    )
     lines.append("")
 
     total_reqs = len(requirements_data)
@@ -277,16 +310,24 @@ def generate_coverage_report(requirements_data):
 
     param_coverage = (reqs_with_params * 100) // total_reqs if total_reqs > 0 else 0
     test_coverage = (reqs_with_tests * 100) // total_reqs if total_reqs > 0 else 0
-    standard_coverage = (reqs_with_standards * 100) // total_reqs if total_reqs > 0 else 0
+    standard_coverage = (
+        (reqs_with_standards * 100) // total_reqs if total_reqs > 0 else 0
+    )
 
     lines.append("## Summary")
     lines.append("")
     lines.append("| Metric | Count | Percentage |")
     lines.append("|--------|-------|------------|")
     lines.append(f"| Total Requirements | {total_reqs} | 100% |")
-    lines.append(f"| Requirements with Parameter References | {reqs_with_params} | {param_coverage}% |")
-    lines.append(f"| Requirements with Linked Tests | {reqs_with_tests} | {test_coverage}% |")
-    lines.append(f"| Requirements with Standard References | {reqs_with_standards} | {standard_coverage}% |")
+    lines.append(
+        f"| Requirements with Parameter References | {reqs_with_params} | {param_coverage}% |"
+    )
+    lines.append(
+        f"| Requirements with Linked Tests | {reqs_with_tests} | {test_coverage}% |"
+    )
+    lines.append(
+        f"| Requirements with Standard References | {reqs_with_standards} | {standard_coverage}% |"
+    )
     lines.append("")
 
     # Requirements without parameter references
@@ -296,7 +337,10 @@ def generate_coverage_report(requirements_data):
     for req_id, frontmatter in requirements_data:
         has_params = False
         if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if "parameters" in frontmatter["references"] and frontmatter["references"]["parameters"]:
+            if (
+                "parameters" in frontmatter["references"]
+                and frontmatter["references"]["parameters"]
+            ):
                 has_params = True
         if not has_params:
             missing_params.append((req_id, frontmatter.get("title", "")))
@@ -316,7 +360,10 @@ def generate_coverage_report(requirements_data):
     for req_id, frontmatter in requirements_data:
         has_tests = False
         if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if "tests" in frontmatter["references"] and frontmatter["references"]["tests"]:
+            if (
+                "tests" in frontmatter["references"]
+                and frontmatter["references"]["tests"]
+            ):
                 has_tests = True
         if not has_tests:
             missing_tests.append((req_id, frontmatter.get("title", "")))
@@ -335,7 +382,9 @@ def generate_change_impact(requirements_data):
     lines = []
     lines.append("# Change Impact Analysis")
     lines.append("")
-    lines.append("This report identifies requirements that may need review due to parent requirement changes.")
+    lines.append(
+        "This report identifies requirements that may need review due to parent requirement changes."
+    )
     lines.append("")
 
     # Build version map
@@ -347,7 +396,9 @@ def generate_change_impact(requirements_data):
     # Find stale requirements
     stale_requirements = []
     for req_id, frontmatter in requirements_data:
-        if "references" not in frontmatter or not isinstance(frontmatter["references"], dict):
+        if "references" not in frontmatter or not isinstance(
+            frontmatter["references"], dict
+        ):
             continue
         if "requirements" not in frontmatter["references"]:
             continue
@@ -363,24 +414,30 @@ def generate_change_impact(requirements_data):
                 if parent_id in req_versions:
                     current_version = req_versions[parent_id]
                     if current_version != tracked_version:
-                        stale_parents.append({
-                            "id": parent_id,
-                            "tracked": tracked_version,
-                            "current": current_version,
-                        })
+                        stale_parents.append(
+                            {
+                                "id": parent_id,
+                                "tracked": tracked_version,
+                                "current": current_version,
+                            }
+                        )
 
         if stale_parents:
-            stale_requirements.append({
-                "id": req_id,
-                "title": frontmatter.get("title", ""),
-                "version": frontmatter.get("version", "-"),
-                "stale_parents": stale_parents,
-            })
+            stale_requirements.append(
+                {
+                    "id": req_id,
+                    "title": frontmatter.get("title", ""),
+                    "version": frontmatter.get("version", "-"),
+                    "stale_parents": stale_parents,
+                }
+            )
 
     if stale_requirements:
         lines.append("## WARNING: Requirements with Stale Parent References")
         lines.append("")
-        lines.append("The following requirements track parent versions that have changed:")
+        lines.append(
+            "The following requirements track parent versions that have changed:"
+        )
         lines.append("")
 
         for req in stale_requirements:
@@ -391,14 +448,20 @@ def generate_change_impact(requirements_data):
             lines.append("**Stale Parent References**:")
             lines.append("")
             for parent in req["stale_parents"]:
-                lines.append(f"- **{parent['id']}**: Tracking v{parent['tracked']}, but current version is v{parent['current']}")
+                lines.append(
+                    f"- **{parent['id']}**: Tracking v{parent['tracked']}, but current version is v{parent['current']}"
+                )
             lines.append("")
-            lines.append("**Action Required**: Review and update this requirement to align with parent changes, then update the parent version reference.")
+            lines.append(
+                "**Action Required**: Review and update this requirement to align with parent changes, then update the parent version reference."
+            )
             lines.append("")
     else:
         lines.append("## SUCCRESS: All Requirements Up-to-Date")
         lines.append("")
-        lines.append("No requirements found with stale parent references. All tracked parent versions match current versions.")
+        lines.append(
+            "No requirements found with stale parent references. All tracked parent versions match current versions."
+        )
         lines.append("")
 
     return "\n".join(lines)
@@ -409,8 +472,12 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
     lines = []
     lines.append(f"# Compliance Report: {standard_name}")
     lines.append("")
-    lines.append(f"This report summarizes compliance status for requirements referencing {standard_name}.")
-    lines.append("Note: 'Linked Tests' refers to test references in frontmatter, not verified test execution.")
+    lines.append(
+        f"This report summarizes compliance status for requirements referencing {standard_name}."
+    )
+    lines.append(
+        "Note: 'Linked Tests' refers to test references in frontmatter, not verified test execution."
+    )
     lines.append("")
 
     # Categorize requirements by type
@@ -439,7 +506,10 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
 
         # Check linked tests
         if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if "tests" in frontmatter["references"] and frontmatter["references"]["tests"]:
+            if (
+                "tests" in frontmatter["references"]
+                and frontmatter["references"]["tests"]
+            ):
                 reqs_with_tests.append((req_id, frontmatter))
 
     total_reqs = len(requirements_data)
@@ -455,12 +525,18 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
     for req_type in sorted(type_counts.keys()):
         count = type_counts[req_type]
         percentage = (count * 100) // total_reqs if total_reqs > 0 else 0
-        type_label = req_type.capitalize() if req_type != "unspecified" else "Unspecified Type"
+        type_label = (
+            req_type.capitalize() if req_type != "unspecified" else "Unspecified Type"
+        )
         marker = " WARNING" if critical_type and req_type == critical_type else ""
         lines.append(f"| {type_label} Requirements{marker} | {count} | {percentage}% |")
 
-    lines.append(f"| Requirements Referencing {standard_name} | {len(reqs_with_standard)} | {(len(reqs_with_standard) * 100) // total_reqs if total_reqs > 0 else 0}% |")
-    lines.append(f"| Requirements with Linked Tests | {len(reqs_with_tests)} | {(len(reqs_with_tests) * 100) // total_reqs if total_reqs > 0 else 0}% |")
+    lines.append(
+        f"| Requirements Referencing {standard_name} | {len(reqs_with_standard)} | {(len(reqs_with_standard) * 100) // total_reqs if total_reqs > 0 else 0}% |"
+    )
+    lines.append(
+        f"| Requirements with Linked Tests | {len(reqs_with_tests)} | {(len(reqs_with_tests) * 100) // total_reqs if total_reqs > 0 else 0}% |"
+    )
     lines.append("")
 
     # Requirements by status
@@ -473,13 +549,27 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
     lines.append("")
     lines.append("| Status | Count |")
     lines.append("|--------|-------|")
-    for status in ["draft", "proposed", "approved", "implemented", "verified", "deprecated"]:
+    for status in [
+        "draft",
+        "proposed",
+        "approved",
+        "implemented",
+        "verified",
+        "deprecated",
+    ]:
         count = status_counts.get(status, 0)
         if count > 0:
             lines.append(f"| {status.capitalize()} | {count} |")
     # Show any other statuses
     for status, count in sorted(status_counts.items()):
-        if status not in ["draft", "proposed", "approved", "implemented", "verified", "deprecated"]:
+        if status not in [
+            "draft",
+            "proposed",
+            "approved",
+            "implemented",
+            "verified",
+            "deprecated",
+        ]:
             lines.append(f"| {status.capitalize()} | {count} |")
     lines.append("")
 
@@ -488,16 +578,25 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
         critical_reqs = reqs_by_type[critical_type]
         lines.append(f"## {critical_type.capitalize()} Requirements Detail")
         lines.append("")
-        lines.append("| Requirement | Title | Status | Linked Tests | Standard Reference |")
-        lines.append("|-------------|-------|--------|--------------|-------------------|")
+        lines.append(
+            "| Requirement | Title | Status | Linked Tests | Standard Reference |"
+        )
+        lines.append(
+            "|-------------|-------|--------|--------------|-------------------|"
+        )
 
         for req_id, frontmatter in critical_reqs:
             title = frontmatter.get("title", "")
             status = frontmatter.get("status", "-")
 
             has_tests = "SUCCESS"
-            if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-                if "tests" in frontmatter["references"] and frontmatter["references"]["tests"]:
+            if "references" in frontmatter and isinstance(
+                frontmatter["references"], dict
+            ):
+                if (
+                    "tests" in frontmatter["references"]
+                    and frontmatter["references"]["tests"]
+                ):
                     has_tests = "SUCCESS"
                 else:
                     has_tests = "FAILURE"
@@ -505,7 +604,9 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
                 has_tests = "FAILURE"
 
             has_standard = "FAILURE"
-            if "references" in frontmatter and isinstance(frontmatter["references"], dict):
+            if "references" in frontmatter and isinstance(
+                frontmatter["references"], dict
+            ):
                 if "standards" in frontmatter["references"]:
                     standards = frontmatter["references"]["standards"]
                     for std in standards:
@@ -513,7 +614,9 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
                             has_standard = "SUCCESS"
                             break
 
-            lines.append(f"| {req_id} | {title} | {status} | {has_tests} | {has_standard} |")
+            lines.append(
+                f"| {req_id} | {title} | {status} | {has_tests} | {has_standard} |"
+            )
         lines.append("")
 
     # Compliance gaps
@@ -526,27 +629,38 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
         critical_without_tests = []
         for req_id, frontmatter in critical_reqs:
             has_tests = False
-            if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-                if "tests" in frontmatter["references"] and frontmatter["references"]["tests"]:
+            if "references" in frontmatter and isinstance(
+                frontmatter["references"], dict
+            ):
+                if (
+                    "tests" in frontmatter["references"]
+                    and frontmatter["references"]["tests"]
+                ):
                     has_tests = True
             if not has_tests:
                 critical_without_tests.append((req_id, frontmatter.get("title", "")))
 
         if critical_without_tests:
-            lines.append(f"### WARNING: {critical_type.capitalize()} Requirements without Linked Tests")
+            lines.append(
+                f"### WARNING: {critical_type.capitalize()} Requirements without Linked Tests"
+            )
             lines.append("")
             for req_id, title in critical_without_tests:
                 lines.append(f"- **{req_id}**: {title}")
             lines.append("")
         else:
-            lines.append(f"### SUCCESS All {critical_type.capitalize()} Requirements have Linked Tests")
+            lines.append(
+                f"### SUCCESS All {critical_type.capitalize()} Requirements have Linked Tests"
+            )
             lines.append("")
 
         # Critical type requirements without standard reference
         critical_without_standard = []
         for req_id, frontmatter in critical_reqs:
             has_standard = False
-            if "references" in frontmatter and isinstance(frontmatter["references"], dict):
+            if "references" in frontmatter and isinstance(
+                frontmatter["references"], dict
+            ):
                 if "standards" in frontmatter["references"]:
                     standards = frontmatter["references"]["standards"]
                     for std in standards:
@@ -557,13 +671,17 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
                 critical_without_standard.append((req_id, frontmatter.get("title", "")))
 
         if critical_without_standard:
-            lines.append(f"### WARNING: {critical_type.capitalize()} Requirements without {standard_name} Reference")
+            lines.append(
+                f"### WARNING: {critical_type.capitalize()} Requirements without {standard_name} Reference"
+            )
             lines.append("")
             for req_id, title in critical_without_standard:
                 lines.append(f"- **{req_id}**: {title}")
             lines.append("")
         else:
-            lines.append(f"### SUCCESS: All {critical_type.capitalize()} Requirements reference {standard_name}")
+            lines.append(
+                f"### SUCCESS: All {critical_type.capitalize()} Requirements reference {standard_name}"
+            )
             lines.append("")
 
     # General gaps (all requirements)
@@ -571,7 +689,14 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
     for req_id, frontmatter in requirements_data:
         status = frontmatter.get("status", "")
         if status not in ["verified", "deprecated"]:
-            unverified.append((req_id, frontmatter.get("title", ""), status, frontmatter.get("type", "unspecified")))
+            unverified.append(
+                (
+                    req_id,
+                    frontmatter.get("title", ""),
+                    status,
+                    frontmatter.get("type", "unspecified"),
+                )
+            )
 
     if unverified:
         lines.append("### Requirements Not Yet Verified")
@@ -587,7 +712,9 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
 
 def main():
     if len(sys.argv) < 4:
-        print("Usage: generate_report.py <report_type> <output_file> <input_files...> [--standard=NAME] [--critical-type=TYPE]")
+        print(
+            "Usage: generate_report.py <report_type> <output_file> <input_files...> [--standard=NAME] [--critical-type=TYPE]"
+        )
         sys.exit(1)
 
     report_type = sys.argv[1]
@@ -625,7 +752,7 @@ def main():
         sys.exit(1)
 
     # Write output
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         f.write(report)
         f.write("\n")
 

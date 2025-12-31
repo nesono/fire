@@ -17,7 +17,7 @@ MD024:
   siblings_only: true
 
 # MD025/single-title/single-h1 - Multiple top-level headings
-MD025: false  # Requirement files intentionally have multiple H1s (frontmatter + body)
+MD025: false # Requirement files intentionally have multiple H1s (frontmatter + body)
 
 # MD033/no-inline-html - Inline HTML
 MD033:
