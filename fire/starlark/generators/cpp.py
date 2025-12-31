@@ -121,7 +121,7 @@ template<int ExpectedVersion>
 FOOTER_TEMPLATE = "#endif  // ${guard_name}\n"
 
 
-def generate_cpp(param_data: dict, cpp_namespace: str = None) -> str:
+def generate_cpp(param_data: dict, cpp_namespace: str = "") -> str:
     """Generate C++ header from parameter data."""
     parameters = param_data["parameters"]
     source_label = param_data.get("source_label", "")
