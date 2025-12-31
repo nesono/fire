@@ -14,6 +14,7 @@ module(
 
 bazel_dep(name = "rules_python", version = "1.7.0")
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "rules_mypy", version = "0.40.0")
 
 PYTHON_VERSION = "3.10"
 
@@ -27,6 +28,17 @@ pip.parse(
     requirements_lock = "//:requirements.txt",
 )
 use_repo(pip, "pip")
+
+types = use_extension("@rules_mypy//mypy:types.bzl", "types")
+types.requirements(
+    name = "pip_types",
+    # `@pip` in the next line corresponds to the `hub_name` when using
+    # rules_python's `pip.parse(...)`.
+    pip_requirements = "@pip//:requirements.bzl",
+    # also legal to pass a `requirements.in` here
+    requirements_txt = "//:requirements.txt",
+)
+use_repo(types, "pip_types")
 
 # =============================================================================
 # Development dependencies - only needed for developing/testing this module
