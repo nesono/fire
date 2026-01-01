@@ -1,19 +1,68 @@
 """Bazel rules for parameter management.
 
 Parameters are defined in YAML files and validated at build time using JSON schema.
-Code is generated for multiple languages from the validated YAML.
-
-This file provides only parameter validation (parameter_library).
-For code generation, use @fire//fire/starlark:codegen.bzl which provides:
-  - generate_cc_parameters()      - generates .h files
-  - generate_python_parameters()  - generates .py files
-  - generate_java_parameters()    - generates .java files
-  - generate_go_parameters()      - generates .go files
-  - generate_rust_parameters()    - generates .rs files
-
-Consumers are responsible for wrapping generated files in their own language libraries.
-This keeps Fire's dependencies minimal - Fire only needs rules_python for validation.
 """
+
+def _validate_parameters_impl(ctx):
+    """Implementation of parameter validation rule."""
+    script = ctx.executable._script
+    schema = ctx.file._schema
+    input_file = ctx.file.src
+    output = ctx.outputs.out
+
+    # Create a wrapper script that runs validation and copies file on success
+    wrapper_script = ctx.actions.declare_file(ctx.label.name + "_wrapper.sh")
+    ctx.actions.write(
+        output = wrapper_script,
+        content = """#!/bin/bash
+"{script}" "{input}" --schema="{schema}" && cp "{input}" "{output}"
+""".format(
+            script = script.path,
+            input = input_file.path,
+            schema = schema.path,
+            output = output.path,
+        ),
+        is_executable = True,
+    )
+
+    # Get runfiles for the script
+    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
+
+    # Run validation
+    ctx.actions.run(
+        inputs = [input_file, schema] + script_runfiles,
+        outputs = [output],
+        executable = wrapper_script,
+        tools = [script],
+        mnemonic = "ValidateParameters",
+        progress_message = "Validating parameters in %s" % input_file.basename,
+    )
+
+    return [DefaultInfo(files = depset([output]))]
+
+_validate_parameters = rule(
+    implementation = _validate_parameters_impl,
+    attrs = {
+        "out": attr.output(
+            mandatory = True,
+        ),
+        "src": attr.label(
+            allow_single_file = [".yaml", ".yml"],
+            mandatory = True,
+            doc = "Parameter YAML file to validate",
+        ),
+        "_schema": attr.label(
+            default = Label("@fire//fire/starlark:parameter_schema.json"),
+            allow_single_file = [".json"],
+        ),
+        "_script": attr.label(
+            default = Label("@fire//fire/starlark:validate_parameters_script"),
+            executable = True,
+            cfg = "exec",
+        ),
+    },
+    doc = "Validates a parameter YAML file against the parameter schema",
+)
 
 def parameter_library(
         name,
@@ -42,25 +91,11 @@ def parameter_library(
 
         # In BUILD.bazel:
         load("@fire//fire/starlark:parameters.bzl", "parameter_library")
-        load("@fire//fire/starlark:codegen.bzl", "generate_cc_parameters")
-        load("@rules_cc//cc:defs.bzl", "cc_library")
 
         # Validate parameters
         parameter_library(
             name = "vehicle_params",
             src = "vehicle_params.yaml",
-        )
-
-        # Generate C++ code
-        generate_cc_parameters(
-            name = "vehicle_params_h",
-            parameter_library = ":vehicle_params",
-        )
-
-        # Wrap in cc_library
-        cc_library(
-            name = "vehicle_params_cc",
-            hdrs = [":vehicle_params_h"],
         )
     """
 
@@ -68,23 +103,12 @@ def parameter_library(
     if not namespace:
         namespace = ""
 
-    # Create validation target
+    # Create validation target using custom rule
     validation_name = name + "_validation"
-    native.genrule(
+    _validate_parameters(
         name = validation_name,
-        srcs = [src],
-        outs = [name + "_validated.yaml"],
-        cmd = """
-            $(location @fire//fire/starlark:validate_parameters_script) \
-                $< \
-                --schema=$(location @fire//fire/starlark:parameter_schema.json) && \
-            cp $< $@
-        """,
-        tools = [
-            "@fire//fire/starlark:validate_parameters_script",
-            "@fire//fire/starlark:parameter_schema.json",
-        ],
-        visibility = visibility if visibility else ["//visibility:public"],
+        src = src,
+        out = name + "_validated.yaml",
     )
 
     # Create a filegroup that exposes both the namespace and the validated YAML
