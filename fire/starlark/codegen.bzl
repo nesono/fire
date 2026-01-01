@@ -8,22 +8,34 @@ This design keeps Fire's dependencies minimal - Fire only needs rules_python for
 validation. Consumers control which language rules they use and which versions.
 """
 
-def _generate_cc_parameters_impl(ctx):
-    """Implementation of C++ parameter generation rule."""
+def _generate_parameters_impl(ctx):
+    """Implementation of parameter code generation rule."""
     script = ctx.executable._script
     input_file = ctx.file.src
     output = ctx.outputs.out
+    language = ctx.attr.language
 
     # Build arguments
     args = ctx.actions.args()
-    args.add("cpp")
+    args.add(language)
     args.add(input_file.path)
     args.add(output.path)
+
+    # Add language-specific flags
     if ctx.attr.namespace:
         args.add("--namespace=" + ctx.attr.namespace)
+    if ctx.attr.class_name:
+        args.add("--class-name=" + ctx.attr.class_name)
+    if ctx.attr.package_prefix:
+        args.add("--namespace=" + ctx.attr.package_prefix)
+    if ctx.attr.package_name:
+        args.add("--namespace=" + ctx.attr.package_name)
 
     # Get runfiles for the script
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
+
+    # Language name for messages (capitalize first letter)
+    lang_display = language.capitalize() if language != "cpp" else "C++"
 
     # Run code generation
     ctx.actions.run(
@@ -31,121 +43,31 @@ def _generate_cc_parameters_impl(ctx):
         outputs = [output],
         executable = script,
         arguments = [args],
-        mnemonic = "GenerateCppParameters",
-        progress_message = "Generating C++ parameters from %s" % input_file.basename,
+        mnemonic = "Generate" + lang_display.replace("+", "").replace(" ", "") + "Parameters",
+        progress_message = "Generating %s parameters from %s" % (lang_display, input_file.basename),
     )
 
     return [DefaultInfo(files = depset([output]))]
 
-_generate_cc_parameters = rule(
-    implementation = _generate_cc_parameters_impl,
+_generate_parameters = rule(
+    implementation = _generate_parameters_impl,
     attrs = {
+        "class_name": attr.string(
+            doc = "Java class name",
+        ),
+        "language": attr.string(
+            mandatory = True,
+            values = ["cpp", "python", "java", "go", "rust"],
+            doc = "Target programming language",
+        ),
         "namespace": attr.string(
             doc = "C++ namespace (use :: for nested, e.g., 'outer::inner')",
         ),
         "out": attr.output(
             mandatory = True,
         ),
-        "src": attr.label(
-            allow_single_file = [".yaml", ".yml"],
-            mandatory = True,
-            doc = "Parameter YAML file (validated)",
-        ),
-        "_script": attr.label(
-            default = Label("@fire//fire/starlark:generate_code_script"),
-            executable = True,
-            cfg = "exec",
-        ),
-    },
-    doc = "Generates C++ header file from parameter library",
-)
-
-def _generate_python_parameters_impl(ctx):
-    """Implementation of Python parameter generation rule."""
-    script = ctx.executable._script
-    input_file = ctx.file.src
-    output = ctx.outputs.out
-
-    # Build arguments
-    args = ctx.actions.args()
-    args.add("python")
-    args.add(input_file.path)
-    args.add(output.path)
-
-    # Get runfiles for the script
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
-
-    # Run code generation
-    ctx.actions.run(
-        inputs = [input_file] + script_runfiles,
-        outputs = [output],
-        executable = script,
-        arguments = [args],
-        mnemonic = "GeneratePythonParameters",
-        progress_message = "Generating Python parameters from %s" % input_file.basename,
-    )
-
-    return [DefaultInfo(files = depset([output]))]
-
-_generate_python_parameters = rule(
-    implementation = _generate_python_parameters_impl,
-    attrs = {
-        "out": attr.output(
-            mandatory = True,
-        ),
-        "src": attr.label(
-            allow_single_file = [".yaml", ".yml"],
-            mandatory = True,
-            doc = "Parameter YAML file (validated)",
-        ),
-        "_script": attr.label(
-            default = Label("@fire//fire/starlark:generate_code_script"),
-            executable = True,
-            cfg = "exec",
-        ),
-    },
-    doc = "Generates Python module from parameter library",
-)
-
-def _generate_java_parameters_impl(ctx):
-    """Implementation of Java parameter generation rule."""
-    script = ctx.executable._script
-    input_file = ctx.file.src
-    output = ctx.outputs.out
-
-    # Build arguments
-    args = ctx.actions.args()
-    args.add("java")
-    args.add(input_file.path)
-    args.add(output.path)
-    args.add("--class-name=" + ctx.attr.class_name)
-    if ctx.attr.package_prefix:
-        args.add("--namespace=" + ctx.attr.package_prefix)
-
-    # Get runfiles for the script
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
-
-    # Run code generation
-    ctx.actions.run(
-        inputs = [input_file] + script_runfiles,
-        outputs = [output],
-        executable = script,
-        arguments = [args],
-        mnemonic = "GenerateJavaParameters",
-        progress_message = "Generating Java parameters from %s" % input_file.basename,
-    )
-
-    return [DefaultInfo(files = depset([output]))]
-
-_generate_java_parameters = rule(
-    implementation = _generate_java_parameters_impl,
-    attrs = {
-        "class_name": attr.string(
-            mandatory = True,
-            doc = "Name of the generated Java class",
-        ),
-        "out": attr.output(
-            mandatory = True,
+        "package_name": attr.string(
+            doc = "Go package name",
         ),
         "package_prefix": attr.string(
             doc = "Java package prefix (e.g., 'com.example')",
@@ -161,106 +83,7 @@ _generate_java_parameters = rule(
             cfg = "exec",
         ),
     },
-    doc = "Generates Java class from parameter library",
-)
-
-def _generate_go_parameters_impl(ctx):
-    """Implementation of Go parameter generation rule."""
-    script = ctx.executable._script
-    input_file = ctx.file.src
-    output = ctx.outputs.out
-
-    # Build arguments
-    args = ctx.actions.args()
-    args.add("go")
-    args.add(input_file.path)
-    args.add(output.path)
-    args.add("--namespace=" + ctx.attr.package_name)
-
-    # Get runfiles for the script
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
-
-    # Run code generation
-    ctx.actions.run(
-        inputs = [input_file] + script_runfiles,
-        outputs = [output],
-        executable = script,
-        arguments = [args],
-        mnemonic = "GenerateGoParameters",
-        progress_message = "Generating Go parameters from %s" % input_file.basename,
-    )
-
-    return [DefaultInfo(files = depset([output]))]
-
-_generate_go_parameters = rule(
-    implementation = _generate_go_parameters_impl,
-    attrs = {
-        "out": attr.output(
-            mandatory = True,
-        ),
-        "package_name": attr.string(
-            mandatory = True,
-            doc = "Go package name",
-        ),
-        "src": attr.label(
-            allow_single_file = [".yaml", ".yml"],
-            mandatory = True,
-            doc = "Parameter YAML file (validated)",
-        ),
-        "_script": attr.label(
-            default = Label("@fire//fire/starlark:generate_code_script"),
-            executable = True,
-            cfg = "exec",
-        ),
-    },
-    doc = "Generates Go source file from parameter library",
-)
-
-def _generate_rust_parameters_impl(ctx):
-    """Implementation of Rust parameter generation rule."""
-    script = ctx.executable._script
-    input_file = ctx.file.src
-    output = ctx.outputs.out
-
-    # Build arguments
-    args = ctx.actions.args()
-    args.add("rust")
-    args.add(input_file.path)
-    args.add(output.path)
-
-    # Get runfiles for the script
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
-
-    # Run code generation
-    ctx.actions.run(
-        inputs = [input_file] + script_runfiles,
-        outputs = [output],
-        executable = script,
-        arguments = [args],
-        mnemonic = "GenerateRustParameters",
-        progress_message = "Generating Rust parameters from %s" % input_file.basename,
-    )
-
-    return [DefaultInfo(files = depset([output]))]
-
-_generate_rust_parameters = rule(
-    implementation = _generate_rust_parameters_impl,
-    attrs = {
-        "out": attr.output(
-            mandatory = True,
-        ),
-        "src": attr.label(
-            allow_single_file = [".yaml", ".yml"],
-            mandatory = True,
-            doc = "Parameter YAML file (validated)",
-        ),
-        "_script": attr.label(
-            default = Label("@fire//fire/starlark:generate_code_script"),
-            executable = True,
-            cfg = "exec",
-        ),
-    },
-    doc = "Generates Rust module from parameter library",
+    doc = "Generates source code from parameter library for a specific language",
 )
 
 def generate_cc_parameters(
@@ -305,10 +128,11 @@ def generate_cc_parameters(
         base_name = name
 
     # Use custom rule for code generation
-    _generate_cc_parameters(
+    _generate_parameters(
         name = name,
         src = parameter_library,
         out = base_name + ".h",
+        language = "cpp",
         namespace = namespace if namespace else "",
         visibility = visibility if visibility else ["//visibility:public"],
     )
@@ -352,10 +176,11 @@ def generate_python_parameters(
         base_name = name
 
     # Use custom rule for code generation
-    _generate_python_parameters(
+    _generate_parameters(
         name = name,
         src = parameter_library,
         out = base_name + ".py",
+        language = "python",
         visibility = visibility if visibility else ["//visibility:public"],
     )
 
@@ -406,10 +231,11 @@ def generate_java_parameters(
         class_name = "".join([word.capitalize() for word in parts])
 
     # Use custom rule for code generation
-    _generate_java_parameters(
+    _generate_parameters(
         name = name,
         src = parameter_library,
         out = class_name + ".java",
+        language = "java",
         class_name = class_name,
         package_prefix = package_prefix if package_prefix else "",
         visibility = visibility if visibility else ["//visibility:public"],
@@ -461,10 +287,11 @@ def generate_go_parameters(
         package_name = base_name.replace("_", "")
 
     # Use custom rule for code generation
-    _generate_go_parameters(
+    _generate_parameters(
         name = name,
         src = parameter_library,
         out = base_name + ".go",
+        language = "go",
         package_name = package_name,
         visibility = visibility if visibility else ["//visibility:public"],
     )
@@ -510,9 +337,10 @@ def generate_rust_parameters(
         base_name = name
 
     # Use custom rule for code generation
-    _generate_rust_parameters(
+    _generate_parameters(
         name = name,
         src = parameter_library,
         out = base_name + ".rs",
+        language = "rust",
         visibility = visibility if visibility else ["//visibility:public"],
     )
