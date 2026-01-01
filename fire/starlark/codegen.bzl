@@ -8,6 +8,84 @@ This design keeps Fire's dependencies minimal - Fire only needs rules_python for
 validation. Consumers control which language rules they use and which versions.
 """
 
+def _generate_parameters_impl(ctx):
+    """Implementation of parameter code generation rule."""
+    script = ctx.executable._script
+    input_file = ctx.file.src
+    output = ctx.outputs.out
+    language = ctx.attr.language
+
+    # Build arguments
+    args = ctx.actions.args()
+    args.add(language)
+    args.add(input_file.path)
+    args.add(output.path)
+
+    # Add language-specific flags
+    if ctx.attr.namespace:
+        args.add("--namespace=" + ctx.attr.namespace)
+    if ctx.attr.class_name:
+        args.add("--class-name=" + ctx.attr.class_name)
+    if ctx.attr.package_prefix:
+        args.add("--namespace=" + ctx.attr.package_prefix)
+    if ctx.attr.package_name:
+        args.add("--namespace=" + ctx.attr.package_name)
+
+    # Get runfiles for the script
+    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
+
+    # Language name for messages (capitalize first letter)
+    lang_display = language.capitalize() if language != "cpp" else "C++"
+
+    # Run code generation
+    ctx.actions.run(
+        inputs = [input_file] + script_runfiles,
+        outputs = [output],
+        executable = script,
+        arguments = [args],
+        mnemonic = "Generate" + lang_display.replace("+", "").replace(" ", "") + "Parameters",
+        progress_message = "Generating %s parameters from %s" % (lang_display, input_file.basename),
+    )
+
+    return [DefaultInfo(files = depset([output]))]
+
+_generate_parameters = rule(
+    implementation = _generate_parameters_impl,
+    attrs = {
+        "class_name": attr.string(
+            doc = "Java class name",
+        ),
+        "language": attr.string(
+            mandatory = True,
+            values = ["cpp", "python", "java", "go", "rust"],
+            doc = "Target programming language",
+        ),
+        "namespace": attr.string(
+            doc = "C++ namespace (use :: for nested, e.g., 'outer::inner')",
+        ),
+        "out": attr.output(
+            mandatory = True,
+        ),
+        "package_name": attr.string(
+            doc = "Go package name",
+        ),
+        "package_prefix": attr.string(
+            doc = "Java package prefix (e.g., 'com.example')",
+        ),
+        "src": attr.label(
+            allow_single_file = [".yaml", ".yml"],
+            mandatory = True,
+            doc = "Parameter YAML file (validated)",
+        ),
+        "_script": attr.label(
+            default = Label("@fire//fire/starlark:generate_code_script"),
+            executable = True,
+            cfg = "exec",
+        ),
+    },
+    doc = "Generates source code from parameter library for a specific language",
+)
+
 def generate_cc_parameters(
         name,
         parameter_library,
@@ -49,17 +127,13 @@ def generate_cc_parameters(
     if not base_name:
         base_name = name
 
-    # Build command with optional namespace
-    cmd = "$(location @fire//fire/starlark:generate_code_script) cpp $< $@"
-    if namespace:
-        cmd += " --namespace='{}'".format(namespace)
-
-    native.genrule(
+    # Use custom rule for code generation
+    _generate_parameters(
         name = name,
-        srcs = [parameter_library],
-        outs = [base_name + ".h"],
-        cmd = cmd,
-        tools = ["@fire//fire/starlark:generate_code_script"],
+        src = parameter_library,
+        out = base_name + ".h",
+        language = "cpp",
+        namespace = namespace if namespace else "",
         visibility = visibility if visibility else ["//visibility:public"],
     )
 
@@ -101,12 +175,12 @@ def generate_python_parameters(
     if not base_name:
         base_name = name
 
-    native.genrule(
+    # Use custom rule for code generation
+    _generate_parameters(
         name = name,
-        srcs = [parameter_library],
-        outs = [base_name + ".py"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) python $< $@",
-        tools = ["@fire//fire/starlark:generate_code_script"],
+        src = parameter_library,
+        out = base_name + ".py",
+        language = "python",
         visibility = visibility if visibility else ["//visibility:public"],
     )
 
@@ -156,17 +230,14 @@ def generate_java_parameters(
         parts = base_name.split("_")
         class_name = "".join([word.capitalize() for word in parts])
 
-    # Build command with optional package prefix
-    cmd = "$(location @fire//fire/starlark:generate_code_script) java $< $@ --class-name='{}'".format(class_name)
-    if package_prefix:
-        cmd += " --namespace='{}'".format(package_prefix)
-
-    native.genrule(
+    # Use custom rule for code generation
+    _generate_parameters(
         name = name,
-        srcs = [parameter_library],
-        outs = [class_name + ".java"],
-        cmd = cmd,
-        tools = ["@fire//fire/starlark:generate_code_script"],
+        src = parameter_library,
+        out = class_name + ".java",
+        language = "java",
+        class_name = class_name,
+        package_prefix = package_prefix if package_prefix else "",
         visibility = visibility if visibility else ["//visibility:public"],
     )
 
@@ -215,12 +286,13 @@ def generate_go_parameters(
     if not package_name:
         package_name = base_name.replace("_", "")
 
-    native.genrule(
+    # Use custom rule for code generation
+    _generate_parameters(
         name = name,
-        srcs = [parameter_library],
-        outs = [base_name + ".go"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) go $< $@ --namespace='{}'".format(package_name),
-        tools = ["@fire//fire/starlark:generate_code_script"],
+        src = parameter_library,
+        out = base_name + ".go",
+        language = "go",
+        package_name = package_name,
         visibility = visibility if visibility else ["//visibility:public"],
     )
 
@@ -264,11 +336,11 @@ def generate_rust_parameters(
     if not base_name:
         base_name = name
 
-    native.genrule(
+    # Use custom rule for code generation
+    _generate_parameters(
         name = name,
-        srcs = [parameter_library],
-        outs = [base_name + ".rs"],
-        cmd = "$(location @fire//fire/starlark:generate_code_script) rust $< $@",
-        tools = ["@fire//fire/starlark:generate_code_script"],
+        src = parameter_library,
+        out = base_name + ".rs",
+        language = "rust",
         visibility = visibility if visibility else ["//visibility:public"],
     )
