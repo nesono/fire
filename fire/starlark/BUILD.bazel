@@ -1,4 +1,4 @@
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 load(":validator_test.bzl", "validator_test_suite")
 
 exports_files([
@@ -59,3 +59,17 @@ py_binary(
 
 # Unit tests for validator
 validator_test_suite(name = "validator_test")
+
+# Python unit tests for parameter validation
+py_test(
+    name = "test_validate_parameters",
+    srcs = [
+        "test_validate_parameters.py",
+        "validate_parameters.py",
+    ],
+    data = ["parameter_schema.json"],
+    deps = [
+        "@pip//jsonschema",
+        "@pip//pyyaml",
+    ],
+)
