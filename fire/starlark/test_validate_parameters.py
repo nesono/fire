@@ -103,7 +103,11 @@ class TestParameterValidation(unittest.TestCase):
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
         self.assertTrue(
-            any("does not have enough properties" in str(e) for e in errors)
+            any(
+                "should have at least 1 item" in str(e)
+                or "does not have enough properties" in str(e)
+                for e in errors
+            )
         )
 
     def test_missing_type_field(self):
@@ -155,7 +159,12 @@ class TestParameterValidation(unittest.TestCase):
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
         self.assertTrue(
-            any("minLength" in str(e) or "too short" in str(e).lower() for e in errors)
+            any(
+                "should have at least 1 character" in str(e)
+                or "minLength" in str(e)
+                or "too short" in str(e).lower()
+                for e in errors
+            )
         )
 
     def test_missing_version_field(self):
@@ -189,7 +198,14 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("minimum" in str(e).lower() for e in errors))
+        self.assertTrue(
+            any(
+                "greater than or equal to 1" in str(e)
+                or "minimum" in str(e).lower()
+                or ">= 1" in str(e)
+                for e in errors
+            )
+        )
 
     def test_invalid_version_negative(self):
         """Test validation fails for negative version."""
@@ -206,7 +222,14 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("minimum" in str(e).lower() for e in errors))
+        self.assertTrue(
+            any(
+                "greater than or equal to 1" in str(e)
+                or "minimum" in str(e).lower()
+                or ">= 1" in str(e)
+                for e in errors
+            )
+        )
 
     def test_invalid_type_enum(self):
         """Test validation fails for invalid type enum value."""
@@ -225,7 +248,9 @@ class TestParameterValidation(unittest.TestCase):
         self.assertFalse(success)
         self.assertTrue(
             any(
-                "enum" in str(e).lower() or "not one of" in str(e).lower()
+                "enum" in str(e).lower()
+                or "not one of" in str(e).lower()
+                or "not a valid" in str(e).lower()
                 for e in errors
             )
         )
@@ -411,7 +436,12 @@ class TestParameterValidation(unittest.TestCase):
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
         self.assertTrue(
-            any("minItems" in str(e) or "too short" in str(e).lower() for e in errors)
+            any(
+                "should have at least 1 item" in str(e)
+                or "minItems" in str(e)
+                or "too short" in str(e).lower()
+                for e in errors
+            )
         )
 
     def test_table_empty_rows(self):
@@ -431,7 +461,12 @@ class TestParameterValidation(unittest.TestCase):
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
         self.assertTrue(
-            any("minItems" in str(e) or "too short" in str(e).lower() for e in errors)
+            any(
+                "should have at least 1 item" in str(e)
+                or "minItems" in str(e)
+                or "too short" in str(e).lower()
+                for e in errors
+            )
         )
 
     def test_table_with_value_field(self):

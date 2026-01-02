@@ -32,11 +32,14 @@ py_binary(
 # Python script for validating parameter YAML files
 py_binary(
     name = "validate_parameters_script",
-    srcs = ["validate_parameters.py"],
+    srcs = [
+        "parameter_models.py",
+        "validate_parameters.py",
+    ],
     main = "validate_parameters.py",
     visibility = ["//visibility:public"],
     deps = [
-        "@pip//jsonschema",
+        "@pip//pydantic",
         "@pip//pyyaml",
     ],
 )
@@ -64,12 +67,13 @@ validator_test_suite(name = "validator_test")
 py_test(
     name = "test_validate_parameters",
     srcs = [
+        "parameter_models.py",
         "test_validate_parameters.py",
         "validate_parameters.py",
     ],
     data = ["parameter_schema.json"],
     deps = [
-        "@pip//jsonschema",
+        "@pip//pydantic",
         "@pip//pyyaml",
     ],
 )
