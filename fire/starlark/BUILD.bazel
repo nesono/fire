@@ -1,4 +1,4 @@
-load("@rules_python//python:defs.bzl", "py_binary", "py_test")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 load(":validator_test.bzl", "validator_test_suite")
 
 exports_files([
@@ -28,15 +28,37 @@ py_binary(
     deps = ["@pip//pyyaml"],
 )
 
-py_binary(
-    name = "validate_parameters_script",
+# Python library for parameter models
+py_library(
+    name = "parameter_models",
     srcs = [
         "parameter_models.py",
-        "validate_parameters.py",
     ],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+    deps = ["@pip//pydantic"],
+)
+
+# Python library for parameter validation
+py_library(
+    name = "validate_parameters_lib",
+    srcs = ["validate_parameters.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":parameter_models",
+        "@pip//pydantic",
+        "@pip//pyyaml",
+    ],
+)
+
+# Python script for validating parameter YAML files
+py_binary(
+    name = "validate_parameters_script",
+    srcs = ["validate_parameters.py"],
     main = "validate_parameters.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":parameter_models",
         "@pip//pydantic",
         "@pip//pyyaml",
     ],
@@ -61,12 +83,13 @@ validator_test_suite(name = "validator_test")
 py_test(
     name = "validate_parameters_test",
     srcs = [
-        "parameter_models.py",
         "validate_parameters.py",
         "validate_parameters_test.py",
     ],
     data = ["parameter_schema.json"],
+    imports = ["."],
     deps = [
+        ":parameter_models",
         "@pip//pydantic",
         "@pip//pyyaml",
     ],
