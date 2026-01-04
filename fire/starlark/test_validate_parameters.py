@@ -30,6 +30,18 @@ class TestParameterValidation(unittest.TestCase):
         tmp.close()
         return tmp.name
 
+    def _assert_words_in_string_list(self, errors, words):
+        try:
+            self.assertTrue(
+                any(
+                    any(word.lower() in str(e).lower() for word in words)
+                    for e in errors
+                )
+            )
+        except Exception:
+            print("errors:", errors)
+            raise
+
     def test_valid_simple_parameters(self):
         """Test validation passes for valid simple parameters."""
         data = {
@@ -102,12 +114,12 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any(
-                "should have at least 1 item" in str(e)
-                or "does not have enough properties" in str(e)
-                for e in errors
-            )
+        self._assert_words_in_string_list(
+            errors,
+            [
+                "should have at least 1 item",
+                "does not have enough properties",
+            ],
         )
 
     def test_missing_type_field(self):
@@ -141,7 +153,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("description" in str(e).lower() for e in errors))
+        self._assert_words_in_string_list(errors, ["description"])
 
     def test_empty_description(self):
         """Test validation fails for empty description string."""
@@ -158,13 +170,8 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any(
-                "should have at least 1 character" in str(e)
-                or "minLength" in str(e)
-                or "too short" in str(e).lower()
-                for e in errors
-            )
+        self._assert_words_in_string_list(
+            errors, ["should have at least 1 character", "minLength", "too short"]
         )
 
     def test_missing_version_field(self):
@@ -181,7 +188,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("version" in str(e).lower() for e in errors))
+        self._assert_words_in_string_list(errors, ["version"])
 
     def test_invalid_version_zero(self):
         """Test validation fails for version = 0."""
@@ -286,9 +293,58 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any("integer" in str(e).lower() or "type" in str(e).lower() for e in errors)
-        )
+        self._assert_words_in_string_list(errors, ["integer", "type"])
+
+    def test_wrong_value_type_for_i32_do_not_allow_coercing(self):
+        """Test validation fails when value is a string instead of an i32."""
+        data = {
+            "parameters": {
+                "test_param": {
+                    "type": "i32",
+                    "value": "42",
+                    "description": "Wrong value type",
+                    "version": 1,
+                }
+            }
+        }
+        yaml_path = self._create_temp_yaml(data)
+        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        self.assertFalse(success)
+        self._assert_words_in_string_list(errors, ["integer", "type"])
+
+    def test_too_high_value_for_i32(self):
+        """Test validation fails when value is too high for i32."""
+        data = {
+            "parameters": {
+                "test_param": {
+                    "type": "i32",
+                    "value": 2147483647,
+                    "description": "Wrong value type",
+                    "version": 1,
+                }
+            }
+        }
+        yaml_path = self._create_temp_yaml(data)
+        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        self.assertFalse(success)
+        self._assert_words_in_string_list(errors, ["less"])
+
+    def test_too_low_value_for_i32(self):
+        """Test validation fails when value is too low for i32."""
+        data = {
+            "parameters": {
+                "test_param": {
+                    "type": "i32",
+                    "value": -2147483649,
+                    "description": "Wrong value type",
+                    "version": 1,
+                }
+            }
+        }
+        yaml_path = self._create_temp_yaml(data)
+        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        self.assertFalse(success)
+        self._assert_words_in_string_list(errors, ["greater"])
 
     def test_negative_value_for_u32(self):
         """Test validation fails for negative value with u32 type."""
@@ -305,9 +361,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any("minimum" in str(e).lower() or "0" in str(e) for e in errors)
-        )
+        self._assert_words_in_string_list(errors, ["minimum", "0"])
 
     def test_negative_value_for_u64(self):
         """Test validation fails for negative value with u64 type."""
@@ -324,9 +378,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any("minimum" in str(e).lower() or "0" in str(e) for e in errors)
-        )
+        self._assert_words_in_string_list(errors, ["minimum", "0"])
 
     def test_wrong_value_type_for_f32(self):
         """Test validation fails when value is not a number for f32."""
@@ -343,9 +395,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any("number" in str(e).lower() or "type" in str(e).lower() for e in errors)
-        )
+        self._assert_words_in_string_list(errors, ["number", "type"])
 
     def test_wrong_value_type_for_string(self):
         """Test validation fails when value is not a string for string type."""
@@ -362,9 +412,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any("string" in str(e).lower() or "type" in str(e).lower() for e in errors)
-        )
+        self._assert_words_in_string_list(errors, ["string", "type"])
 
     def test_wrong_value_type_for_bool(self):
         """Test validation fails when value is not a boolean for bool type."""
@@ -381,9 +429,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any("boolean" in str(e).lower() or "type" in str(e).lower() for e in errors)
-        )
+        self._assert_words_in_string_list(errors, ["boolean", "type"])
 
     def test_table_missing_columns(self):
         """Test validation fails when table is missing 'columns' field."""
@@ -400,7 +446,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("columns" in str(e).lower() for e in errors))
+        self._assert_words_in_string_list(errors, ["columns"])
 
     def test_table_missing_rows(self):
         """Test validation fails when table is missing 'rows' field."""
@@ -417,7 +463,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("rows" in str(e).lower() for e in errors))
+        self._assert_words_in_string_list(errors, ["rows"])
 
     def test_table_empty_columns(self):
         """Test validation fails for table with empty columns array."""
@@ -435,13 +481,13 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any(
-                "should have at least 1 item" in str(e)
-                or "minItems" in str(e)
-                or "too short" in str(e).lower()
-                for e in errors
-            )
+        self._assert_words_in_string_list(
+            errors,
+            [
+                "should have at least 1 item",
+                "minItems",
+                "too short",
+            ],
         )
 
     def test_table_empty_rows(self):
@@ -460,13 +506,13 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any(
-                "should have at least 1 item" in str(e)
-                or "minItems" in str(e)
-                or "too short" in str(e).lower()
-                for e in errors
-            )
+        self._assert_words_in_string_list(
+            errors,
+            [
+                "should have at least 1 item",
+                "minItems",
+                "too short",
+            ],
         )
 
     def test_table_with_value_field(self):
@@ -504,7 +550,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("name" in str(e).lower() for e in errors))
+        self._assert_words_in_string_list(errors, ["name"])
 
     def test_column_missing_type(self):
         """Test validation fails when column is missing 'type' field."""
@@ -522,7 +568,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("type" in str(e).lower() for e in errors))
+        self._assert_words_in_string_list(errors, ["type"])
 
     def test_column_invalid_name_pattern(self):
         """Test validation fails for column name that doesn't match pattern."""
@@ -552,7 +598,7 @@ class TestParameterValidation(unittest.TestCase):
                 self.assertFalse(
                     success, f"Should fail for column name: {invalid_name}"
                 )
-                self.assertTrue(any("does not match" in str(e) for e in errors))
+                self._assert_words_in_string_list(errors, ["does not match"])
 
     def test_column_invalid_type_enum(self):
         """Test validation fails for invalid column type."""
@@ -572,12 +618,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(
-            any(
-                "enum" in str(e).lower() or "not one of" in str(e).lower()
-                for e in errors
-            )
-        )
+        self._assert_words_in_string_list(errors, ["enum", "not one of"])
 
     def test_additional_properties_not_allowed(self):
         """Test validation fails for additional properties not in schema."""
@@ -595,7 +636,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("additional" in str(e).lower() for e in errors))
+        self._assert_words_in_string_list(errors, ["additional"])
 
     def test_additional_top_level_properties_not_allowed(self):
         """Test validation fails for additional top-level properties."""
@@ -613,7 +654,7 @@ class TestParameterValidation(unittest.TestCase):
         yaml_path = self._create_temp_yaml(data)
         success, errors = validate_parameters(yaml_path, str(self.schema_path))
         self.assertFalse(success)
-        self.assertTrue(any("additional" in str(e).lower() for e in errors))
+        self._assert_words_in_string_list(errors, ["additional"])
 
     def test_all_integer_types(self):
         """Test all integer types with valid values."""
