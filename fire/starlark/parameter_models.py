@@ -7,111 +7,100 @@ for validating parameter YAML files.
 
 from typing import Annotated, Any, Dict, List, Literal, Union
 
-from pydantic import BaseModel, Discriminator, Field, Tag, field_validator  # type: ignore
+from pydantic import BaseModel, Discriminator, Field, Tag, field_validator
+
+
+class AllParamBase(BaseModel):
+    """Versioned parameter with description."""
+
+    description: str = Field(min_length=1)
+    version: int = Field(ge=1)
+
+
+class UnitParamBase(AllParamBase):
+    """Versioned parameter with description and unit."""
+
+    unit: str | None = None
 
 
 class Column(BaseModel):
     """Column definition for table parameters."""
 
-    name: str = Field(..., pattern=r"^[a-z][a-z0-9_]*$")
+    name: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
     type: Literal["i32", "i64", "u32", "u64", "f32", "f64", "string", "bool"]
     unit: str | None = None
 
     model_config = {"extra": "forbid"}
 
 
-class I32Parameter(BaseModel):
+class I32Parameter(UnitParamBase):
     """32-bit signed integer parameter."""
 
     type: Literal["i32"]
-    value: int
-    description: str = Field(..., min_length=1)
-    version: int = Field(..., ge=1)
-    unit: str | None = None
+    value: int = Field(strict=True, ge=-2147483648, lt=2147483647)
 
     model_config = {"extra": "forbid"}
 
 
-class I64Parameter(BaseModel):
+class I64Parameter(UnitParamBase):
     """64-bit signed integer parameter."""
 
     type: Literal["i64"]
     value: int
-    description: str = Field(..., min_length=1)
-    version: int = Field(..., ge=1)
-    unit: str | None = None
 
     model_config = {"extra": "forbid"}
 
 
-class U32Parameter(BaseModel):
+class U32Parameter(UnitParamBase):
     """32-bit unsigned integer parameter."""
 
     type: Literal["u32"]
-    value: int = Field(..., ge=0)
-    description: str = Field(..., min_length=1)
-    version: int = Field(..., ge=1)
-    unit: str | None = None
+    value: int = Field(ge=0)
 
     model_config = {"extra": "forbid"}
 
 
-class U64Parameter(BaseModel):
+class U64Parameter(UnitParamBase):
     """64-bit unsigned integer parameter."""
 
     type: Literal["u64"]
-    value: int = Field(..., ge=0)
-    description: str = Field(..., min_length=1)
-    version: int = Field(..., ge=1)
-    unit: str | None = None
+    value: int = Field(ge=0)
 
     model_config = {"extra": "forbid"}
 
 
-class F32Parameter(BaseModel):
+class F32Parameter(UnitParamBase):
     """32-bit float parameter."""
 
     type: Literal["f32"]
     value: float | int  # Allow int for float types
-    description: str = Field(..., min_length=1)
-    version: int = Field(..., ge=1)
-    unit: str | None = None
 
     model_config = {"extra": "forbid"}
 
 
-class F64Parameter(BaseModel):
+class F64Parameter(UnitParamBase):
     """64-bit float parameter."""
 
     type: Literal["f64"]
     value: float | int  # Allow int for float types
-    description: str = Field(..., min_length=1)
-    version: int = Field(..., ge=1)
-    unit: str | None = None
 
     model_config = {"extra": "forbid"}
 
 
-class StringParameter(BaseModel):
+class StringParameter(UnitParamBase):
     """String parameter."""
 
     type: Literal["string"]
     value: str
-    description: str = Field(..., min_length=1)
-    version: int = Field(..., ge=1)
-    unit: str | None = None
 
     model_config = {"extra": "forbid"}
 
 
-class BoolParameter(BaseModel):
+class BoolParameter(UnitParamBase):
     """Boolean parameter."""
 
     type: Literal["bool"]
     value: bool
-    description: str = Field(..., min_length=1)
-    version: int = Field(..., ge=1)
-    unit: str | None = None
 
     model_config = {"extra": "forbid", "strict": True}
 
@@ -124,14 +113,12 @@ class BoolParameter(BaseModel):
         return v
 
 
-class TableParameter(BaseModel):
+class TableParameter(AllParamBase):
     """Table parameter with columns and rows."""
 
     type: Literal["table"]
-    description: str = Field(..., min_length=1)
-    version: int = Field(..., ge=1)
-    columns: List[Column] = Field(..., min_length=1)
-    rows: List[List[Any]] = Field(..., min_length=1)
+    columns: List[Column] = Field(min_length=1)
+    rows: List[List[Any]] = Field(min_length=1)
 
     model_config = {"extra": "forbid"}
 
@@ -156,6 +143,6 @@ Parameter = Annotated[
 class ParameterFile(BaseModel):
     """Root model for parameter YAML files."""
 
-    parameters: Dict[str, Parameter] = Field(..., min_length=1)
+    parameters: Dict[str, Parameter] = Field(min_length=1)
 
     model_config = {"extra": "forbid"}
