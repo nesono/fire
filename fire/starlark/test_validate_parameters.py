@@ -238,6 +238,57 @@ class TestParameterValidation(unittest.TestCase):
             )
         )
 
+    def test_wrong_value_type_for_i64_do_not_allow_coercing(self):
+        """Test validation fails when value is a string instead of an i64."""
+        data = {
+            "parameters": {
+                "test_param": {
+                    "type": "i64",
+                    "value": "42",
+                    "description": "Wrong value type",
+                    "version": 1,
+                }
+            }
+        }
+        yaml_path = self._create_temp_yaml(data)
+        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        self.assertFalse(success)
+        self._assert_words_in_string_list(errors, ["integer", "type"])
+
+    def test_too_high_value_for_i64(self):
+        """Test validation fails when value is too high for i64."""
+        data = {
+            "parameters": {
+                "test_param": {
+                    "type": "i64",
+                    "value": 9223372036854775807,
+                    "description": "Wrong value type",
+                    "version": 1,
+                }
+            }
+        }
+        yaml_path = self._create_temp_yaml(data)
+        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        self.assertFalse(success)
+        self._assert_words_in_string_list(errors, ["less"])
+
+    def test_too_low_value_for_i64(self):
+        """Test validation fails when value is too low for i64."""
+        data = {
+            "parameters": {
+                "test_param": {
+                    "type": "i64",
+                    "value": -9223372036854775809,
+                    "description": "Wrong value type",
+                    "version": 1,
+                }
+            }
+        }
+        yaml_path = self._create_temp_yaml(data)
+        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        self.assertFalse(success)
+        self._assert_words_in_string_list(errors, ["greater"])
+
     def test_invalid_type_enum(self):
         """Test validation fails for invalid type enum value."""
         data = {

@@ -46,7 +46,7 @@ class I64Parameter(UnitParamBase):
     """64-bit signed integer parameter."""
 
     type: Literal["i64"]
-    value: int
+    value: int = Field(strict=True, ge=-9223372036854775808, lt=9223372036854775807)
 
     model_config = {"extra": "forbid"}
 
