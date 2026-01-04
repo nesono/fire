@@ -414,6 +414,40 @@ class TestParameterValidation(unittest.TestCase):
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["minimum", "0"])
 
+    def test_wrong_value_type_for_u32_do_not_allow_coercing(self):
+        """Test validation fails when value is a string instead of an u32."""
+        data = {
+            "parameters": {
+                "test_param": {
+                    "type": "u32",
+                    "value": "42",
+                    "description": "Wrong value type",
+                    "version": 1,
+                }
+            }
+        }
+        yaml_path = self._create_temp_yaml(data)
+        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        self.assertFalse(success)
+        self._assert_words_in_string_list(errors, ["integer", "type"])
+
+    def test_too_high_value_for_u32(self):
+        """Test validation fails when value is too high for u32."""
+        data = {
+            "parameters": {
+                "test_param": {
+                    "type": "u32",
+                    "value": 4294967296,
+                    "description": "Wrong value type",
+                    "version": 1,
+                }
+            }
+        }
+        yaml_path = self._create_temp_yaml(data)
+        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        self.assertFalse(success)
+        self._assert_words_in_string_list(errors, ["less"])
+
     def test_negative_value_for_u64(self):
         """Test validation fails for negative value with u64 type."""
         data = {

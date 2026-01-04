@@ -55,7 +55,7 @@ class U32Parameter(UnitParamBase):
     """32-bit unsigned integer parameter."""
 
     type: Literal["u32"]
-    value: int = Field(ge=0)
+    value: int = Field(strict=True, ge=0, le=4294967295)
 
     model_config = {"extra": "forbid"}
 
