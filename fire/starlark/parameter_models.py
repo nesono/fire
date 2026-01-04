@@ -64,7 +64,7 @@ class U64Parameter(UnitParamBase):
     """64-bit unsigned integer parameter."""
 
     type: Literal["u64"]
-    value: int = Field(ge=0)
+    value: int = Field(strict=True, ge=0, le=18446744073709551615)
 
     model_config = {"extra": "forbid"}
 
