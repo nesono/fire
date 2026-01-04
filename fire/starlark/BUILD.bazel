@@ -32,7 +32,6 @@ py_binary(
 py_library(
     name = "parameter_models",
     srcs = [
-        "__init__.py",
         "parameter_models.py",
     ],
     imports = ["."],
@@ -56,6 +55,7 @@ py_library(
 py_binary(
     name = "validate_parameters_script",
     srcs = ["validate_parameters.py"],
+    legacy_create_init = 1,
     main = "validate_parameters.py",
     visibility = ["//visibility:public"],
     deps = [
@@ -84,7 +84,6 @@ validator_test_suite(name = "validator_test")
 py_test(
     name = "validate_parameters_test",
     srcs = [
-        "__init__.py",
         "validate_parameters.py",
         "validate_parameters_test.py",
     ],
