@@ -3,60 +3,67 @@
 #
 # This script tests the end-to-end workflow of consuming fire as
 # a Bazel module dependency.
+#
+# Usage: ./run.sh [--python-version VERSION]
+#   --python-version: Python version to test (default: 3.11)
 
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# Parse command line arguments
+PYTHON_VERSION="3.11"
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --python-version)
+            PYTHON_VERSION="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--python-version VERSION]"
+            exit 1
+            ;;
+    esac
+done
+
+fail=0
+
 echo "========================================="
 echo "Fire Integration Test"
+echo "Python Version: $PYTHON_VERSION"
 echo "========================================="
 echo ""
 
-# Run all Bazel tests
-echo "Running all Bazel tests..."
-if ! bazel test //... --test_output=errors; then
-    echo "❌ FAIL: Bazel tests failed"
-    exit 1
-fi
-echo "✅ PASS: All Bazel tests passed"
+# Generate MODULE.bazel from template
+echo "Generating MODULE.bazel for Python $PYTHON_VERSION..."
+sed "s/{{PYTHON_VERSION}}/$PYTHON_VERSION/g" MODULE.bazel.template > MODULE.bazel
 echo ""
 
-# Verify generated reports exist
-echo "Verifying generated reports..."
-FAILURES=0
+echo "Running all Bazel tests..."
+bazel test //... --test_output=errors
+echo ""
 
+echo "Verifying generated reports..."
 if [ -f bazel-bin/compliance_report.md ]; then
-    echo "✅ Compliance report generated"
+    echo "Compliance report generated"
 else
-    echo "❌ Compliance report not found"
-    FAILURES=$((FAILURES + 1))
+    echo "Compliance report not found"
+	fail=1
 fi
 
 if [ -f bazel-bin/coverage_report.md ]; then
-    echo "✅ Coverage report generated"
+    echo "Coverage report generated"
 else
-    echo "❌ Coverage report not found"
-    FAILURES=$((FAILURES + 1))
+    echo "Coverage report not found"
+	fail=1
 fi
 
 if [ -f bazel-bin/traceability_report.md ]; then
-    echo "✅ Traceability report generated"
+    echo "Traceability report generated"
 else
-    echo "❌ Traceability report not found"
-    FAILURES=$((FAILURES + 1))
+    echo "Traceability report not found"
+	fail=1
 fi
 
-echo ""
-
-if [ $FAILURES -eq 0 ]; then
-    echo "========================================="
-    echo "Integration Test PASSED"
-    echo "========================================="
-    exit 0
-else
-    echo "========================================="
-    echo "Integration Test FAILED"
-    echo "========================================="
-    exit 1
-fi
+exit $fail
