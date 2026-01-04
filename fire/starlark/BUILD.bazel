@@ -1,4 +1,4 @@
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 load(":validator_test.bzl", "validator_test_suite")
 
 exports_files([
@@ -12,7 +12,6 @@ exports_files([
     "parameter_schema.json",
 ])
 
-# Python script for generating code from YAML
 py_binary(
     name = "generate_code_script",
     srcs = [
@@ -29,19 +28,20 @@ py_binary(
     deps = ["@pip//pyyaml"],
 )
 
-# Python script for validating parameter YAML files
 py_binary(
     name = "validate_parameters_script",
-    srcs = ["validate_parameters.py"],
+    srcs = [
+        "parameter_models.py",
+        "validate_parameters.py",
+    ],
     main = "validate_parameters.py",
     visibility = ["//visibility:public"],
     deps = [
-        "@pip//jsonschema",
+        "@pip//pydantic",
         "@pip//pyyaml",
     ],
 )
 
-# Python script for validating cross-references in requirements
 py_binary(
     name = "validate_cross_references_script",
     srcs = ["validate_cross_references.py"],
@@ -49,7 +49,6 @@ py_binary(
     visibility = ["//visibility:public"],
 )
 
-# Python script for generating reports
 py_binary(
     name = "generate_report_script",
     srcs = ["generate_report.py"],
@@ -57,5 +56,18 @@ py_binary(
     visibility = ["//visibility:public"],
 )
 
-# Unit tests for validator
 validator_test_suite(name = "validator_test")
+
+py_test(
+    name = "validate_parameters_test",
+    srcs = [
+        "parameter_models.py",
+        "validate_parameters.py",
+        "validate_parameters_test.py",
+    ],
+    data = ["parameter_schema.json"],
+    deps = [
+        "@pip//pydantic",
+        "@pip//pyyaml",
+    ],
+)
