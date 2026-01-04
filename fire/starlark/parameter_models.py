@@ -82,7 +82,7 @@ class F64Parameter(UnitParamBase):
     """64-bit float parameter."""
 
     type: Literal["f64"]
-    value: float | int  # Allow int for float types
+    value: float = Field(strict=True)
 
     model_config = {"extra": "forbid"}
 

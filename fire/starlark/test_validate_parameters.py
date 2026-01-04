@@ -533,6 +533,23 @@ class TestParameterValidation(unittest.TestCase):
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["number", "type"])
 
+    def test_no_coercing_for_f64(self):
+        """Test validation fails when value is not a number for f64."""
+        data = {
+            "parameters": {
+                "test_param": {
+                    "type": "f64",
+                    "value": "3.14",
+                    "description": "Wrong value type",
+                    "version": 1,
+                }
+            }
+        }
+        yaml_path = self._create_temp_yaml(data)
+        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        self.assertFalse(success)
+        self._assert_words_in_string_list(errors, ["number", "type"])
+
     def test_wrong_value_type_for_string(self):
         """Test validation fails when value is not a string for string type."""
         data = {
