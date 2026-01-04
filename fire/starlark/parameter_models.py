@@ -100,9 +100,9 @@ class BoolParameter(UnitParamBase):
     """Boolean parameter."""
 
     type: Literal["bool"]
-    value: bool
+    value: bool = Field(strict=True)
 
-    model_config = {"extra": "forbid", "strict": True}
+    model_config = {"extra": "forbid"}
 
     @field_validator("value", mode="before")
     @classmethod
