@@ -55,7 +55,6 @@ py_library(
 py_binary(
     name = "validate_parameters_script",
     srcs = ["validate_parameters.py"],
-    legacy_create_init = 1,
     main = "validate_parameters.py",
     visibility = ["//visibility:public"],
     deps = [
