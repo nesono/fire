@@ -9,7 +9,6 @@ exports_files([
     "generate_report.py",
     "generate_code.py",
     "validate_cross_references.py",
-    "parameter_schema.json",
 ])
 
 py_binary(
@@ -86,7 +85,6 @@ py_test(
         "validate_parameters.py",
         "validate_parameters_test.py",
     ],
-    data = ["parameter_schema.json"],
     imports = ["."],
     deps = [
         ":parameter_models",
