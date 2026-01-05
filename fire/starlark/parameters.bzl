@@ -61,7 +61,6 @@ _validate_parameters = rule(
 def parameter_library(
         name,
         src,
-        namespace = None,
         visibility = None):
     """Define and validate a parameter library from a YAML file.
 
@@ -71,7 +70,6 @@ def parameter_library(
     Args:
         name: Name of the library
         src: Path to the parameter YAML file (e.g., "vehicle_params.yaml")
-        namespace: Namespace for parameters (optional, derived from package path if not provided)
         visibility: Visibility of the target
 
     Example:
@@ -93,26 +91,12 @@ def parameter_library(
         )
     """
 
-    # Use empty namespace if not provided
-    if not namespace:
-        namespace = ""
-
     # Create validation target using custom rule
     validation_name = name + "_validation"
     _validate_parameters(
         name = validation_name,
         src = src,
         out = name + "_validated.yaml",
-    )
-
-    # Create a filegroup that exposes both the namespace and the validated YAML
-    # We store namespace in a separate file for code generators to consume
-    namespace_file = name + "_namespace"
-    native.genrule(
-        name = namespace_file,
-        outs = [name + ".namespace"],
-        cmd = "echo '{}' > $@".format(namespace),
-        visibility = ["//visibility:private"],
     )
 
     # Main target is a filegroup containing the validated YAML
