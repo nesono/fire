@@ -10,31 +10,23 @@ module(
     version = "0.0.0",
 )
 
-# C++ rules for consuming generated code
 bazel_dep(name = "rules_cc", version = "0.2.16")
-
-# Rust rules for consuming generated code
 bazel_dep(name = "rules_rust", version = "0.68.1")
 bazel_dep(name = "rules_shell", version = "0.6.1")
+bazel_dep(name = "rules_python", version = "1.7.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
 
-# Depend on fire project
 bazel_dep(name = "fire", version = "0.1.2")
-
-# Override to use local development version
 local_path_override(
     module_name = "fire",
     path = "..",
 )
-
-bazel_dep(name = "rules_python", version = "1.7.0")
-bazel_dep(name = "bazel_skylib", version = "1.9.0")
 
 PYTHON_VERSION = "{{PYTHON_VERSION}}"
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(python_version = PYTHON_VERSION)
 
-# Rust toolchain setup
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(edition = "2021")
 use_repo(rust, "rust_toolchains")

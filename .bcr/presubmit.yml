@@ -9,5 +9,5 @@ bcr_test_module:
       name: "Run test module"
       platform: ${{ platform }}
       bazel: ${{ bazel }}
-      test_targets:
-        - "//..."
+      shell_commands:
+        - ./run.sh
