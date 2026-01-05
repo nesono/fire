@@ -20,12 +20,11 @@ def load_yaml(yaml_path):
         return yaml.safe_load(f)
 
 
-def validate_parameters(yaml_path, schema_path=None):
+def validate_parameters(yaml_path):
     """Validate parameter YAML file using Pydantic models.
 
     Args:
         yaml_path: Path to the YAML file to validate
-        schema_path: Deprecated, kept for backwards compatibility
 
     Returns:
         Tuple of (success, errors) where errors is a list of error messages.
@@ -43,7 +42,6 @@ def validate_parameters(yaml_path, schema_path=None):
     try:
         ParameterFile.model_validate(data)
     except ValidationError as e:
-        # Format error messages to match jsonschema format
         errors = []
         for error in e.errors():
             # Build the path string (skip discriminator tags like 'i32', 'bool', etc.)
@@ -65,10 +63,10 @@ def validate_parameters(yaml_path, schema_path=None):
                     path_parts.append(p_str)
             path = " -> ".join(path_parts) if path_parts else "root"
 
-            # Format the message to match jsonschema style
+            # Format the message to match schema style
             msg = error["msg"]
 
-            # Handle specific error types to match jsonschema messages
+            # Handle specific error types to match schema messages
             error_type = error["type"]
             if error_type == "missing":
                 field = error["loc"][-1] if error["loc"] else "field"
@@ -120,11 +118,10 @@ def main():
         description="Validate parameter YAML files against JSON schema"
     )
     parser.add_argument("yaml_file", help="Path to the parameter YAML file")
-    parser.add_argument("--schema", required=True, help="Path to the JSON schema file")
 
     args = parser.parse_args()
 
-    success, errors = validate_parameters(args.yaml_file, args.schema)
+    success, errors = validate_parameters(args.yaml_file)
 
     if not success:
         print(f"Parameter validation failed for {args.yaml_file}:")

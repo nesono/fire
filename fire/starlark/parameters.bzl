@@ -1,12 +1,11 @@
 """Bazel rules for parameter management.
 
-Parameters are defined in YAML files and validated at build time using JSON schema.
+Parameters are defined in YAML files and validated at build time.
 """
 
 def _validate_parameters_impl(ctx):
     """Implementation of parameter validation rule."""
     script = ctx.executable._script
-    schema = ctx.file._schema
     input_file = ctx.file.src
     output = ctx.outputs.out
 
@@ -15,11 +14,10 @@ def _validate_parameters_impl(ctx):
     ctx.actions.write(
         output = wrapper_script,
         content = """#!/bin/bash
-"{script}" "{input}" --schema="{schema}" && cp "{input}" "{output}"
+"{script}" "{input}" && cp "{input}" "{output}"
 """.format(
             script = script.path,
             input = input_file.path,
-            schema = schema.path,
             output = output.path,
         ),
         is_executable = True,
@@ -30,7 +28,7 @@ def _validate_parameters_impl(ctx):
 
     # Run validation
     ctx.actions.run(
-        inputs = [input_file, schema] + script_runfiles,
+        inputs = [input_file] + script_runfiles,
         outputs = [output],
         executable = wrapper_script,
         tools = [script],
@@ -51,17 +49,13 @@ _validate_parameters = rule(
             mandatory = True,
             doc = "Parameter YAML file to validate",
         ),
-        "_schema": attr.label(
-            default = Label("@fire//fire/starlark:parameter_schema.json"),
-            allow_single_file = [".json"],
-        ),
         "_script": attr.label(
             default = Label("@fire//fire/starlark:validate_parameters_script"),
             executable = True,
             cfg = "exec",
         ),
     },
-    doc = "Validates a parameter YAML file against the parameter schema",
+    doc = "Validates a parameter YAML file",
 )
 
 def parameter_library(
@@ -71,7 +65,7 @@ def parameter_library(
         visibility = None):
     """Define and validate a parameter library from a YAML file.
 
-    This macro validates the YAML file at build time against a JSON schema
+    This macro validates the YAML file at build time
     and makes it available for code generation.
 
     Args:

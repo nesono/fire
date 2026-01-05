@@ -7,7 +7,6 @@ to ensure feature parity when migrating to a different validation library.
 
 import tempfile
 import unittest
-from pathlib import Path
 
 import yaml
 
@@ -16,12 +15,6 @@ from validate_parameters import validate_parameters  # type: ignore
 
 class TestParameterValidation(unittest.TestCase):
     """Test parameter YAML validation."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Set up test fixtures."""
-        # Path to the schema file
-        cls.schema_path = Path(__file__).parent / "parameter_schema.json"
 
     def _create_temp_yaml(self, data):
         """Create a temporary YAML file with the given data."""
@@ -74,7 +67,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertTrue(success, f"Validation failed: {errors}")
 
     def test_valid_table_parameter(self):
@@ -97,14 +90,14 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertTrue(success, f"Validation failed: {errors}")
 
     def test_missing_parameters_field(self):
         """Test validation fails when 'parameters' field is missing."""
         data = {"not_parameters": {}}
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self.assertTrue(len(errors) > 0)
 
@@ -112,7 +105,7 @@ class TestParameterValidation(unittest.TestCase):
         """Test validation fails for empty parameters object."""
         data = {"parameters": {}}
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(
             errors,
@@ -134,7 +127,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         # Error message varies depending on which allOf branch is evaluated
         self.assertTrue(len(errors) > 0)
@@ -151,7 +144,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["description"])
 
@@ -168,7 +161,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(
             errors, ["should have at least 1 character", "minLength", "too short"]
@@ -186,7 +179,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["version"])
 
@@ -203,7 +196,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self.assertTrue(
             any(
@@ -227,7 +220,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self.assertTrue(
             any(
@@ -251,7 +244,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["integer", "type"])
 
@@ -268,7 +261,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["less"])
 
@@ -285,7 +278,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["greater"])
 
@@ -302,7 +295,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self.assertTrue(
             any(
@@ -325,7 +318,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self.assertTrue(any("value" in str(e).lower() for e in errors))
 
@@ -342,7 +335,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["integer", "type"])
 
@@ -359,7 +352,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["integer", "type"])
 
@@ -376,7 +369,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["less"])
 
@@ -393,7 +386,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["greater"])
 
@@ -410,7 +403,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["minimum", "0"])
 
@@ -427,7 +420,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["integer", "type"])
 
@@ -444,7 +437,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["less"])
 
@@ -461,7 +454,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["minimum", "0"])
 
@@ -478,7 +471,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["integer", "type"])
 
@@ -495,7 +488,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["less"])
 
@@ -512,7 +505,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["number", "type"])
 
@@ -529,7 +522,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["number", "type"])
 
@@ -546,7 +539,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["number", "type"])
 
@@ -563,7 +556,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["string", "type"])
 
@@ -580,7 +573,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["boolean", "type"])
 
@@ -597,7 +590,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["columns"])
 
@@ -614,7 +607,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["rows"])
 
@@ -632,7 +625,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(
             errors,
@@ -657,7 +650,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(
             errors,
@@ -683,7 +676,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         # The schema sets "value": false for table type, which means value field is not allowed
 
@@ -701,7 +694,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["name"])
 
@@ -719,7 +712,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["type"])
 
@@ -747,7 +740,7 @@ class TestParameterValidation(unittest.TestCase):
                     }
                 }
                 yaml_path = self._create_temp_yaml(data)
-                success, errors = validate_parameters(yaml_path, str(self.schema_path))
+                success, errors = validate_parameters(yaml_path)
                 self.assertFalse(
                     success, f"Should fail for column name: {invalid_name}"
                 )
@@ -769,7 +762,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["enum", "not one of"])
 
@@ -787,7 +780,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["additional"])
 
@@ -805,7 +798,7 @@ class TestParameterValidation(unittest.TestCase):
             "extra_top_level": "not allowed",
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertFalse(success)
         self._assert_words_in_string_list(errors, ["additional"])
 
@@ -840,7 +833,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertTrue(success, f"Validation failed: {errors}")
 
     def test_all_float_types(self):
@@ -862,7 +855,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertTrue(success, f"Validation failed: {errors}")
 
     def test_integers_accepted_for_floats(self):
@@ -884,7 +877,7 @@ class TestParameterValidation(unittest.TestCase):
             }
         }
         yaml_path = self._create_temp_yaml(data)
-        success, errors = validate_parameters(yaml_path, str(self.schema_path))
+        success, errors = validate_parameters(yaml_path)
         self.assertTrue(success, f"Validation failed: {errors}")
 
 
