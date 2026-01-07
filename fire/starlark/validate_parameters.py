@@ -115,7 +115,7 @@ def validate_parameters(yaml_path):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Validate parameter YAML files against JSON schema"
+        description="Validate parameter YAML files using Pydantic models"
     )
     parser.add_argument("yaml_file", help="Path to the parameter YAML file")
     parser.add_argument("output_file", help="Path to the validated YAML file")

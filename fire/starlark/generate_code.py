@@ -9,7 +9,7 @@ Usage:
     generate_code.py java <input> <output> [--class-name=<name>]
 
 Arguments:
-    <input>   Path to the JSON parameter data file
+    <input>   Path to the YAML parameter data file
     <output>  Path to write the generated code
 
 Options:
@@ -46,6 +46,11 @@ def yaml_to_internal_format(yaml_data, namespace=""):
 def main():
     parser = argparse.ArgumentParser(
         description="Generate code from Fire parameter definitions"
+    )
+    parser.add_argument(
+        "--package-path",
+        default="",
+        help="Bazel package path (for generating unique identifiers)",
     )
     subparsers = parser.add_subparsers(dest="language", required=True)
 
@@ -111,7 +116,12 @@ def main():
 
     # Generate code based on language
     if args.language == "cpp":
-        code = generate_cpp(param_data, getattr(args, "cpp_namespace", None))
+        code = generate_cpp(
+            param_data,
+            getattr(args, "cpp_namespace", None),
+            args.output,
+            args.package_path,
+        )
     elif args.language == "python":
         code = generate_python(param_data)
     elif args.language == "go":
