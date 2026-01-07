@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Unit tests for parameter YAML validation against JSON schema.
+"""Unit tests for parameter YAML validation using Pydantic models.
 
-These tests capture the current jsonschema-based validation behavior
-to ensure feature parity when migrating to a different validation library.
+These tests validate the behavior of Pydantic-based parameter validation.
 """
 
 import tempfile

@@ -1,8 +1,6 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
-load(":validator_test.bzl", "validator_test_suite")
 
 exports_files([
-    "validator.bzl",
     "parameters.bzl",
     "requirements.bzl",
     "reports.bzl",
@@ -76,8 +74,6 @@ py_binary(
     main = "generate_report.py",
     visibility = ["//visibility:public"],
 )
-
-validator_test_suite(name = "validator_test")
 
 py_test(
     name = "validate_parameters_test",

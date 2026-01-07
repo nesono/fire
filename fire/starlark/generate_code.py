@@ -9,7 +9,7 @@ Usage:
     generate_code.py java <input> <output> [--class-name=<name>]
 
 Arguments:
-    <input>   Path to the JSON parameter data file
+    <input>   Path to the YAML parameter data file
     <output>  Path to write the generated code
 
 Options:

@@ -1,6 +1,5 @@
 """Base utilities for code generators."""
 
-from string import Template
 from typing import Any
 
 # Type mappings for each language
@@ -85,8 +84,3 @@ def format_value(param_type: str, value: Any, language: str) -> str:
             return str(value)
     else:
         return str(value)
-
-
-def render_template(template_str: str, **kwargs) -> str:
-    """Render a template string with the given variables."""
-    return Template(template_str).substitute(**kwargs)
