@@ -385,6 +385,18 @@ Note that the important part here is the header 2 (`##`), that includes the ID o
 The header 3 (`###`) sections are free text for now, even though we highly recomment you to use a fixed format for it.
 Note that a requirement file can contain multiple of such requirements.
 
+Requirements are collected in Bazel targets as follows
+
+```starlark
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+requirement_library(
+  name = "vehicle_requirements",
+  srcs = glob(["*.md"]),
+  deps = [":vehicle_params"],
+)
+```
+
 ## How Fire Works
 
 - Validate requirement links between requirements
