@@ -9,29 +9,17 @@ def _validate_parameters_impl(ctx):
     input_file = ctx.file.src
     output = ctx.outputs.out
 
-    # Create a wrapper script that runs validation and copies file on success
-    wrapper_script = ctx.actions.declare_file(ctx.label.name + "_wrapper.sh")
-    ctx.actions.write(
-        output = wrapper_script,
-        content = """#!/bin/bash
-"{script}" "{input}" && cp "{input}" "{output}"
-""".format(
-            script = script.path,
-            input = input_file.path,
-            output = output.path,
-        ),
-        is_executable = True,
-    )
-
     # Get runfiles for the script
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
+
+    args = [input_file.path, output.path]
 
     # Run validation
     ctx.actions.run(
         inputs = [input_file] + script_runfiles,
         outputs = [output],
-        executable = wrapper_script,
-        tools = [script],
+        arguments = args,
+        executable = script,
         mnemonic = "ValidateParameters",
         progress_message = "Validating parameters in %s" % input_file.basename,
     )
