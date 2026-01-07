@@ -21,7 +21,7 @@ It is based on the following basic concepts:
 Add Fire to your `MODULE.bazel`:
 
 ```starlark
-bazel_dep(name = "fire", version = "0.1.2")
+bazel_dep(name = "fire", version = "0.2.1")
 
 # Add language rules for the languages you want to use
 bazel_dep(name = "rules_cc", version = "0.2.16")      # For C++ code generation
@@ -138,48 +138,131 @@ int main() {
 Generate parameters for Python, Java, Go, and Rust (in `vehicle/dynamics/`):
 
 ```starlark
-load(
-    "@fire//fire/starlark:parameters.bzl",
-    "parameter_library",
-    "python_parameter_library",
-    "java_parameter_library",
-    "go_parameter_library",
-    "rust_parameter_library",
-)
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+load("@rules_java//java:defs.bzl", "java_library", "java_test")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_rust//rust:defs.bzl", "rust_test")
+load("//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_go_parameters", "generate_java_parameters", "generate_python_parameters", "generate_rust_parameters")
+load("//fire/starlark:parameters.bzl", "parameter_library")
 
-# First create the parameter library from YAML
+# Validate and create parameter library from YAML file
+# Namespace is auto-derived from package path: examples -> examples
 parameter_library(
     name = "vehicle_params",
     src = "vehicle_params.yaml",
 )
 
-# Generate Python parameters
-# Namespace auto-derived: vehicle/dynamics -> vehicle.dynamics
-python_parameter_library(
+# Generate C++ header with parameters
+# Consumes vehicle_params (validated YAML) and generates vehicle_params.h
+generate_cc_parameters(
+    name = "vehicle_params_h",
+    base_name = "vehicle_params",
+    parameter_library = ":vehicle_params",
+)
+
+# Wrap in cc_library
+cc_library(
+    name = "vehicle_params_cc",
+    hdrs = [":vehicle_params_h"],
+)
+
+# Example: C++ header with custom namespace
+generate_cc_parameters(
+    name = "vehicle_params_custom_ns_h",
+    base_name = "vehicle_params_custom_ns",
+    namespace = "my_project::vehicle::params",
+    parameter_library = ":vehicle_params",
+)
+
+# Wrap in cc_library
+cc_library(
+    name = "vehicle_params_cc_custom_ns",
+    hdrs = [":vehicle_params_custom_ns_h"],
+)
+
+# Generate Python module with parameters
+# Consumes vehicle_params (validated YAML) and generates vehicle_params.py
+generate_python_parameters(
+    name = "vehicle_params_py_src",
+    base_name = "vehicle_params",
+    parameter_library = ":vehicle_params",
+)
+
+# Wrap in py_library
+py_library(
     name = "vehicle_params_py",
+    srcs = [":vehicle_params_py_src"],
+)
+
+# Example: Second Python library (demonstrates multiple targets from same params)
+generate_python_parameters(
+    name = "vehicle_params_py_alt_src",
+    base_name = "vehicle_params_py_alt",
     parameter_library = ":vehicle_params",
 )
 
-# Generate Java parameters with package prefix
-# Namespace auto-derived: vehicle/dynamics -> com.example.vehicle.dynamics
-java_parameter_library(
-    name = "vehicle_params_java",
-    parameter_library = ":vehicle_params",
-    package_prefix = "com.example",  # Optional prefix for Java packages
+py_library(
+    name = "vehicle_params_py_alt",
+    srcs = [":vehicle_params_py_alt_src"],
+)
+
+# Generate Java class with parameters
+# Consumes vehicle_params (validated YAML) and generates VehicleParams.java
+generate_java_parameters(
+    name = "vehicle_params_java_src",
     class_name = "VehicleParams",
-)
-
-# Generate Go parameters
-# Package name auto-derived: vehicle/dynamics -> package dynamics
-go_parameter_library(
-    name = "vehicle_params_go",
+    package_prefix = "com.example",
     parameter_library = ":vehicle_params",
 )
 
-# Generate Rust parameters
-# Generates constants with SCREAMING_SNAKE_CASE naming
-rust_parameter_library(
+# Wrap in java_library
+java_library(
+    name = "vehicle_params_java",
+    srcs = [":vehicle_params_java_src"],
+)
+
+# Generate Go source with parameters
+# Consumes vehicle_params (validated YAML) and generates vehicle_params.go
+generate_go_parameters(
+    name = "vehicle_params_go_src",
+    base_name = "vehicle_params",
+    parameter_library = ":vehicle_params",
+)
+
+# Wrap in go_library
+go_library(
+    name = "vehicle_params_go",
+    srcs = [":vehicle_params_go_src"],
+    importpath = "examples/vehicle_params",
+)
+
+# Example: Second Go library (demonstrates multiple targets from same params)
+generate_go_parameters(
+    name = "vehicle_params_go_alt_src",
+    base_name = "vehicle_params_alt",
+    parameter_library = ":vehicle_params",
+)
+
+go_library(
+    name = "vehicle_params_go_alt",
+    srcs = [":vehicle_params_go_alt_src"],
+    importpath = "examples/vehicle_params_go_alt",
+)
+
+# Generate Rust module with parameters
+# Consumes vehicle_params (validated YAML) and generates vehicle_params.rs
+# Rust can use generated .rs files directly in srcs (no wrapper needed)
+generate_rust_parameters(
     name = "vehicle_params_rs",
+    base_name = "vehicle_params",
+    parameter_library = ":vehicle_params",
+)
+
+# Example: Second Rust module (demonstrates multiple targets from same params)
+generate_rust_parameters(
+    name = "vehicle_params_rs_alt",
+    base_name = "vehicle_params_rs_alt",
     parameter_library = ":vehicle_params",
 )
 ```
@@ -301,6 +384,18 @@ safety analysis for ASIL-D classification. The maximum velocity is constrained b
 Note that the important part here is the header 2 (`##`), that includes the ID of the requirement and must be followed by a line containing SIL, Sec, and Version separated by `|` characters.
 The header 3 (`###`) sections are free text for now, even though we highly recomment you to use a fixed format for it.
 Note that a requirement file can contain multiple of such requirements.
+
+Requirements are collected in Bazel targets as follows
+
+```starlark
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+requirement_library(
+  name = "vehicle_requirements",
+  srcs = glob(["*.md"]),
+  deps = [":vehicle_params"],
+)
+```
 
 ## How Fire Works
 
