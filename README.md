@@ -21,7 +21,7 @@ It is based on the following basic concepts:
 Add Fire to your `MODULE.bazel`:
 
 ```starlark
-bazel_dep(name = "fire", version = "0.1.2")
+bazel_dep(name = "fire", version = "0.2.1")
 
 # Add language rules for the languages you want to use
 bazel_dep(name = "rules_cc", version = "0.2.16")      # For C++ code generation
