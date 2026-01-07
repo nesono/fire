@@ -17,6 +17,10 @@ def _generate_parameters_impl(ctx):
 
     # Build arguments
     args = ctx.actions.args()
+
+    # Add package path first (before subcommand)
+    args.add("--package-path=" + ctx.label.package)
+
     args.add(language)
     args.add(input_file.path)
     args.add(output.path)

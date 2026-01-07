@@ -121,10 +121,14 @@ template<int ExpectedVersion>
 FOOTER_TEMPLATE = "#endif  // ${guard_name}\n"
 
 
-def generate_cpp(param_data: dict, cpp_namespace: str = "") -> str:
+def generate_cpp(
+    param_data: dict,
+    cpp_namespace: str = "",
+    output_file: str = "",
+    package_path: str = "",
+) -> str:
     """Generate C++ header from parameter data."""
     parameters = param_data["parameters"]
-    source_label = param_data.get("source_label", "")
 
     # Determine namespace
     if cpp_namespace is None:
@@ -136,12 +140,24 @@ def generate_cpp(param_data: dict, cpp_namespace: str = "") -> str:
     if namespace:
         guard_name = namespace.upper().replace("::", "_") + "_PARAMS_H"
     else:
-        guard_base = (
-            source_label.replace("//", "").replace("/", "_").replace(":", "_")
-            if source_label
-            else "GENERATED"
-        )
-        guard_name = guard_base.upper() + "_PARAMS_H"
+        # Use repository-relative path to create unique guard
+        if output_file and package_path:
+            # Extract base filename without path and extension
+            import os
+
+            base_name = os.path.basename(output_file)
+            # Remove extension
+            if base_name.endswith(".h"):
+                base_name = base_name[:-2]
+
+            # Construct path: package_path/base_name
+            repo_path = package_path + "/" + base_name if package_path else base_name
+            guard_name = (
+                repo_path.upper().replace("/", "_").replace(".", "_").replace("-", "_")
+                + "_H"
+            )
+        else:
+            guard_name = "GENERATED_PARAMS_H"
 
     output = []
 

@@ -47,6 +47,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate code from Fire parameter definitions"
     )
+    parser.add_argument(
+        "--package-path",
+        default="",
+        help="Bazel package path (for generating unique identifiers)",
+    )
     subparsers = parser.add_subparsers(dest="language", required=True)
 
     # C++ subcommand
@@ -111,7 +116,12 @@ def main():
 
     # Generate code based on language
     if args.language == "cpp":
-        code = generate_cpp(param_data, getattr(args, "cpp_namespace", None))
+        code = generate_cpp(
+            param_data,
+            getattr(args, "cpp_namespace", None),
+            args.output,
+            args.package_path,
+        )
     elif args.language == "python":
         code = generate_python(param_data)
     elif args.language == "go":
