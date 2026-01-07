@@ -118,6 +118,7 @@ def main():
         description="Validate parameter YAML files against JSON schema"
     )
     parser.add_argument("yaml_file", help="Path to the parameter YAML file")
+    parser.add_argument("output_file", help="Path to the validated YAML file")
 
     args = parser.parse_args()
 
@@ -128,6 +129,11 @@ def main():
         for error in errors:
             print(f"  ERROR: {error}")
         sys.exit(1)
+
+    # copy input to output
+    with open(args.yaml_file) as input_file:
+        with open(args.output_file, "w") as output_file:
+            output_file.write(input_file.read())
 
     sys.exit(0)
 
