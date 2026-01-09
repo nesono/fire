@@ -338,53 +338,9 @@ fn test_parameters() {
 }
 ```
 
-### Define Requirements
+### System Requirements
 
-Requirements are written in Markdown with a specific structure (that is validated), for instance
-
-Let's say we have a requirement file `requirements/velocity_requirements.sysreq.md`:
-
-```markdown
-# Velocity Requirements
-
-## REQ-VEL-001
-
-SIL: ASIL-D | Sec: false | Version: 2
-
-**Maximum Vehicle Velocity**
-
-The vehicle SHALL NOT exceed the maximum design velocity defined by
-[@maximum_vehicle_velocity](examples/vehicle_params.yaml#maximum_vehicle_velocity) (55.0 m/s)
-under any operating conditions.
-
-### Rationale
-
-This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www.iso.org/standard/68383.html)
-safety analysis for ASIL-D classification. The maximum velocity is constrained by:
-
-- Mechanical stress limits on drivetrain components
-- Tire rating specifications
-- Braking system performance envelope (see [REQ-BRK-001](examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001))
-- Control system response time requirements
-
-### Verification
-
-- Static analysis of control algorithms
-- Hardware-in-the-loop testing with velocity limiting scenarios
-- Vehicle dynamics simulation at boundary conditions
-- Track testing with instrumentation (see [vehicle_params_test](//examples:vehicle_params_test))
-- Potentially link to a test plan
-
-### Changelog
-
-- **Version 2**: Added parent requirement version tracking support
-- **Version 1**: Initial maximum velocity requirement definition
-```
-
-Note that the important part here is the header 2 (`##`), that includes the ID of the requirement and must be followed by a line containing SIL, Sec, and Version separated by `|` characters.
-The header 3 (`###`) sections are free text for now, even though we highly recomment you to use a fixed format for it.
-Note that a requirement file can contain multiple of such requirements.
-
+System requirements are written in Markdown with a specific structure (that is validated).
 Requirements are collected in Bazel targets as follows
 
 ```starlark
@@ -397,36 +353,16 @@ requirement_library(
 )
 ```
 
-## How Fire Works
-
-- Validate requirement links between requirements
-  - Checking existence
-  - Checking version (disallow consuming an older version)
-  - Checking if the consumption expects the right version
-- Validating the parameter files for being well formed
-- Validating links between parameters and
-  - Requirements
-  - Source code
-
-### Table Parameters
-
-Parameters are defined in YAML with the following fields:
-
-- `type` (required): One of:
-  - Integer types: `i32`, `i64` (signed), `u32`, `u64` (unsigned)
-  - Floating-point types: `f32`, `f64`
-  - Other types: `string`, `bool`, `table`
-- `value` (required for non-table types): The parameter value
-- `description` (required): Human-readable short description
-- `unit` (optional): Physical unit for the parameter
-
 ## Requirement Format
 
-Requirements use section-based markdown with YAML code blocks. Each requirement is identified by an H2 header (`##`), with a YAML block containing only essential structured data.
+Requirements use section-based Markdown.
+Each requirement is identified by an H2 header (`##`) followed by a line containing only essential structured data.
 
 ### System Requirements (`.sysreq.md`)
 
-System requirements contain only essential structured data in YAML blocks, with all metadata in markdown prose.
+Note that the important part here is the header 2 (`##`), that includes the ID of the requirement and must be followed by a line containing SIL, Sec, and Version separated by `|` characters.
+The header 3 (`###`) sections are free text for now, even though we highly recommend you to use a fixed format for it.
+Note that a requirement file can contain multiple of such requirements.
 
 **Format:**
 
@@ -441,69 +377,95 @@ System requirements contain only essential structured data in YAML blocks, with 
 - `Sec`: Security-related flag - `true` or `false`
 - `Version`: Positive integer version number (1, 2, 3, ...)
 
+**Example**:
+
+```markdown
+# Velocity Requirements
+
+## REQ-VEL-001
+
+SIL: ASIL-D | Sec: false | Version: 2
+
+**Maximum Vehicle Velocity**
+
+The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](/examples/vehicle_params.yaml#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
+
+### Rationale
+
+This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www.iso.org/standard/68383.html) safety analysis for ASIL-D classification. The maximum velocity is constrained by:
+
+- Mechanical stress limits on drivetrain components
+- Tire rating specifications
+- Braking system performance envelope (see [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=2#REQ-BRK-001))
+- Control system response time requirements
+
+### Verification
+
+- Static analysis of control algorithms
+- Hardware-in-the-loop testing with velocity limiting scenarios
+- Vehicle dynamics simulation at boundary conditions
+- Track testing with instrumentation (see [vehicle_params_cc_test](//examples:vehicle_params_cc_test))
+
+### Changelog
+
+- **Version 2**: Added parent requirement version tracking support
+- **Version 1**: Initial maximum velocity requirement definition
+```
+
 ### Software Component Requirements (`.swreq.md`)
 
 Software requirements are derived from system requirements and follow a similar minimal format.
 
 **Format:**
 
-- Optional frontmatter: `system_function` (path to `.sysarch.md` file)
 - H2 headers (`##`) for requirement IDs (e.g., `REQ_BC_CALCULATE_FORCE`)
-- Text line with 3 fields: `SIL`, `Sec`, `Version`
-- Description starts with "Derived from [PARENT](path?version=N#PARENT)" link
+- Text line with 4 fields: `SIL`, `Sec`, `Version`, `Parent`
 - Markdown links for all references
 
 **Example:**
 
 ```markdown
----
-system_function: /examples/system_functions/braking_control.sysarch.md
----
-
 # Software Requirements: Brake Controller
 
 ## REQ_BC_CALCULATE_FORCE
 
-SIL: ASIL-D | Sec: false | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001)
+SIL: ASIL-D | Sec: false | Version: 2 | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001)
 
 The brake controller component shall calculate the required brake force...
 ```
 
 ### Markdown References
 
-All cross-references use standard markdown links with repository-relative paths:
+All cross-references use standard Markdown links with repository-relative paths:
 
 - **Parameter Reference**: `[@param_name](/path/to/file.yaml#param_name)`
   - Uses `@` prefix to distinguish from regular links
+  - Link name needs to correspond to the target name
   - Example: `[@maximum_vehicle_velocity](/examples/vehicle_params.yaml#maximum_vehicle_velocity)`
 
 - **Requirement Reference**: `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
   - Includes `?version=N` query parameter to track parent version
+  - Needs to start with a `/`
+  - Needs to be repository-relative
+  - Link name needs to correspond to the target name
   - Example: `[REQ-VEL-001](/examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001)`
 
 - **Test Reference**: `[test_name](//package:target)`
   - Uses Bazel label format
+  - Link name needs to correspond to the target name within the package (i.e. the string after the `:`)
   - Example: `[vehicle_params_test](//examples:vehicle_params_test)`
 
 - **Standard Reference**: `[text](https://url)`
-  - Standard markdown links for external standards and specifications
+  - Standard Markdown links for external standards and specifications
   - Example: `[ISO 26262:2018, Part 3](https://www.iso.org/standard/68383.html)`
 
 ### Version Tracking
 
-System requirements track their own versions in text line. Software requirements track parent versions in markdown links.
+System requirements track their own versions in text line. Software requirements track parent versions in Markdown links.
 
 **Detecting Stale Requirements:**
 
 When a parent requirement version changes (e.g., REQ-VEL-001 v2 → v3), any child requirement still referencing `?version=2` is flagged as potentially needing review.
-
-**Why This Format:**
-
-- Minimal structured data (only fields we actually parse and validate)
-- All metadata in markdown prose (title, rationale, changelog, etc.)
-- Single source of truth for references (markdown links, not duplicated in YAML)
-- Clean, readable format that renders well in GitHub/GitLab
-- Version tracking via query parameters in links
 
 ### Generating Reports with Bazel
 
