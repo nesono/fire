@@ -99,12 +99,31 @@ def extract_markdown_references(body):
     req_refs = []
     test_refs = []
 
-    # Pattern for [@param](path#param)
+    # Pattern for [@param](path?version=N#param)
     param_pattern = r"\[@([a-zA-Z_][a-zA-Z0-9_]*)\]\(([^)]+)\)"
     for match in re.finditer(param_pattern, body):
         param_name = match.group(1)
-        param_path = match.group(2)
-        param_refs.append((param_name, param_path))
+        full_url = match.group(2)
+
+        # Extract version from query parameter if present
+        version = None
+        clean_path = full_url
+        if "?" in full_url:
+            path_part, query_part = full_url.split("?", 1)
+            # Extract query string (before # if present)
+            query_str = query_part.split("#")[0] if "#" in query_part else query_part
+            # Parse version=N
+            for param in query_str.split("&"):
+                if "=" in param:
+                    key, value = param.split("=", 1)
+                    if key == "version" and value.isdigit():
+                        version = int(value)
+            # Reconstruct clean path with fragment if present
+            clean_path = path_part
+            if "#" in query_part:
+                clean_path = clean_path + "#" + query_part.split("#")[1]
+
+        param_refs.append((param_name, clean_path, version))
 
     # Pattern for [REQ-ID](path.md?version=N#anchor) or [REQ-ID](path.md)
     req_pattern = r"\[([A-Z][A-Z0-9_-]+)\]\(([^)]+\.md[^)]*)\)"
@@ -142,8 +161,10 @@ def extract_markdown_references(body):
     return param_refs, req_refs, test_refs
 
 
-def validate_parameter_reference(param_name, param_path, workspace_root):
-    """Validate that a parameter reference exists."""
+def validate_parameter_reference(
+    param_name, param_path, workspace_root, ref_version=None, source_file=None
+):
+    """Validate that a parameter reference exists and check version if specified."""
     # Extract file path and anchor
     if "#" in param_path:
         file_path, anchor = param_path.split("#", 1)
@@ -187,10 +208,33 @@ def validate_parameter_reference(param_name, param_path, workspace_root):
         # Look for parameter definition
         # In YAML, parameters are defined as keys under 'parameters:'
         # e.g., "  param_name:" at the start of a line
-        if f"{anchor}:" in content:
-            return True, None
-        else:
+        if f"{anchor}:" not in content:
             return False, f"Parameter '{anchor}' not found in {file_path}"
+
+        # Check version if ref_version is specified
+        if ref_version is not None:
+            # Parse version from YAML file
+            # Look for version: N in the file (at root level or in metadata)
+            actual_version = None
+            for line in content.split("\n"):
+                # Match "version: N" or "  version: N" (allow leading whitespace)
+                version_match = re.match(r"^\s*version:\s*(\d+)\s*$", line)
+                if version_match:
+                    actual_version = int(version_match.group(1))
+                    break
+
+            # ANSI color codes: \033[91m = light red, \033[0m = reset
+            # Print to stdout so Bazel shows these warnings even when validation passes
+            if actual_version is None:
+                print(
+                    f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} has no version field"
+                )
+            elif actual_version != ref_version:
+                print(
+                    f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} is at version={actual_version}"
+                )
+
+        return True, None
 
     except Exception as e:
         return False, f"Error reading {file_path}: {e}"
@@ -327,7 +371,7 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
     param_refs, req_refs, test_refs = extract_markdown_references(content)
 
     # Validate parameter references exist
-    for param_name, param_path in param_refs:
+    for param_name, param_path, ref_version in param_refs:
         # Check if this parameter file is in allowed_deps (strict dependency checking)
         # Only enforce if allowed_deps is not None (i.e., was explicitly passed)
         if allowed_deps is not None:
@@ -358,7 +402,7 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
                 continue  # Skip further validation for this parameter
 
         valid, error = validate_parameter_reference(
-            param_name, param_path, workspace_root
+            param_name, param_path, workspace_root, ref_version, file_path
         )
         if not valid:
             errors.append(f"{file_path}: {error}")
