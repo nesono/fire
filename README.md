@@ -1,18 +1,20 @@
-# Fire - Requirements Management System for Bazel
+# Fire - Fully Integrated Requirements Engineering
+
+A Requirements Management System for Bazel
 
 [![CI](https://github.com/nesono/fire/actions/workflows/ci.yaml/badge.svg)](https://github.com/nesono/fire/actions/workflows/ci.yaml)
 
 Fire is a Bazel module for managing safety-critical system requirements,
-parameters, and their relationships through Bazel's dependency graph.
+parameters, and their relationships with support by Bazel's dependency graph.
 
 It is based on the following basic concepts:
 
-- Parameters (e.g. max speed) are defined in YAML files
-- System or Software Component Requirements are specified in Markdown files
-- References from Markdown files are all using Markdown link syntax
-- References support versioning, to flag affected downstream consumers
-- Parameters can be consumed from source code through code generated libraries
-- Support for reporting, e.g. for notified bodies
+- **Parameters** (e.g. max speed) are defined in YAML files
+- **System** or **Software Component Requirements** are specified in Markdown files
+- **References** from Markdown files are all using Markdown link syntax
+- References support **versioning**, to flag affected downstream consumers
+- Parameters can be **consumed from source code** through code generated libraries
+- Support for **reporting**, e.g. for notified bodies
 
 ## Usage
 
@@ -23,20 +25,20 @@ Add Fire to your `MODULE.bazel`:
 ```starlark
 bazel_dep(name = "fire", version = "0.2.1")
 
-# Add language rules for the languages you want to use
+# Add language rules for the languages you want to use (optional)
 bazel_dep(name = "rules_cc", version = "0.2.16")      # For C++ code generation
 bazel_dep(name = "rules_python", version = "1.7.0")   # For Python code generation
 # Add rules_rust, rules_go, rules_java as needed
 ```
 
-**Important**: Fire provides code generation functions that output source
-files. You are responsible for wrapping these in your language's library rules.
-This keeps Fire's dependencies minimal - Fire only depends on rules_python (for
-YAML validation).
+**Important**: Fire provides code generation functions that output source files (no Bazel targets).
+The reason is mostly to not clutter the consumers dependency tree with languages they might not need.
+The consumer is responsible for wrapping these source files into language's library targets or binaries.
+This keeps Fire's dependencies minimal - Fire itself only depends on `rules_python` (for YAML validation).
 
 ### Define Parameter Libraries
 
-Add parameters to a yaml file, e.g. like the following:
+Add parameters to a YAML file, e.g. like the following:
 
 In file `vehicle_params.yaml`
 
@@ -72,7 +74,7 @@ parameters:
       - [30.0, 0.7, 64.3]
 ```
 
-### Create Bazel Targets
+### Create Bazel Targets For the Parameters
 
 In your `BUILD.bazel` file (e.g., in `vehicle/dynamics/`):
 
@@ -108,7 +110,7 @@ cc_test(
 )
 ```
 
-### Example Consumption in C++ Code
+### Consumption in C++ Code Example
 
 The generated header provides type-safe access to parameters:
 
@@ -267,7 +269,9 @@ generate_rust_parameters(
 )
 ```
 
-**Python usage:**
+### Consumption in Code
+
+**Python usage**
 
 ```python
 from vehicle_params_py import (
@@ -285,7 +289,7 @@ def test_parameters():
         print(f"v={row.velocity}, μ={row.friction_coefficient}, d={row.braking_distance}")
 ```
 
-**Java usage:**
+**Java usage**
 
 ```java
 import com.example.vehicle.dynamics.VehicleParams;
@@ -303,7 +307,7 @@ public class DynamicsTest {
 }
 ```
 
-**Go usage:**
+**Go usage**
 
 ```go
 import dynamics "yourproject/vehicle/dynamics"
@@ -319,7 +323,7 @@ func TestParameters(t *testing.T) {
 }
 ```
 
-**Rust usage:**
+**Rust usage**
 
 ```rust
 mod vehicle_params_rust;
@@ -338,10 +342,10 @@ fn test_parameters() {
 }
 ```
 
-### System Requirements
+### Defining System Requirements
 
-System requirements are written in Markdown with a specific structure (that is validated).
-Requirements are collected in Bazel targets as follows
+System requirements are written in Markdown with a specific structure (that is validated by Fire).
+Requirements are collected in Bazel targets as follows:
 
 ```starlark
 load("//fire/starlark:requirements.bzl", "requirement_library")
@@ -353,7 +357,7 @@ requirement_library(
 )
 ```
 
-## Requirement Format
+## Requirements Format
 
 Requirements use section-based Markdown.
 Each requirement is identified by an H2 header (`##`) followed by a line containing only essential structured data.
@@ -414,13 +418,14 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 
 ### Software Component Requirements (`.swreq.md`)
 
-Software requirements are derived from system requirements and follow a similar minimal format.
+Software component requirements are derived from system requirements and follow a similar minimal format.
 
 **Format:**
 
 - H2 headers (`##`) for requirement IDs (e.g., `REQ_BC_CALCULATE_FORCE`)
 - Text line with 4 fields: `SIL`, `Sec`, `Version`, `Parent`
-- Markdown links for all references
+- Bold text (`**Title**`) for human readable requirement title
+- Markdown links for all references (parameters, tests, standards)
 
 **Example:**
 
@@ -432,6 +437,12 @@ Software requirements are derived from system requirements and follow a similar 
 SIL: ASIL-D | Sec: false | Version: 2 | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001)
 
 The brake controller component shall calculate the required brake force...
+```
+
+Note that all requirement files can contain multiple requirements separated by
+
+```markdown
+---
 ```
 
 ### Markdown References
