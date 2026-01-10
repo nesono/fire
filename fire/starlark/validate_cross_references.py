@@ -212,27 +212,29 @@ def validate_parameter_reference(
             return False, f"Parameter '{anchor}' not found in {file_path}"
 
         # Check version if ref_version is specified
-        if ref_version is not None:
-            # Parse version from YAML file
-            # Look for version: N in the file (at root level or in metadata)
-            actual_version = None
-            for line in content.split("\n"):
-                # Match "version: N" or "  version: N" (allow leading whitespace)
-                version_match = re.match(r"^\s*version:\s*(\d+)\s*$", line)
-                if version_match:
-                    actual_version = int(version_match.group(1))
-                    break
+        if ref_version is None:
+            return False, f"Parameter '{anchor}' misses version in {file_path}"
 
-            # ANSI color codes: \033[91m = light red, \033[0m = reset
-            # Print to stdout so Bazel shows these warnings even when validation passes
-            if actual_version is None:
-                print(
-                    f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} has no version field"
-                )
-            elif actual_version != ref_version:
-                print(
-                    f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} is at version={actual_version}"
-                )
+        # Parse version from YAML file
+        # Look for version: N in the file (at root level or in metadata)
+        actual_version = None
+        for line in content.split("\n"):
+            # Match "version: N" or "  version: N" (allow leading whitespace)
+            version_match = re.match(r"^\s*version:\s*(\d+)\s*$", line)
+            if version_match:
+                actual_version = int(version_match.group(1))
+                break
+
+        # ANSI color codes: \033[91m = light red, \033[0m = reset
+        # Print to stdout so Bazel shows these warnings even when validation passes
+        if actual_version is None:
+            print(
+                f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} has no version field"
+            )
+        elif actual_version != ref_version:
+            print(
+                f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} is at version={actual_version}"
+            )
 
         return True, None
 
