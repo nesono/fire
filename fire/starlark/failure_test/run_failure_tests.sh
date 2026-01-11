@@ -132,6 +132,10 @@ for target in $FAILURE_TARGETS; do
         elif echo "$output" | grep -q "VERSION MISMATCH"; then
             echo "✅ PASS: Build produced version mismatch warning"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for missing required fields (should FAIL)
+        elif echo "$output" | grep -qE "does not contain '(sil|sec|version)' field|has no metadata"; then
+            echo "✅ PASS: Build failed with missing required field error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Unexpected: build succeeded or failed with wrong error
         else
             echo "❌ FAIL: Build should have failed or produced expected warning"

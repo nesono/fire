@@ -2,7 +2,7 @@
 
 ## REQ-INT-002
 
-SIL: ASIL-C | Version: 1
+SIL: ASIL-C | Sec: Public | Version: 1
 
 **Minimum Braking Distance**
 
