@@ -43,6 +43,7 @@ requirement_library(
     tags = [
         "failure_test",  # Expected to produce error
         "manual",  # Don't run in normal test runs
+        "version_too_old",
     ],
     deps = [":test_params_v2"],
 )

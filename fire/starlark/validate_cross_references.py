@@ -227,11 +227,12 @@ def validate_parameter_reference(
 
         # ANSI color codes: \033[91m = light red, \033[0m = reset
         # Print to stdout so Bazel shows these warnings even when validation passes
-        if actual_version is None:
-            print(
-                f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} has no version field"
+        if actual_version < ref_version:
+            return (
+                False,
+                f"Parameter {anchor} expects a future version ({ref_version}), but actual version is {actual_version}",
             )
-        elif actual_version != ref_version:
+        elif actual_version > ref_version:
             print(
                 f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} is at version={actual_version}"
             )
