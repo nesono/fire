@@ -1,0 +1,48 @@
+"""Tests for missing required fields in requirements.
+
+These tests verify that validation fails when requirements are missing
+required fields: SIL, Sec, or Version.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+# Missing SIL field - should FAIL
+requirement_library(
+    name = "test_missing_sil",
+    srcs = ["missing_sil.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)
+
+# Missing Sec field - should FAIL
+requirement_library(
+    name = "test_missing_sec",
+    srcs = ["missing_sec.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)
+
+# Missing Version field - should FAIL
+requirement_library(
+    name = "test_missing_version",
+    srcs = ["missing_version.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)
+
+# Missing all required fields - should FAIL
+requirement_library(
+    name = "test_missing_all",
+    srcs = ["missing_all.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)

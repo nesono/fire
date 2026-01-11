@@ -370,6 +370,31 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
     except Exception as e:
         return [f"Error reading {file_path}: {e}"]
 
+    # Validate the requirement file's own metadata
+    # Find all requirement IDs in the file and validate each one
+    req_id_pattern = r"^## ([A-Z][A-Z0-9_-]+)\s*$"
+    for match in re.finditer(req_id_pattern, content, re.MULTILINE):
+        req_id = match.group(1)
+        frontmatter = parse_inline_metadata_for_requirement(content, req_id)
+
+        if not frontmatter or frontmatter.get("id") != req_id:
+            errors.append(f"{file_path}: Requirement ID '{req_id}' has no metadata")
+            continue
+
+        # Check required fields (parent is optional)
+        if not frontmatter.get("sil"):
+            errors.append(
+                f"{file_path}: Requirement '{req_id}' does not contain 'sil' field"
+            )
+        if not frontmatter.get("sec"):
+            errors.append(
+                f"{file_path}: Requirement '{req_id}' does not contain 'sec' field"
+            )
+        if not frontmatter.get("version"):
+            errors.append(
+                f"{file_path}: Requirement '{req_id}' does not contain 'version' field"
+            )
+
     # Extract references from markdown body
     param_refs, req_refs, test_refs = extract_markdown_references(content)
 

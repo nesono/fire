@@ -2,6 +2,8 @@
 
 ## REQ-PARAM-001
 
+SIL: ASIL-A | Sec: Public | Version: 1
+
 This requirement references [@test_parameter](fire/starlark/failure_test/dependency_failures/test_params.bzl#test_parameter) but the dependency is NOT declared in BUILD.
 
 This should FAIL validation.
