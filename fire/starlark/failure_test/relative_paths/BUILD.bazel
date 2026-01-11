@@ -1,0 +1,54 @@
+"""Tests for non-repository-relative paths in references.
+
+These tests verify that validation fails when references use non-repository-relative
+paths (paths that don't start with /).
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:parameters.bzl", "parameter_library")
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+# Base requirement (valid)
+requirement_library(
+    name = "base_requirement",
+    srcs = ["base_requirement.md"],
+)
+
+# Test parameter library
+parameter_library(
+    name = "test_params",
+    src = "test_params.yaml",
+)
+
+# Non-absolute parent path - should FAIL
+requirement_library(
+    name = "test_non_absolute_parent",
+    srcs = ["non_absolute_parent.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+    deps = [":base_requirement"],
+)
+
+# Non-absolute requirement reference - should FAIL
+requirement_library(
+    name = "test_non_absolute_reference",
+    srcs = ["non_absolute_reference.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+    deps = [":base_requirement"],
+)
+
+# Non-absolute parameter reference - should FAIL
+requirement_library(
+    name = "test_non_absolute_param",
+    srcs = ["non_absolute_param.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+    deps = [":test_params"],
+)

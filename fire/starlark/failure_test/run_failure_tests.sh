@@ -136,6 +136,10 @@ for target in $FAILURE_TARGETS; do
         elif echo "$output" | grep -qE "does not contain '(sil|sec|version)' field|has no metadata"; then
             echo "✅ PASS: Build failed with missing required field error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for non-repository-relative paths (should FAIL)
+        elif echo "$output" | grep -q "must be repository-relative"; then
+            echo "✅ PASS: Build failed with non-repository-relative path error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Unexpected: build succeeded or failed with wrong error
         else
             echo "❌ FAIL: Build should have failed or produced expected warning"
