@@ -23,8 +23,11 @@ def parse_inline_metadata_for_requirement(content, req_id):
 
     Looks for ## REQ-ID heading followed by a line with pipe-separated fields.
     Format: Key1: value1 | Key2: value2 | Key3: [link](url)
-    Returns the parsed metadata as a dict with 'id' and other fields.
+    Returns tuple of (RequirementMetadata | None, ValidationError | None).
     """
+    from fire.starlark.requirement_models import RequirementMetadata
+    from pydantic import ValidationError
+
     lines = content.split("\n")
     metadata_line = None
 
@@ -52,7 +55,7 @@ def parse_inline_metadata_for_requirement(content, req_id):
             break
 
     if not metadata_line:
-        return None
+        return None, None
 
     # Parse pipe-separated fields: Key1: value1 | Key2: value2 | Parent: [REQ-ID](path)
     frontmatter = {"id": req_id}
@@ -90,7 +93,12 @@ def parse_inline_metadata_for_requirement(content, req_id):
         else:
             frontmatter[key] = value
 
-    return frontmatter
+    # Validate with Pydantic
+    try:
+        metadata = RequirementMetadata.model_validate(frontmatter)
+        return metadata, None
+    except ValidationError as e:
+        return None, e
 
 
 def extract_markdown_references(body):
@@ -296,21 +304,34 @@ def validate_requirement_reference(
             content = f.read()
 
         # Parse inline metadata (pipe-separated format)
-        frontmatter = parse_inline_metadata_for_requirement(content, req_id)
+        metadata, validation_error = parse_inline_metadata_for_requirement(
+            content, req_id
+        )
 
-        if not frontmatter or frontmatter.get("id") != req_id:
-            return False, f"Requirement file {req_path} does not contain ID '{req_id}'"
+        if metadata is None:
+            if validation_error:
+                # Format Pydantic errors
+                error_messages = []
+                for error in validation_error.errors():
+                    field = error["loc"][0] if error["loc"] else "metadata"
+                    message = error["msg"]
+                    error_messages.append(f"{field}: {message}")
+                return (
+                    False,
+                    f"Requirement file {req_path} validation failed: {'; '.join(error_messages)}",
+                )
+            else:
+                return (
+                    False,
+                    f"Requirement file {req_path} does not contain ID '{req_id}'",
+                )
 
         # Check version if ref_version is specified
         if ref_version is not None:
-            actual_version = frontmatter.get("version")
+            actual_version = metadata.version
             # ANSI color codes: \033[91m = light red, \033[0m = reset
             # Print to stdout so Bazel shows these warnings even when validation passes
-            if actual_version is None:
-                print(
-                    f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} has no version field"
-                )
-            elif actual_version != ref_version:
+            if actual_version != ref_version:
                 print(
                     f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} is at version={actual_version}"
                 )
@@ -395,48 +416,24 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
     req_id_pattern = r"^## ([A-Z][A-Z0-9_-]+)\s*$"
     for match in re.finditer(req_id_pattern, content, re.MULTILINE):
         req_id = match.group(1)
-        frontmatter = parse_inline_metadata_for_requirement(content, req_id)
+        metadata, validation_error = parse_inline_metadata_for_requirement(
+            content, req_id
+        )
 
-        if not frontmatter or frontmatter.get("id") != req_id:
-            errors.append(f"{file_path}: Requirement ID '{req_id}' has no metadata")
+        if metadata is None:
+            if validation_error:
+                # Format Pydantic errors with full detail
+                for error in validation_error.errors():
+                    field = error["loc"][0] if error["loc"] else "metadata"
+                    message = error["msg"]
+                    errors.append(
+                        f"{file_path}: Requirement '{req_id}' - {field}: {message}"
+                    )
+            else:
+                errors.append(f"{file_path}: Requirement ID '{req_id}' has no metadata")
             continue
 
-        # Check required fields (parent is optional)
-        if "sil" not in frontmatter:
-            errors.append(
-                f"{file_path}: Requirement '{req_id}' does not contain 'sil' field"
-            )
-        if "sec" not in frontmatter:
-            print(frontmatter)
-            errors.append(
-                f"{file_path}: Requirement '{req_id}' does not contain 'sec' field"
-            )
-        if "version" not in frontmatter:
-            errors.append(
-                f"{file_path}: Requirement '{req_id}' does not contain 'version' field"
-            )
-
-        # Check parent field path is repository-relative (if parent exists)
-        if "parent" in frontmatter:
-            parent_value = frontmatter["parent"]
-            # Parent is in format [REQ-ID](/path/to/file.md?version=N#REQ-ID)
-            parent_match = re.match(r"\[([^\]]+)\]\(([^\)]+)\)", parent_value)
-            if parent_match:
-                parent_path = parent_match.group(2)
-                # Extract the path part (before # and ?)
-                path_to_check = (
-                    parent_path.split("#")[0] if "#" in parent_path else parent_path
-                )
-                path_to_check = (
-                    path_to_check.split("?")[0]
-                    if "?" in path_to_check
-                    else path_to_check
-                )
-
-                if not path_to_check.startswith("/"):
-                    errors.append(
-                        f"{file_path}: Requirement '{req_id}' parent path must be repository-relative (start with /): '{parent_path}'"
-                    )
+        # Validation now handled by Pydantic model - no manual checks needed!
 
     # Extract references from markdown body
     param_refs, req_refs, test_refs = extract_markdown_references(content)

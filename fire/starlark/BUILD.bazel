@@ -66,6 +66,10 @@ py_binary(
     srcs = ["validate_cross_references.py"],
     main = "validate_cross_references.py",
     visibility = ["//visibility:public"],
+    deps = [
+        ":requirement_models",
+        "@pip//pydantic",
+    ],
 )
 
 py_binary(
@@ -86,5 +90,38 @@ py_test(
         ":parameter_models",
         "@pip//pydantic",
         "@pip//pyyaml",
+    ],
+)
+
+# Python library for requirement models
+py_library(
+    name = "requirement_models",
+    srcs = [
+        "requirement_models.py",
+    ],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+    deps = ["@pip//pydantic"],
+)
+
+# Python library for cross-reference validation
+py_library(
+    name = "validate_cross_references_lib",
+    srcs = ["validate_cross_references.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":requirement_models",
+        "@pip//pydantic",
+    ],
+)
+
+py_test(
+    name = "validate_requirements_metadata_test",
+    size = "small",
+    srcs = ["validate_requirements_metadata_test.py"],
+    imports = ["."],
+    deps = [
+        ":requirement_models",
+        "@pip//pydantic",
     ],
 )
