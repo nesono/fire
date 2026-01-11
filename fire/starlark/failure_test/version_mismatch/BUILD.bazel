@@ -5,6 +5,7 @@ versions don't match the actual requirement versions.
 They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
 """
 
+load("//fire/starlark:parameters.bzl", "parameter_library")
 load("//fire/starlark:requirements.bzl", "requirement_library")
 
 # Version mismatch test - should produce WARNING
@@ -18,4 +19,31 @@ requirement_library(
         "failure_test",  # Expected to produce warning
         "manual",  # Don't run in normal test runs
     ],
+)
+
+# Parameter version mismatch test - should produce WARNING
+parameter_library(
+    name = "test_params_v2",
+    src = "test_params_v2.yaml",
+)
+
+requirement_library(
+    name = "test_param_version_mismatch",
+    srcs = ["test_param_version_mismatch.md"],
+    tags = [
+        "failure_test",  # Expected to produce warning
+        "manual",  # Don't run in normal test runs
+    ],
+    deps = [":test_params_v2"],
+)
+
+requirement_library(
+    name = "test_param_version_mismatch_error",
+    srcs = ["test_param_version_mismatch_error.md"],
+    tags = [
+        "failure_test",  # Expected to produce error
+        "manual",  # Don't run in normal test runs
+        "version_too_old",
+    ],
+    deps = [":test_params_v2"],
 )
