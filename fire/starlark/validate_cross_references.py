@@ -172,6 +172,13 @@ def validate_parameter_reference(
         file_path = param_path
         anchor = param_name
 
+    # Check that path is repository-relative (starts with /)
+    if not file_path.startswith("/"):
+        return (
+            False,
+            f"Parameter reference path must be repository-relative (start with /): '{param_path}'",
+        )
+
     # Strip leading slash for repository-relative paths (e.g., /examples/foo.yaml -> examples/foo.yaml)
     # Markdown uses /path for repository-relative, but os.path.join treats it as absolute
     if file_path.startswith("/"):
@@ -247,6 +254,19 @@ def validate_requirement_reference(
     req_id, req_path, workspace_root, ref_version=None, source_file=None
 ):
     """Validate that a requirement reference exists and check version if specified."""
+    # Check that path is repository-relative (starts with /)
+    # Extract the path part before checking (handle fragments and query params)
+    path_to_check = req_path.split("#")[0] if "#" in req_path else req_path
+    path_to_check = (
+        path_to_check.split("?")[0] if "?" in path_to_check else path_to_check
+    )
+
+    if not path_to_check.startswith("/"):
+        return (
+            False,
+            f"Requirement reference path must be repository-relative (start with /): '{req_path}'",
+        )
+
     # Strip leading slash for repository-relative paths (e.g., /examples/foo.md -> examples/foo.md)
     # Markdown uses /path for repository-relative, but os.path.join treats it as absolute
     if req_path.startswith("/"):
@@ -395,6 +415,28 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
             errors.append(
                 f"{file_path}: Requirement '{req_id}' does not contain 'version' field"
             )
+
+        # Check parent field path is repository-relative (if parent exists)
+        if "parent" in frontmatter:
+            parent_value = frontmatter["parent"]
+            # Parent is in format [REQ-ID](/path/to/file.md?version=N#REQ-ID)
+            parent_match = re.match(r"\[([^\]]+)\]\(([^\)]+)\)", parent_value)
+            if parent_match:
+                parent_path = parent_match.group(2)
+                # Extract the path part (before # and ?)
+                path_to_check = (
+                    parent_path.split("#")[0] if "#" in parent_path else parent_path
+                )
+                path_to_check = (
+                    path_to_check.split("?")[0]
+                    if "?" in path_to_check
+                    else path_to_check
+                )
+
+                if not path_to_check.startswith("/"):
+                    errors.append(
+                        f"{file_path}: Requirement '{req_id}' parent path must be repository-relative (start with /): '{parent_path}'"
+                    )
 
     # Extract references from markdown body
     param_refs, req_refs, test_refs = extract_markdown_references(content)
