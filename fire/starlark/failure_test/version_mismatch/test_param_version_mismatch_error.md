@@ -2,7 +2,7 @@
 
 ## REQ-PARAM-VERSION-ERROR
 
-SIL: ASIL-A | Sec: Public | Version: 1
+SIL: ASIL-A | Sec: False | Version: 1
 
 This requirement references
 [@test_param](/fire/starlark/failure_test/version_mismatch/test_params_v2.yaml?version=3#test_param)

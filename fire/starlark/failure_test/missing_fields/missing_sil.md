@@ -2,7 +2,7 @@
 
 ## REQ-MISSING-SIL
 
-Sec: Public | Version: 1
+Sec: False | Version: 1
 
 This requirement is missing the SIL field.
 

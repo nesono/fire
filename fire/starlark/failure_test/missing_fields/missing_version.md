@@ -2,7 +2,7 @@
 
 ## REQ-MISSING-VERSION
 
-SIL: ASIL-A | Sec: Public
+SIL: ASIL-A | Sec: False
 
 This requirement is missing the Version field.
 

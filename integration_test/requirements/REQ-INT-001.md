@@ -2,7 +2,7 @@
 
 ## REQ-INT-001
 
-SIL: ASIL-B | Sec: Public | Version: 1
+SIL: ASIL-B | Sec: False | Version: 1
 
 **Maximum Speed Constraint**
 
