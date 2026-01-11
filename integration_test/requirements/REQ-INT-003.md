@@ -2,7 +2,7 @@
 
 ## REQ-INT-003
 
-SIL: ASIL-D | Sec: Public | Version: 1
+SIL: ASIL-D | Sec: False | Version: 1
 
 **System Update Rate**
 
