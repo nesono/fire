@@ -382,15 +382,16 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
             continue
 
         # Check required fields (parent is optional)
-        if not frontmatter.get("sil"):
+        if "sil" not in frontmatter:
             errors.append(
                 f"{file_path}: Requirement '{req_id}' does not contain 'sil' field"
             )
-        if not frontmatter.get("sec"):
+        if "sec" not in frontmatter:
+            print(frontmatter)
             errors.append(
                 f"{file_path}: Requirement '{req_id}' does not contain 'sec' field"
             )
-        if not frontmatter.get("version"):
+        if "version" not in frontmatter:
             errors.append(
                 f"{file_path}: Requirement '{req_id}' does not contain 'version' field"
             )
