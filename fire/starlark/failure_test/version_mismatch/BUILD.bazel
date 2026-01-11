@@ -36,3 +36,13 @@ requirement_library(
     ],
     deps = [":test_params_v2"],
 )
+
+requirement_library(
+    name = "test_param_version_mismatch_error",
+    srcs = ["test_param_version_mismatch_error.md"],
+    tags = [
+        "failure_test",  # Expected to produce error
+        "manual",  # Don't run in normal test runs
+    ],
+    deps = [":test_params_v2"],
+)
