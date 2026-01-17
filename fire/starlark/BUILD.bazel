@@ -31,7 +31,6 @@ py_library(
     srcs = [
         "parameter_models.py",
     ],
-    imports = ["."],
     visibility = ["//visibility:public"],
     deps = ["@pip//pydantic"],
 )
@@ -85,7 +84,6 @@ py_test(
         "validate_parameters.py",
         "validate_parameters_test.py",
     ],
-    imports = ["."],
     deps = [
         ":parameter_models",
         "@pip//pydantic",
@@ -99,7 +97,6 @@ py_library(
     srcs = [
         "requirement_models.py",
     ],
-    imports = ["."],
     visibility = ["//visibility:public"],
     deps = ["@pip//pydantic"],
 )
@@ -119,7 +116,6 @@ py_test(
     name = "validate_requirements_metadata_test",
     size = "small",
     srcs = ["validate_requirements_metadata_test.py"],
-    imports = ["."],
     deps = [
         ":requirement_models",
         "@pip//pydantic",
