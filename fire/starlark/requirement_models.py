@@ -32,14 +32,6 @@ class RequirementMetadata(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    @field_validator("sec", mode="before")
-    @classmethod
-    def validate_sec_bool(cls, v):
-        """Validate sec field strictly as boolean."""
-        if not isinstance(v, bool):
-            raise ValueError("sec must be a boolean (true or false)")
-        return v
-
     @field_validator("parent")
     @classmethod
     def validate_parent_format(cls, v: Optional[str]) -> Optional[str]:
