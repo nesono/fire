@@ -3,3 +3,9 @@ pydantic==2.10.3
 pydantic-core==2.27.2
 annotated-types==0.7.0
 typing-extensions==4.12.2
+pytest==8.3.4
+iniconfig==2.0.0
+packaging==24.2
+pluggy==1.5.0
+exceptiongroup==1.2.2
+tomli==2.2.1

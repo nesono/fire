@@ -119,5 +119,6 @@ py_test(
     deps = [
         ":requirement_models",
         "@pip//pydantic",
+        "@pip//pytest",
     ],
 )
