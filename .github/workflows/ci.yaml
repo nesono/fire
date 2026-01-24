@@ -51,7 +51,6 @@ jobs:
   failure-tests:
     name: Run Failure Tests
     runs-on: ubuntu-latest
-    needs: [pre-commit, test]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -63,7 +62,6 @@ jobs:
   integration-test:
     name: Integration Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
-    needs: [pre-commit, test]
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
