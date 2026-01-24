@@ -35,6 +35,13 @@ py_library(
     deps = ["@pip//pydantic"],
 )
 
+py_library(
+    name = "pydantic_tools",
+    srcs = ["pydantic_tools.py"],
+    visibility = ["//visibility:public"],
+    deps = ["@pip//pydantic"],
+)
+
 # Python library for parameter validation
 py_library(
     name = "validate_parameters_lib",
@@ -42,6 +49,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":parameter_models",
+        ":pydantic_tools",
         "@pip//pydantic",
         "@pip//pyyaml",
     ],
@@ -55,6 +63,7 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":parameter_models",
+        ":pydantic_tools",
         "@pip//pydantic",
         "@pip//pyyaml",
     ],
@@ -66,6 +75,7 @@ py_binary(
     main = "validate_cross_references.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":pydantic_tools",
         ":requirement_models",
         "@pip//pydantic",
     ],
@@ -86,6 +96,7 @@ py_test(
     ],
     deps = [
         ":parameter_models",
+        ":pydantic_tools",
         "@pip//pydantic",
         "@pip//pytest",
         "@pip//pyyaml",
@@ -108,6 +119,7 @@ py_library(
     srcs = ["validate_cross_references.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":pydantic_tools",
         ":requirement_models",
         "@pip//pydantic",
     ],
@@ -119,6 +131,17 @@ py_test(
     srcs = ["validate_requirements_metadata_test.py"],
     deps = [
         ":requirement_models",
+        "@pip//pydantic",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "pydantic_tools_test",
+    size = "small",
+    srcs = ["pydantic_tools_test.py"],
+    deps = [
+        ":pydantic_tools",
         "@pip//pydantic",
         "@pip//pytest",
     ],

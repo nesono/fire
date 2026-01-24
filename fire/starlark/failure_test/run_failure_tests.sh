@@ -133,7 +133,7 @@ for target in $FAILURE_TARGETS; do
             echo "✅ PASS: Build produced version mismatch warning"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for missing required fields (should FAIL)
-        elif echo "$output" | grep -qE "does not contain '(sil|sec|version)' field|has no metadata|Field required"; then
+        elif echo "$output" | grep -qE "is a required property|has no metadata|Field required"; then
             echo "✅ PASS: Build failed with missing required field error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for non-repository-relative paths (should FAIL)
@@ -141,7 +141,7 @@ for target in $FAILURE_TARGETS; do
             echo "✅ PASS: Build failed with non-repository-relative path error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for Pydantic validation errors (should FAIL)
-        elif echo "$output" | grep -qE "Input should be|greater than or equal|sec must be a boolean"; then
+        elif echo "$output" | grep -qE "not a valid boolean|not a valid enumeration member|not a valid integer|greater than or equal"; then
             echo "✅ PASS: Build failed with Pydantic validation error"
             SUCCESSES=$((SUCCESSES + 1))
         # Unexpected: build succeeded or failed with wrong error

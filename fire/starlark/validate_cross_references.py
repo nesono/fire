@@ -17,6 +17,8 @@ import os
 import re
 import sys
 
+from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
+
 
 def parse_inline_metadata_for_requirement(content, req_id):
     """Parse inline metadata for a specific requirement ID.
@@ -310,12 +312,7 @@ def validate_requirement_reference(
 
         if metadata is None:
             if validation_error:
-                # Format Pydantic errors
-                error_messages = []
-                for error in validation_error.errors():
-                    field = error["loc"][0] if error["loc"] else "metadata"
-                    message = error["msg"]
-                    error_messages.append(f"{field}: {message}")
+                error_messages = format_validation_errors(validation_error)
                 return (
                     False,
                     f"Requirement file {req_path} validation failed: {'; '.join(error_messages)}",
@@ -422,13 +419,8 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
 
         if metadata is None:
             if validation_error:
-                # Format Pydantic errors with full detail
-                for error in validation_error.errors():
-                    field = error["loc"][0] if error["loc"] else "metadata"
-                    message = error["msg"]
-                    errors.append(
-                        f"{file_path}: Requirement '{req_id}' - {field}: {message}"
-                    )
+                for msg in format_validation_errors(validation_error):
+                    errors.append(f"{file_path}: Requirement '{req_id}' - {msg}")
             else:
                 errors.append(f"{file_path}: Requirement ID '{req_id}' has no metadata")
             continue
