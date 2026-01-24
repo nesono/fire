@@ -1,0 +1,48 @@
+"""Tests for invalid metadata values in requirements.
+
+These tests verify that validation fails when requirements have invalid
+field values: invalid SIL, invalid Sec type, or invalid Version values.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+# Invalid SIL value (ASIL-E) - should FAIL
+requirement_library(
+    name = "test_invalid_sil",
+    srcs = ["invalid_sil.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)
+
+# Invalid Sec type (string instead of bool) - should FAIL
+requirement_library(
+    name = "test_invalid_sec",
+    srcs = ["invalid_sec.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)
+
+# Invalid Version (zero) - should FAIL
+requirement_library(
+    name = "test_invalid_version_zero",
+    srcs = ["invalid_version_zero.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)
+
+# Invalid Version (negative) - should FAIL
+requirement_library(
+    name = "test_invalid_version_negative",
+    srcs = ["invalid_version_negative.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)
