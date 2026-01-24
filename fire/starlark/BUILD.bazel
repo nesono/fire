@@ -87,6 +87,7 @@ py_test(
     deps = [
         ":parameter_models",
         "@pip//pydantic",
+        "@pip//pytest",
         "@pip//pyyaml",
     ],
 )
