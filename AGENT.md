@@ -34,8 +34,22 @@ Write Pythonic code.
 
 Whenever changing the code, make sure that pre-commit still works.
 
+Formatters used:
+
+- Black
+- Ruff
+- Buildifier
+- Mypy
+
+Ensure not to add any secrets to the code, they will be detected by
+
+- gitleaks
+- detect-secrets
+
 ## Testing
 
+Test files use a `_test.py` suffix and are colocated with their implementation.
+Test framework is pytest.
 Always make sure that `bazel test //...` works when invoked from the repository
 root.
 
