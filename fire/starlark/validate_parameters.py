@@ -11,7 +11,7 @@ import sys
 import yaml
 from pydantic import ValidationError  # type: ignore
 
-from parameter_models import ParameterFile  # type: ignore
+from fire.starlark.parameter_models import ParameterFile  # type: ignore
 
 
 def load_yaml(yaml_path):
