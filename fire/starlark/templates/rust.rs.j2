@@ -1,0 +1,84 @@
+// Generated parameter constants with version checking
+
+{% for param in parameters if param.type == "table" %}
+{% set struct_name = param.name | pascal_case + "Row" %}
+#[derive(Debug, Clone, Copy)]
+pub struct {{ struct_name }} {
+{% for col in param.columns %}
+    pub {{ col.name }}: {{ col.type | rust_type }},
+{% endfor %}
+}
+
+{% endfor %}
+{% for param in parameters %}
+{% set const_name = param.name | upper %}
+{% set version = param.version | default(1) %}
+{% if param.type == "table" %}
+{% set struct_name = param.name | pascal_case + "Row" %}
+{% set size = param.rows | length %}
+const {{ const_name }}_DATA: [{{ struct_name }}; {{ size }}] = [
+{% for row in param.rows %}
+    {{ struct_name }} { {% for i in range(param.columns | length) %}{{ param.columns[i].name }}: {% if param.columns[i].type == "string" %}"{{ row[i] }}"{% elif param.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} },
+{% endfor %}
+];
+
+pub const {{ const_name }}_SIZE: usize = {{ size }};
+
+{% if version > 1 %}
+/// Access {{ param.name }} with version check (current version: {{ version }})
+#[deprecated(note = "Parameter {{ param.name }} has been updated to version {{ version }}")]
+const fn {{ param.name }}_outdated() -> &'static [{{ struct_name }}; {{ size }}] {
+    &{{ const_name }}_DATA
+}
+
+#[allow(unreachable_patterns)]
+pub const fn {{ param.name }}<const EXPECTED_VERSION: i32>() -> &'static [{{ struct_name }}; {{ size }}] {
+    match EXPECTED_VERSION {
+        {{ version + 1 }}.. => panic!("Parameter {{ param.name }} version {{ version }} is older than expected version"),
+        ..={{ version - 1 }} => {{ param.name }}_outdated(),
+        _ => &{{ const_name }}_DATA,
+    }
+}
+
+{% else %}
+/// Access {{ param.name }} with version check (current version: {{ version }})
+pub const fn {{ param.name }}<const EXPECTED_VERSION: i32>() -> &'static [{{ struct_name }}; {{ size }}] {
+    assert!(EXPECTED_VERSION <= {{ version }}, "Parameter {{ param.name }} version {{ version }} is older than expected version");
+    &{{ const_name }}_DATA
+}
+
+{% endif %}
+{% else %}
+{% set rust_type = param.type | rust_type %}
+{% if param.type == "string" %}
+const {{ const_name }}_VALUE: &str = "{{ param.value }}";
+{% else %}
+const {{ const_name }}_VALUE: {{ rust_type }} = {% if param.type == "bool" %}{% if param.value %}true{% else %}false{% endif %}{% else %}{{ param.value }}{% endif %};
+{% endif %}
+
+{% if version > 1 %}
+/// Access {{ param.name }} with version check (current version: {{ version }})
+#[deprecated(note = "Parameter {{ param.name }} has been updated to version {{ version }}")]
+const fn {{ param.name }}_outdated() -> {{ rust_type }} {
+    {{ const_name }}_VALUE
+}
+
+#[allow(unreachable_patterns)]
+pub const fn {{ param.name }}<const EXPECTED_VERSION: i32>() -> {{ rust_type }} {
+    match EXPECTED_VERSION {
+        {{ version + 1 }}.. => panic!("Parameter {{ param.name }} version {{ version }} is older than expected version"),
+        ..={{ version - 1 }} => {{ param.name }}_outdated(),
+        _ => {{ const_name }}_VALUE,
+    }
+}
+
+{% else %}
+/// Access {{ param.name }} with version check (current version: {{ version }})
+pub const fn {{ param.name }}<const EXPECTED_VERSION: i32>() -> {{ rust_type }} {
+    assert!(EXPECTED_VERSION <= {{ version }}, "Parameter {{ param.name }} version {{ version }} is older than expected version");
+    {{ const_name }}_VALUE
+}
+
+{% endif %}
+{% endif %}
+{% endfor %}

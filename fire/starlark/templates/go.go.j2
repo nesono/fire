@@ -1,0 +1,63 @@
+package {{ package_name }}
+
+import (
+    "fmt"
+)
+
+{% for param in parameters if param.type == "table" %}
+{% set struct_name = param.name | pascal_case + "Row" %}
+type {{ struct_name }} struct {
+{% for col in param.columns %}
+    {{ col.name | pascal_case }} {{ col.type | go_type }}
+{% endfor %}
+}
+
+{% endfor %}
+{% for param in parameters %}
+{% set const_name = param.name | upper %}
+{% set const_name_lower = const_name | lower %}
+{% set version = param.version | default(1) %}
+{% set param_name_pascal = param.name | pascal_case %}
+{% if param.type == "table" %}
+{% set struct_name = param.name | pascal_case + "Row" %}
+var {{ const_name_lower }}Data = []{{ struct_name }}{
+{% for row in param.rows %}
+    {{ "{" }}{% for i in range(param.columns | length) %}{{ param.columns[i].name | pascal_case }}: {% if param.columns[i].type == "string" %}"{{ row[i] }}"{% elif param.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
+{% endfor %}
+}
+
+// {{ param_name_pascal }} returns {{ param.name }} with version check (current version: {{ version }})
+func {{ param_name_pascal }}(expectedVersion int) []{{ struct_name }} {
+    if expectedVersion > {{ version }} {
+        panic(fmt.Sprintf("Parameter {{ param.name }} version {{ version }} is older than expected version %d", expectedVersion))
+    }
+    if expectedVersion < {{ version }} {
+        fmt.Printf("Warning: Parameter {{ param.name }} has been updated to version {{ version }}, expected %d\n", expectedVersion)
+    }
+    return {{ const_name_lower }}Data
+}
+
+{% else %}
+{% set go_type = param.type | go_type %}
+{% if param.type == "string" %}
+var {{ const_name_lower }}Value = "{{ param.value }}"
+{% elif param.type == "bool" %}
+var {{ const_name_lower }}Value = {% if param.value %}true{% else %}false{% endif %}
+
+{% else %}
+var {{ const_name_lower }}Value {{ go_type }} = {{ param.value }}
+{% endif %}
+
+// {{ param_name_pascal }} returns {{ param.name }} with version check (current version: {{ version }})
+func {{ param_name_pascal }}(expectedVersion int) {{ go_type }} {
+    if expectedVersion > {{ version }} {
+        panic(fmt.Sprintf("Parameter {{ param.name }} version {{ version }} is older than expected version %d", expectedVersion))
+    }
+    if expectedVersion < {{ version }} {
+        fmt.Printf("Warning: Parameter {{ param.name }} has been updated to version {{ version }}, expected %d\n", expectedVersion)
+    }
+    return {{ const_name_lower }}Value
+}
+
+{% endif %}
+{% endfor %}
