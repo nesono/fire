@@ -48,15 +48,18 @@ parameters:
     type: f64
     unit: m/s
     value: 55.0
+    version: 1
     description: Maximum design velocity for the vehicle
 
   wheel_count:
     type: i32
     value: 4
+    version: 1
     description: Number of wheels on the vehicle
 
   braking_distance_table:
     type: table
+    version: 2
     description: Braking distances under various conditions
     columns:
       - name: velocity
@@ -392,7 +395,7 @@ SIL: ASIL-D | Sec: false | Version: 2
 
 **Maximum Vehicle Velocity**
 
-The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](/examples/vehicle_params.yaml#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
+The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](/examples/vehicle_params.yaml?version=1#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
 
 ### Rationale
 
@@ -449,10 +452,10 @@ Note that all requirement files can contain multiple requirements separated by
 
 All cross-references use standard Markdown links with repository-relative paths:
 
-- **Parameter Reference**: `[@param_name](/path/to/file.yaml#param_name)`
+- **Parameter Reference**: `[@param_name](/path/to/file.yaml?version=1#param_name)`
   - Uses `@` prefix to distinguish from regular links
   - Link name needs to correspond to the target name
-  - Example: `[@maximum_vehicle_velocity](/examples/vehicle_params.yaml#maximum_vehicle_velocity)`
+  - Example: `[@maximum_vehicle_velocity](/examples/vehicle_params.yaml?version=1#maximum_vehicle_velocity)`
 
 - **Requirement Reference**: `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
   - Includes `?version=N` query parameter to track parent version
