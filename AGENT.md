@@ -7,6 +7,9 @@ Starlark and the rest is using Python.
 
 ## Coding
 
+Never commit directly to the `main` branch, always ensure there is a branch
+ready to create a (new) PR from.
+
 Always write in TDD style. Write a small test first, make it fail, make it
 succeed, refactor.
 
