@@ -13,16 +13,20 @@ py_binary(
     name = "generate_code_script",
     srcs = [
         "generate_code.py",
-        "generators/base.py",
         "generators/cpp.py",
         "generators/go.py",
         "generators/java.py",
         "generators/python.py",
         "generators/rust.py",
+        "generators/template_loader.py",
     ],
+    data = glob(["templates/*.j2"]),
     main = "generate_code.py",
     visibility = ["//visibility:public"],
-    deps = ["@pip//pyyaml"],
+    deps = [
+        "@pip//jinja2",
+        "@pip//pyyaml",
+    ],
 )
 
 # Python library for parameter models
