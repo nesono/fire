@@ -411,7 +411,7 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 - Static analysis of control algorithms
 - Hardware-in-the-loop testing with velocity limiting scenarios
 - Vehicle dynamics simulation at boundary conditions
-- Track testing with instrumentation (see [vehicle_params_cc_test](//examples:vehicle_params_cc_test))
+- Track testing with instrumentation
 
 ### Changelog
 
@@ -463,11 +463,6 @@ All cross-references use standard Markdown links with repository-relative paths:
   - Needs to be repository-relative
   - Link name needs to correspond to the target name
   - Example: `[REQ-VEL-001](/examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001)`
-
-- **Test Reference**: `[test_name](//package:target)`
-  - Uses Bazel label format
-  - Link name needs to correspond to the target name within the package (i.e. the string after the `:`)
-  - Example: `[vehicle_params_test](//examples:vehicle_params_test)`
 
 - **Standard Reference**: `[text](https://url)`
   - Standard Markdown links for external standards and specifications
@@ -538,15 +533,13 @@ bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:ch
 
 **Available Report Types**:
 
-- `traceability`: Full traceability matrix with Requirements → Parameters, Requirements → Requirements (with versions), Requirements → Tests, Requirements → Standards
-- `coverage`: Metrics showing percentage of requirements with parameter references, linked tests, and standard references
+- `traceability`: Full traceability matrix with Requirements → Parameters, Requirements → Requirements (with versions), Requirements → Standards
+- `coverage`: Metrics showing percentage of requirements with parameter references and standard references
 - `change_impact`: Identifies requirements with stale parent version references
 - `compliance`: Compliance report for a specific standard
   - Attributes: `standard` (required, e.g., "ISO 26262", "IEC 61508"), `critical_type` (optional, e.g., "safety", "security")
   - Shows breakdown by requirement type, status distribution, and compliance gaps
   - Highlights critical requirement type if specified
-
-**Note**: "Linked Tests" refers to requirements with test references in frontmatter, not verified test execution.
 
 ## Contributing
 

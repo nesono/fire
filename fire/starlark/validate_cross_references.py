@@ -107,7 +107,6 @@ def extract_markdown_references(body):
     """Extract parameter, requirement, and test references from markdown body."""
     param_refs = []
     req_refs = []
-    test_refs = []
 
     # Pattern for [@param](path?version=N#param)
     param_pattern = r"\[@([a-zA-Z_][a-zA-Z0-9_]*)\]\(([^)]+)\)"
@@ -161,14 +160,7 @@ def extract_markdown_references(body):
 
         req_refs.append((req_id, clean_path, version))
 
-    # Pattern for [test_name](//package:target)
-    test_pattern = r"\[([a-zA-Z_][a-zA-Z0-9_]*)\]\((//[^)]+:[^)]+)\)"
-    for match in re.finditer(test_pattern, body):
-        test_name = match.group(1)
-        test_label = match.group(2)
-        test_refs.append((test_name, test_label))
-
-    return param_refs, req_refs, test_refs
+    return param_refs, req_refs
 
 
 def validate_parameter_reference(
@@ -339,57 +331,6 @@ def validate_requirement_reference(
         return False, f"Error reading {req_path}: {e}"
 
 
-def validate_test_reference(test_name, test_label, workspace_root):
-    """Validate that a test target exists by checking BUILD file."""
-    try:
-        # Parse the Bazel label to get package and target
-        # Format: //package/path:target_name
-        if not test_label.startswith("//"):
-            return False, f"Invalid test label format: {test_label}"
-
-        label_parts = test_label[2:].split(":")
-        if len(label_parts) != 2:
-            return False, f"Invalid test label format (missing :): {test_label}"
-
-        package_path = label_parts[0]
-        target_name = label_parts[1]
-
-        # Check that link text matches target name
-        if test_name != target_name:
-            return (
-                False,
-                f"Test link text '{test_name}' does not match target name '{target_name}' in {test_label}",
-            )
-
-        # Check if BUILD.bazel or BUILD file exists in the package
-        build_file = None
-        for build_name in ["BUILD.bazel", "BUILD"]:
-            potential_path = os.path.join(workspace_root, package_path, build_name)
-            if os.path.exists(potential_path):
-                build_file = potential_path
-                break
-
-        if not build_file:
-            return False, f"No BUILD file found for package: //{package_path}"
-
-        # Read BUILD file and check if target name appears
-        with open(build_file, "r") as f:
-            build_content = f.read()
-
-        # Simple check: target name should appear in BUILD file
-        # This is not perfect but avoids recursive Bazel invocation
-        if (
-            f'name = "{target_name}"' in build_content
-            or f"name = '{target_name}'" in build_content
-        ):
-            return True, None
-        else:
-            return False, f"Test target '{target_name}' not found in {build_file}"
-
-    except Exception as e:
-        return False, f"Error validating test target {test_label}: {e}"
-
-
 def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
     """Validate all cross-references in a single requirement file.
 
@@ -428,7 +369,7 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
         # Validation now handled by Pydantic model - no manual checks needed!
 
     # Extract references from markdown body
-    param_refs, req_refs, test_refs = extract_markdown_references(content)
+    param_refs, req_refs = extract_markdown_references(content)
 
     # Validate parameter references exist
     for param_name, param_path, ref_version in param_refs:
@@ -491,12 +432,6 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
         valid, error = validate_requirement_reference(
             req_id, req_path, workspace_root, ref_version, file_path
         )
-        if not valid:
-            errors.append(f"{file_path}: {error}")
-
-    # Validate test references exist
-    for test_name, test_label in test_refs:
-        valid, error = validate_test_reference(test_name, test_label, workspace_root)
         if not valid:
             errors.append(f"{file_path}: {error}")
 
