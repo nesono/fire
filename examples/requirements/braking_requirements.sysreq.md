@@ -30,12 +30,14 @@ For each velocity and friction coefficient pair in [@braking_distance_table](/ex
 
 ### Verification
 
-Testing performed according to [vehicle_params_cc_test](//examples:vehicle_params_cc_test):
+Testing performed on the following aspects:
 
 - Brake dynamometer testing
 - Proving ground testing on various surfaces (dry, wet, low friction)
 - Automated emergency braking (AEB) system integration tests
 - Tire friction coefficient measurement and validation
+
+...
 
 ### Dependencies
 

@@ -14,4 +14,4 @@ This requirement is derived from [REQ-INT-001](/requirements/REQ-INT-001.md?vers
 
 ### Verification
 
-Tested by [test_braking](//:test_braking).
+Tested by braking test.

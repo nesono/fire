@@ -14,7 +14,7 @@ It is based on the following basic concepts:
 - **References** from Markdown files are all using Markdown link syntax
 - References support **versioning**, to flag affected downstream consumers
 - Parameters can be **consumed from source code** through code generated libraries
-- Support for **reporting**, e.g. for notified bodies
+- Support for **reporting**, e.g. for collaterals for notified bodies
 
 ## Usage
 
@@ -31,10 +31,12 @@ bazel_dep(name = "rules_python", version = "1.7.0")   # For Python code generati
 # Add rules_rust, rules_go, rules_java as needed
 ```
 
-**Important**: Fire provides code generation functions that output source files (no Bazel targets).
-The reason is mostly to not clutter the consumers dependency tree with languages they might not need.
-The consumer is responsible for wrapping these source files into language's library targets or binaries.
-This keeps Fire's dependencies minimal - Fire itself only depends on `rules_python` (for YAML validation).
+**Important**: Fire provides code generation functions that output source files
+(no Bazel targets). The reason is mostly to not clutter the consumers
+dependency tree with languages they might not need. The consumer is responsible
+for wrapping these source files into language's library targets or binaries.
+This keeps Fire's dependencies minimal - Fire itself only depends on
+`rules_python` (for YAML validation).
 
 ### Define Parameter Libraries
 
@@ -347,8 +349,8 @@ fn test_parameters() {
 
 ### Defining System Requirements
 
-System requirements are written in Markdown with a specific structure (that is validated by Fire).
-Requirements are collected in Bazel targets as follows:
+System requirements are written in Markdown with a specific structure (that is
+validated by Fire). Requirements are collected in Bazel targets as follows:
 
 ```starlark
 load("//fire/starlark:requirements.bzl", "requirement_library")
@@ -362,21 +364,25 @@ requirement_library(
 
 ## Requirements Format
 
-Requirements use section-based Markdown.
-Each requirement is identified by an H2 header (`##`) followed by a line containing only essential structured data.
+Requirements use section-based Markdown. The H1 header (`#`) can be chosen
+freely - we recommend to use a human readable title.
+Each requirement in the requirements file is identified by an H2 header (`##`)
+followed by blank line and then a line containing some structured data.
 
 ### System Requirements (`.sysreq.md`)
 
-Note that the important part here is the header 2 (`##`), that includes the ID of the requirement and must be followed by a line containing SIL, Sec, and Version separated by `|` characters.
-The header 3 (`###`) sections are free text for now, even though we highly recommend you to use a fixed format for it.
+Note that the important part here is the header 2 (`##`), that includes the ID
+of the requirement and must be followed by a line containing SIL, Sec, and
+Version separated by `|` characters. The header 3 (`###`) sections are free
+text for now, even though we highly recommend you to use a fixed format for it.
 Note that a requirement file can contain multiple of such requirements.
 
 **Format:**
 
 - H2 headers (`##`) for requirement IDs
 - Text line with 3 fields: `SIL`, `Sec`, `Version`
-- Bold text (`**Title**`) for human readable requirement title
-- Markdown links for all references (parameters, tests, standards)
+- Bold text (`**Title**`) for human readable requirement title (recommended)
+- Markdown links for all references (parameters, standards)
 
 **Text Fields:**
 
@@ -403,7 +409,7 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 
 - Mechanical stress limits on drivetrain components
 - Tire rating specifications
-- Braking system performance envelope (see [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=2#REQ-BRK-001))
+- Braking system performance envelope
 - Control system response time requirements
 
 ### Verification
@@ -411,7 +417,7 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 - Static analysis of control algorithms
 - Hardware-in-the-loop testing with velocity limiting scenarios
 - Vehicle dynamics simulation at boundary conditions
-- Track testing with instrumentation (see [vehicle_params_cc_test](//examples:vehicle_params_cc_test))
+- Track testing with instrumentation
 
 ### Changelog
 
@@ -427,7 +433,7 @@ Software component requirements are derived from system requirements and follow 
 
 - H2 headers (`##`) for requirement IDs (e.g., `REQ_BC_CALCULATE_FORCE`)
 - Text line with 4 fields: `SIL`, `Sec`, `Version`, `Parent`
-- Bold text (`**Title**`) for human readable requirement title
+- Bold text (`**Title**`) for human readable requirement title (recommended)
 - Markdown links for all references (parameters, tests, standards)
 
 **Example:**
@@ -463,11 +469,6 @@ All cross-references use standard Markdown links with repository-relative paths:
   - Needs to be repository-relative
   - Link name needs to correspond to the target name
   - Example: `[REQ-VEL-001](/examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001)`
-
-- **Test Reference**: `[test_name](//package:target)`
-  - Uses Bazel label format
-  - Link name needs to correspond to the target name within the package (i.e. the string after the `:`)
-  - Example: `[vehicle_params_test](//examples:vehicle_params_test)`
 
 - **Standard Reference**: `[text](https://url)`
   - Standard Markdown links for external standards and specifications
@@ -538,15 +539,13 @@ bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:ch
 
 **Available Report Types**:
 
-- `traceability`: Full traceability matrix with Requirements → Parameters, Requirements → Requirements (with versions), Requirements → Tests, Requirements → Standards
-- `coverage`: Metrics showing percentage of requirements with parameter references, linked tests, and standard references
+- `traceability`: Full traceability matrix with Requirements → Parameters, Requirements → Requirements (with versions), Requirements → Standards
+- `coverage`: Metrics showing percentage of requirements with parameter references and standard references
 - `change_impact`: Identifies requirements with stale parent version references
 - `compliance`: Compliance report for a specific standard
   - Attributes: `standard` (required, e.g., "ISO 26262", "IEC 61508"), `critical_type` (optional, e.g., "safety", "security")
   - Shows breakdown by requirement type, status distribution, and compliance gaps
   - Highlights critical requirement type if specified
-
-**Note**: "Linked Tests" refers to requirements with test references in frontmatter, not verified test execution.
 
 ## Contributing
 

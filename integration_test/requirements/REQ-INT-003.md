@@ -10,4 +10,4 @@ The system SHALL process sensor data and update control outputs at [@update_rate
 
 ### Verification
 
-Tested by [test_update_rate](//:test_update_rate).
+Tested by update rate test.

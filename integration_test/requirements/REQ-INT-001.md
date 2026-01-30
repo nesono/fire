@@ -12,4 +12,4 @@ This requirement ensures safe operation within design limits.
 
 ### Verification
 
-Tested by [test_speed_limit](//:test_speed_limit).
+Tested by speed limit test.
