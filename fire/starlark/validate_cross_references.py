@@ -104,7 +104,7 @@ def parse_inline_metadata_for_requirement(content, req_id):
 
 
 def extract_markdown_references(body):
-    """Extract parameter, requirement, and test references from markdown body."""
+    """Extract parameter and requirement references from Markdown body."""
     param_refs = []
     req_refs = []
 
