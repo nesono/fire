@@ -32,6 +32,9 @@ import fire.starlark.validate_parameters
 ```
 
 Write Pythonic code.
+Use type hints when they cannot be easily deduced (easily deduced is for
+instance, when the objects are defined and assigned with a literal.
+Use the Final keyword when it makes sense (e.g. for global const objects).
 
 ## Pre-Commit
 
