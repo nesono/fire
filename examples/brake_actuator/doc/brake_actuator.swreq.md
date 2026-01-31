@@ -14,6 +14,10 @@ The brake actuator component shall subscribe to brake force commands at a rate o
 
 ---
 
+# Software Requirements: Second H1 (optional, but doesn't fail)
+
+Some more text, which should not fail the FIRE checker.
+
 ## REQ_BA_CONVERT_FORCE
 
 SIL: ASIL-D | Sec: false | Version: 1 | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=2#REQ-BRK-001)
