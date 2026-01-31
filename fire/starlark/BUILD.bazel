@@ -141,6 +141,16 @@ py_test(
 )
 
 py_test(
+    name = "validate_bare_todo_test",
+    size = "small",
+    srcs = ["validate_bare_todo_test.py"],
+    deps = [
+        ":validate_cross_references_lib",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
     name = "pydantic_tools_test",
     size = "small",
     srcs = ["pydantic_tools_test.py"],

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for requirement metadata validation using Pydantic models."""
 
+import sys
+
 import pytest
 from pydantic import ValidationError
 
@@ -377,3 +379,126 @@ def test_multiple_errors():
     errors = exc_info.value.errors()
     # Should have multiple errors
     assert len(errors) >= 4
+
+
+# --- TODO(KEY-1234) support for SIL field ---
+
+
+def test_sil_valid_todo():
+    """TODO(KEY-1234) is accepted for SIL field."""
+    metadata = RequirementMetadata(
+        id="REQ-001", sil="TODO(JIRA-123)", sec=True, version=1
+    )
+    assert metadata.sil == "TODO(JIRA-123)"
+
+
+def test_sil_valid_todo_long_key():
+    """TODO with multi-char key and large number."""
+    metadata = RequirementMetadata(
+        id="REQ-001", sil="TODO(SAFETY-99999)", sec=True, version=1
+    )
+    assert metadata.sil == "TODO(SAFETY-99999)"
+
+
+def test_sil_bare_todo_rejected():
+    """Bare TODO without parens is rejected for SIL."""
+    with pytest.raises(ValidationError):
+        RequirementMetadata(id="REQ-001", sil="TODO", sec=True, version=1)
+
+
+def test_sil_todo_empty_parens_rejected():
+    """TODO() is rejected for SIL."""
+    with pytest.raises(ValidationError):
+        RequirementMetadata(id="REQ-001", sil="TODO()", sec=True, version=1)
+
+
+def test_sil_todo_lowercase_key_rejected():
+    """TODO(jira-123) with lowercase key is rejected."""
+    with pytest.raises(ValidationError):
+        RequirementMetadata(id="REQ-001", sil="TODO(jira-123)", sec=True, version=1)
+
+
+def test_sil_todo_no_number_rejected():
+    """TODO(JIRA) without ticket number is rejected."""
+    with pytest.raises(ValidationError):
+        RequirementMetadata(id="REQ-001", sil="TODO(JIRA)", sec=True, version=1)
+
+
+# --- TODO(KEY-1234) support for Sec field ---
+
+
+def test_sec_valid_todo():
+    """TODO(KEY-1234) is accepted for Sec field."""
+    metadata = RequirementMetadata(
+        id="REQ-001", sil="ASIL-A", sec="TODO(JIRA-456)", version=1
+    )
+    assert metadata.sec == "TODO(JIRA-456)"
+
+
+def test_sec_bare_todo_rejected():
+    """Bare TODO is rejected for Sec."""
+    with pytest.raises(ValidationError):
+        RequirementMetadata(id="REQ-001", sil="ASIL-A", sec="TODO", version=1)
+
+
+def test_sec_string_true_still_rejected():
+    """String 'true' is still rejected for Sec (strict bool)."""
+    with pytest.raises(ValidationError):
+        RequirementMetadata(id="REQ-001", sil="ASIL-A", sec="true", version=1)
+
+
+def test_sec_int_still_rejected():
+    """Integer 1 is still rejected for Sec (strict bool)."""
+    with pytest.raises(ValidationError):
+        RequirementMetadata(id="REQ-001", sil="ASIL-A", sec=1, version=1)
+
+
+# --- TODO(KEY-1234) support for Parent field ---
+
+
+def test_parent_valid_todo():
+    """TODO(KEY-1234) is accepted for Parent field."""
+    metadata = RequirementMetadata(
+        id="REQ-001", sil="ASIL-A", sec=True, version=1, parent="TODO(JIRA-789)"
+    )
+    assert metadata.parent == "TODO(JIRA-789)"
+
+
+def test_parent_bare_todo_rejected():
+    """Bare TODO is rejected for Parent."""
+    with pytest.raises(ValidationError):
+        RequirementMetadata(
+            id="REQ-001", sil="ASIL-A", sec=True, version=1, parent="TODO"
+        )
+
+
+# --- Version does NOT support TODO ---
+
+
+def test_version_todo_rejected():
+    """TODO is NOT allowed for Version field."""
+    with pytest.raises(ValidationError):
+        RequirementMetadata(
+            id="REQ-001", sil="ASIL-A", sec=True, version="TODO(JIRA-123)"
+        )
+
+
+# --- Multiple TODO fields at once ---
+
+
+def test_all_todo_fields():
+    """All TODO-able fields can be TODO simultaneously."""
+    metadata = RequirementMetadata(
+        id="REQ-001",
+        sil="TODO(SAFETY-1)",
+        sec="TODO(SAFETY-2)",
+        version=1,
+        parent="TODO(SAFETY-3)",
+    )
+    assert metadata.sil == "TODO(SAFETY-1)"
+    assert metadata.sec == "TODO(SAFETY-2)"
+    assert metadata.parent == "TODO(SAFETY-3)"
+
+
+if __name__ == "__main__":
+    sys.exit(pytest.main([__file__, "-v"]))

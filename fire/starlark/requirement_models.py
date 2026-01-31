@@ -2,9 +2,35 @@
 """Pydantic models for requirement metadata validation."""
 
 import re
-from typing import Literal, Optional
+from typing import Literal, Optional, Union, Final
 
 from pydantic import BaseModel, Field, field_validator
+
+_TODO_PATTERN: Final = re.compile(r"^TODO\([A-Z]+-[0-9]+\)$")
+
+_VALID_SIL_VALUES: Final = {
+    "ASIL-A",
+    "ASIL-B",
+    "ASIL-C",
+    "ASIL-D",
+    "SIL-1",
+    "SIL-2",
+    "SIL-3",
+    "SIL-4",
+    "QM",
+}
+
+SilValue = Literal[
+    "ASIL-A",
+    "ASIL-B",
+    "ASIL-C",
+    "ASIL-D",
+    "SIL-1",
+    "SIL-2",
+    "SIL-3",
+    "SIL-4",
+    "QM",
+]
 
 
 class RequirementMetadata(BaseModel):
@@ -12,19 +38,9 @@ class RequirementMetadata(BaseModel):
 
     id: str = Field(pattern=r"^[A-Z][A-Z0-9_-]+$")
 
-    sil: Literal[
-        "ASIL-A",
-        "ASIL-B",
-        "ASIL-C",
-        "ASIL-D",
-        "SIL-1",
-        "SIL-2",
-        "SIL-3",
-        "SIL-4",
-        "QM",
-    ]
+    sil: Union[SilValue, str]
 
-    sec: bool = Field(strict=True)
+    sec: Union[bool, str]
 
     version: int = Field(ge=1, strict=True)
 
@@ -32,11 +48,37 @@ class RequirementMetadata(BaseModel):
 
     model_config = {"extra": "forbid"}
 
+    @field_validator("sil", mode="before")
+    @classmethod
+    def validate_sil(cls, v: object) -> object:
+        """Accept valid SIL literals or TODO(KEY-1234)."""
+        if isinstance(v, str) and _TODO_PATTERN.match(v):
+            return v
+        if v not in _VALID_SIL_VALUES:
+            raise ValueError(
+                f"Input should be {', '.join(sorted(_VALID_SIL_VALUES))}"
+                " or TODO(KEY-1234)"
+            )
+        return v
+
+    @field_validator("sec", mode="before")
+    @classmethod
+    def validate_sec(cls, v: object) -> object:
+        """Accept strict booleans or TODO(KEY-1234)."""
+        if isinstance(v, str) and _TODO_PATTERN.match(v):
+            return v
+        if not isinstance(v, bool):
+            raise ValueError("value is not a valid boolean or TODO(KEY-1234)")
+        return v
+
     @field_validator("parent")
     @classmethod
     def validate_parent_format(cls, v: Optional[str]) -> Optional[str]:
-        """Validate parent is a markdown link with repository-relative path."""
+        """Validate parent is a markdown link, TODO(KEY-1234), or None."""
         if v is None:
+            return v
+
+        if _TODO_PATTERN.match(v):
             return v
 
         # Check markdown link format: [TEXT](URL)

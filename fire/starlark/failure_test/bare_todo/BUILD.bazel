@@ -1,0 +1,28 @@
+"""Tests for bare/malformed TODO markers in requirements.
+
+These tests verify that validation fails when requirements contain
+bare TODO markers without proper Jira ticket references.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+# Bare TODO without (KEY-1234) - should FAIL
+requirement_library(
+    name = "test_bare_todo",
+    srcs = ["bare_todo.md"],
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)
+
+# TODO with invalid format (bad) - should FAIL
+requirement_library(
+    name = "test_todo_bad_format",
+    srcs = ["todo_bad_format.md"],
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)

@@ -17,7 +17,27 @@ import os
 import re
 import sys
 
+from typing import Final
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
+
+_BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
+
+
+def validate_no_bare_todos(content: str, file_path: str) -> list[str]:
+    """Scan entire file for bare or malformed TODO markers.
+
+    Every occurrence of 'TODO' must use the format TODO(KEY-1234).
+    Returns list of error strings.
+    """
+    errors: list[str] = []
+    for line_num, line in enumerate(content.split("\n"), start=1):
+        for match in _BARE_TODO_RE.finditer(line):
+            snippet = line[match.start() : match.start() + 30]
+            errors.append(
+                f"{file_path}:{line_num}: Bare or malformed TODO found: "
+                f"'{snippet}'. Must use format TODO(KEY-1234)"
+            )
+    return errors
 
 
 def parse_inline_metadata_for_requirement(content, req_id):
@@ -104,7 +124,7 @@ def parse_inline_metadata_for_requirement(content, req_id):
 
 
 def extract_markdown_references(body):
-    """Extract parameter, requirement, and test references from markdown body."""
+    """Extract parameter and requirement references from Markdown body."""
     param_refs = []
     req_refs = []
 
@@ -348,6 +368,9 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
             content = f.read()
     except Exception as e:
         return [f"Error reading {file_path}: {e}"]
+
+    # Validate no bare/malformed TODOs in the entire file
+    errors.extend(validate_no_bare_todos(content, file_path))
 
     # Validate the requirement file's own metadata
     # Find all requirement IDs in the file and validate each one
