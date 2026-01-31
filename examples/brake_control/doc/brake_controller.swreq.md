@@ -1,7 +1,3 @@
----
-system_function: /examples/system_functions/braking_control.sysarch.md
----
-
 # Software Requirements: Brake Controller Component
 
 This document contains the software requirements for the Brake Controller component. These requirements are derived from the system-level braking requirements and define the specific behavior that must be implemented in the brake controller software.

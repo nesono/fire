@@ -1,7 +1,3 @@
----
-system_function: /examples/system_functions/braking_control.sysarch.md
----
-
 # Software Requirements: Brake Actuator Component
 
 This document contains the software requirements for the Brake Actuator component. These requirements define how the component receives brake commands, controls hydraulic pressure, and interfaces with physical brake hardware.
