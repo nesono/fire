@@ -140,8 +140,12 @@ for target in $FAILURE_TARGETS; do
         elif echo "$output" | grep -q "must be repository-relative"; then
             echo "✅ PASS: Build failed with non-repository-relative path error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for bare/malformed TODO markers (should FAIL)
+        elif echo "$output" | grep -q "Bare or malformed TODO"; then
+            echo "✅ PASS: Build failed with bare/malformed TODO error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Check for Pydantic validation errors (should FAIL)
-        elif echo "$output" | grep -qE "not a valid boolean|not a valid enumeration member|not a valid integer|greater than or equal"; then
+        elif echo "$output" | grep -qE "not a valid boolean|not a valid enumeration member|Input should be ASIL|not a valid integer|greater than or equal"; then
             echo "✅ PASS: Build failed with Pydantic validation error"
             SUCCESSES=$((SUCCESSES + 1))
         # Unexpected: build succeeded or failed with wrong error
