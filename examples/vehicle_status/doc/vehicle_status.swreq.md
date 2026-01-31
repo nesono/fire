@@ -1,7 +1,3 @@
----
-system_function: /examples/system_functions/braking_control.sysarch.md
----
-
 # Software Requirements: Vehicle Status Component
 
 This document contains the software requirements for the Vehicle Status component. These requirements define how the component reads sensors, calculates vehicle state, and publishes status information for use by control systems.
