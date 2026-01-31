@@ -2,13 +2,13 @@
 """Pydantic models for requirement metadata validation."""
 
 import re
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Union, Final
 
 from pydantic import BaseModel, Field, field_validator
 
-TODO_PATTERN = re.compile(r"^TODO\([A-Z]+-[0-9]+\)$")
+_TODO_PATTERN: Final = re.compile(r"^TODO\([A-Z]+-[0-9]+\)$")
 
-_VALID_SIL_VALUES = {
+_VALID_SIL_VALUES: Final = {
     "ASIL-A",
     "ASIL-B",
     "ASIL-C",
@@ -52,7 +52,7 @@ class RequirementMetadata(BaseModel):
     @classmethod
     def validate_sil(cls, v: object) -> object:
         """Accept valid SIL literals or TODO(KEY-1234)."""
-        if isinstance(v, str) and TODO_PATTERN.match(v):
+        if isinstance(v, str) and _TODO_PATTERN.match(v):
             return v
         if v not in _VALID_SIL_VALUES:
             raise ValueError(
@@ -65,7 +65,7 @@ class RequirementMetadata(BaseModel):
     @classmethod
     def validate_sec(cls, v: object) -> object:
         """Accept strict booleans or TODO(KEY-1234)."""
-        if isinstance(v, str) and TODO_PATTERN.match(v):
+        if isinstance(v, str) and _TODO_PATTERN.match(v):
             return v
         if not isinstance(v, bool):
             raise ValueError("value is not a valid boolean or TODO(KEY-1234)")
@@ -78,7 +78,7 @@ class RequirementMetadata(BaseModel):
         if v is None:
             return v
 
-        if TODO_PATTERN.match(v):
+        if _TODO_PATTERN.match(v):
             return v
 
         # Check markdown link format: [TEXT](URL)

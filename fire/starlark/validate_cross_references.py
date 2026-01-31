@@ -17,9 +17,10 @@ import os
 import re
 import sys
 
+from typing import Final
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
 
-_BARE_TODO_RE = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
+_BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
 
 
 def validate_no_bare_todos(content: str, file_path: str) -> list[str]:
