@@ -3,11 +3,11 @@ bcr_test_module:
   module_path: "integration_test"
   matrix:
     platform: ["debian11", "macos", "ubuntu2204"]
-    bazel: [7.x, 8.x]
+    bazel: [7.x, 8.x, 9.x]
   tasks:
-    run_tests:
+    run_test_module:
       name: "Run test module"
       platform: ${{ platform }}
       bazel: ${{ bazel }}
-      shell_commands:
-        - ./run.sh
+      build_targets:
+        - //...
