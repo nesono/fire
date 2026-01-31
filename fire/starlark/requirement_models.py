@@ -68,7 +68,7 @@ class RequirementMetadata(BaseModel):
         if isinstance(v, str) and TODO_PATTERN.match(v):
             return v
         if not isinstance(v, bool):
-            raise ValueError("value is not a valid boolean")
+            raise ValueError("value is not a valid boolean or TODO(KEY-1234)")
         return v
 
     @field_validator("parent")
