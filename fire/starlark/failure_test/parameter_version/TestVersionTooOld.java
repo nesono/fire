@@ -1,13 +1,13 @@
 package fire.starlark.failure_test.parameter_version;
 
 /**
- * Test that requesting a version newer than available causes runtime error.
+ * Test that referencing a version class that doesn't exist causes build error.
+ * TestValueV3 does not exist (max version is v2), so this should fail.
  */
 public class TestVersionTooOld {
     public static void main(String[] args) {
-        // Parameter is at version 2, but we request version 3
-        // This should throw IllegalArgumentException
-        double value = TestParams.testValue(3);
+        // This class does not exist - compilation should fail
+        double value = TestValueV3.VALUE;
         System.out.println("Value: " + value);
     }
 }

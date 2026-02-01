@@ -1,6 +1,5 @@
 parameters:
-  test_param:
+  test_param_v1:
     type: f64
     value: 42.0
     description: Test parameter
-    version: 1

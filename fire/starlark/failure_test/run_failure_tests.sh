@@ -59,7 +59,7 @@ for target in $FAILURE_TARGETS; do
             set -e
 
             if [ $run_exit_code -ne 0 ]; then
-                if echo "$run_output" | grep -qE "older than expected|RuntimeError|IllegalArgumentException|panic"; then
+                if echo "$run_output" | grep -qE "older than expected|RuntimeError|IllegalArgumentException|panic|ModuleNotFoundError|ImportError|No module named"; then
                     echo "✅ PASS: Runtime failed with version too old error"
                     SUCCESSES=$((SUCCESSES + 1))
                 else
@@ -76,9 +76,9 @@ for target in $FAILURE_TARGETS; do
 
     elif has_tag "$target" "version_upgraded"; then
         # Version upgraded tests should succeed but emit warning
-        # Use --nouse_action_cache to force rebuild and see compile-time warnings
+        # Force full rebuild to see compile-time warnings
         set +e
-        output=$(bazel build --nouse_action_cache "$target" 2>&1)
+        output=$(bazel build --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
         build_exit_code=$?
         set -e
 
@@ -118,9 +118,9 @@ for target in $FAILURE_TARGETS; do
 
     else
         # Legacy tests - check for dependency errors or VERSION MISMATCH
-        # Use --nouse_action_cache to force rebuild and see warnings
+        # Force full rebuild to see warnings
         set +e
-        output=$(bazel build --nouse_action_cache "$target" 2>&1)
+        output=$(bazel build --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
         build_exit_code=$?
         set -e
 

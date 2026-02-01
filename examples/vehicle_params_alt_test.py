@@ -1,30 +1,31 @@
 """Test for alternate Python parameter library."""
 
 # Import from the alternate library
-from examples.vehicle_params_py_alt import (
-    braking_distance_table,
+from examples.vehicle_params_py_alt.maximum_vehicle_velocity_v1 import (
+    MAXIMUM_VEHICLE_VELOCITY,
+)
+from examples.vehicle_params_py_alt.wheel_count_v1 import WHEEL_COUNT
+from examples.vehicle_params_py_alt.vehicle_name_v1 import VEHICLE_NAME
+from examples.vehicle_params_py_alt.debug_mode_v1 import DEBUG_MODE
+from examples.vehicle_params_py_alt.braking_distance_table_v1 import (
+    BRAKING_DISTANCE_TABLE,
     BrakingDistanceTableRow,
-    debug_mode,
-    maximum_vehicle_velocity,
-    vehicle_name,
-    wheel_count,
 )
 
 
 def test_simple_parameters():
-    """Test simple parameter access with version check."""
-    assert maximum_vehicle_velocity(1) == 55.0
-    assert wheel_count(1) == 4
-    assert vehicle_name(1) == "TestVehicle"
-    assert not debug_mode(1)
+    """Test simple parameter access."""
+    assert MAXIMUM_VEHICLE_VELOCITY == 55.0
+    assert WHEEL_COUNT == 4
+    assert VEHICLE_NAME == "TestVehicle"
+    assert not DEBUG_MODE
 
 
 def test_table_parameters():
-    """Test table parameter access with version check."""
-    table_data = braking_distance_table(1)
-    assert len(table_data) == 6
+    """Test table parameter access."""
+    assert len(BRAKING_DISTANCE_TABLE) == 6
 
-    first_row = table_data[0]
+    first_row = BRAKING_DISTANCE_TABLE[0]
     assert isinstance(first_row, BrakingDistanceTableRow)
     assert first_row.velocity == 10.0
     assert first_row.friction_coefficient == 0.7

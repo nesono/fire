@@ -1,36 +1,34 @@
 // Test for generated Rust parameter library
 
-// Include the generated parameters
-// Note: In Bazel rust_test, both srcs are placed in the same directory (examples/),
-// so the path is just the filename. The file is generated at examples/vehicle_params.rs
-// in the repository, matching the repository-relative convention.
-#[path = "vehicle_params.rs"]
-mod vehicle_params;
+// Include per-parameter-version modules
+#[path = "vehicle_params_rs/maximum_vehicle_velocity_v1.rs"]
+mod maximum_vehicle_velocity_v1;
 
-use vehicle_params::*;
+#[path = "vehicle_params_rs/wheel_count_v1.rs"]
+mod wheel_count_v1;
+
+#[path = "vehicle_params_rs/vehicle_name_v1.rs"]
+mod vehicle_name_v1;
+
+#[path = "vehicle_params_rs/debug_mode_v1.rs"]
+mod debug_mode_v1;
+
+#[path = "vehicle_params_rs/braking_distance_table_v1.rs"]
+mod braking_distance_table_v1;
 
 #[test]
 fn test_scalar_parameters() {
-    // Test float parameter with version check
-    assert_eq!(maximum_vehicle_velocity::<1>(), 55.0);
-
-    // Test integer parameter with version check
-    assert_eq!(wheel_count::<1>(), 4);
-
-    // Test string parameter with version check
-    assert_eq!(vehicle_name::<1>(), "TestVehicle");
-
-    // Test boolean parameter with version check
-    assert_eq!(debug_mode::<1>(), false);
+    assert_eq!(maximum_vehicle_velocity_v1::MAXIMUM_VEHICLE_VELOCITY, 55.0);
+    assert_eq!(wheel_count_v1::WHEEL_COUNT, 4);
+    assert_eq!(vehicle_name_v1::VEHICLE_NAME, "TestVehicle");
+    assert_eq!(debug_mode_v1::DEBUG_MODE, false);
 }
 
 #[test]
 fn test_table_parameter() {
-    // Test table size constant
-    assert_eq!(BRAKING_DISTANCE_TABLE_SIZE, 6);
+    assert_eq!(braking_distance_table_v1::BRAKING_DISTANCE_TABLE_SIZE, 6);
 
-    // Test table data with version check
-    let table = braking_distance_table::<1>();
+    let table = &braking_distance_table_v1::BRAKING_DISTANCE_TABLE;
     assert_eq!(table.len(), 6);
 
     // Test first row
@@ -49,8 +47,7 @@ fn test_table_parameter() {
 
 #[test]
 fn test_struct_derives() {
-    // Test that the struct can be copied
-    let table = braking_distance_table::<1>();
+    let table = &braking_distance_table_v1::BRAKING_DISTANCE_TABLE;
     let row = table[0];
     let row_copy = row;
     assert_eq!(row.velocity, row_copy.velocity);

@@ -15,26 +15,24 @@ parameter_library(
     src = "test_params.yaml",
 )
 
-# Generate C++ header from parameters
-# Consumes test_params (validated YAML) and generates test_params.h
+# Generate C++ headers from parameters (directory: test_params_cc/)
 generate_cc_parameters(
     name = "test_params_h",
-    base_name = "test_params",
+    base_name = "test_params_cc",
     parameter_library = ":test_params",
 )
 
-# Wrap generated header in cc_library
+# Wrap generated headers in cc_library
 cc_library(
     name = "test_params_cc",
     hdrs = [":test_params_h"],
     visibility = ["//visibility:public"],
 )
 
-# Generate Rust module from parameters
-# Consumes test_params (validated YAML) and generates test_params.rs
+# Generate Rust modules from parameters (directory: test_params_rs/)
 generate_rust_parameters(
     name = "test_params_rs",
-    base_name = "test_params",
+    base_name = "test_params_rs",
     parameter_library = ":test_params",
 )
 

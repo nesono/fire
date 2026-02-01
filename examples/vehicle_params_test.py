@@ -1,39 +1,41 @@
 """Test for vehicle parameters in Python."""
 
-# Import the generated parameters using repository-relative path
-from examples.vehicle_params import (
-    braking_distance_table,
+# Import the generated per-parameter-version modules
+from examples.vehicle_params_py.maximum_vehicle_velocity_v1 import (
+    MAXIMUM_VEHICLE_VELOCITY,
+)
+from examples.vehicle_params_py.wheel_count_v1 import WHEEL_COUNT
+from examples.vehicle_params_py.vehicle_name_v1 import VEHICLE_NAME
+from examples.vehicle_params_py.debug_mode_v1 import DEBUG_MODE
+from examples.vehicle_params_py.braking_distance_table_v1 import (
+    BRAKING_DISTANCE_TABLE,
+    BRAKING_DISTANCE_TABLE_SIZE,
     BrakingDistanceTableRow,
-    debug_mode,
-    maximum_vehicle_velocity,
-    vehicle_name,
-    wheel_count,
 )
 
 
 def test_simple_parameters():
-    """Test simple parameter access with version check."""
-    assert maximum_vehicle_velocity(1) == 55.0
-    assert wheel_count(1) == 4
-    assert vehicle_name(1) == "TestVehicle"
-    assert not debug_mode(1)
+    """Test simple parameter access."""
+    assert MAXIMUM_VEHICLE_VELOCITY == 55.0
+    assert WHEEL_COUNT == 4
+    assert VEHICLE_NAME == "TestVehicle"
+    assert not DEBUG_MODE
 
 
 def test_table_parameters():
-    """Test table parameter access with version check."""
-    # Check we have the expected number of rows
-    table_data = braking_distance_table(1)
-    assert len(table_data) == 6
+    """Test table parameter access."""
+    assert len(BRAKING_DISTANCE_TABLE) == 6
+    assert BRAKING_DISTANCE_TABLE_SIZE == 6
 
     # Check first row
-    first_row = table_data[0]
+    first_row = BRAKING_DISTANCE_TABLE[0]
     assert isinstance(first_row, BrakingDistanceTableRow)
     assert first_row.velocity == 10.0
     assert first_row.friction_coefficient == 0.7
     assert first_row.braking_distance == 7.1
 
     # Check that we can iterate over the table
-    velocities = [row.velocity for row in table_data]
+    velocities = [row.velocity for row in BRAKING_DISTANCE_TABLE]
     assert 10.0 in velocities
     assert 20.0 in velocities
     assert 30.0 in velocities
@@ -41,8 +43,7 @@ def test_table_parameters():
 
 def test_table_immutability():
     """Test that table rows are immutable (frozen dataclass)."""
-    table_data = braking_distance_table(1)
-    first_row = table_data[0]
+    first_row = BRAKING_DISTANCE_TABLE[0]
 
     # Try to modify a field (should raise error due to frozen=True)
     try:

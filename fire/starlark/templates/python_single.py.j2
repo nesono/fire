@@ -1,0 +1,36 @@
+"""Generated parameter constant: {{ item.base_name }} v{{ item.version }}."""
+{% if not item.is_latest %}
+
+import warnings
+
+warnings.warn(
+    "Parameter {{ item.base_name }} v{{ item.version }} is deprecated. "
+    "Use v{{ item.max_version }} instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+{% endif %}
+{% if item.type == "table" %}
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class {{ item.base_name | pascal_case }}Row:
+{% for col in item.columns %}
+    {{ col.name }}: {{ col.type | python_type }}
+{% endfor %}
+
+
+{{ item.base_name | upper }} = [
+{% for row in item.rows %}
+    {{ item.base_name | pascal_case }}Row({% for i in range(item.columns | length) %}{{ item.columns[i].name }}={% if item.columns[i].type == "string" %}"{{ row[i] }}"{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}),
+{% endfor %}
+]
+
+{{ item.base_name | upper }}_SIZE = {{ item.rows | length }}
+{% else %}
+
+{{ item.base_name | upper }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{{ item.value }}{% else %}{{ item.value }}{% endif %}
+
+{% endif %}

@@ -12,8 +12,14 @@ def _generate_parameters_impl(ctx):
     """Implementation of parameter code generation rule."""
     script = ctx.executable._script
     input_file = ctx.file.src
-    output = ctx.outputs.out
     language = ctx.attr.language
+
+    # Java needs a .srcjar (zip of .java files) since java_library
+    # doesn't support TreeArtifact directories in srcs
+    if language == "java":
+        output = ctx.actions.declare_file(ctx.attr.base_name + ".srcjar")
+    else:
+        output = ctx.actions.declare_directory(ctx.attr.base_name)
 
     # Build arguments
     args = ctx.actions.args()
@@ -28,8 +34,6 @@ def _generate_parameters_impl(ctx):
     # Add language-specific flags
     if ctx.attr.namespace:
         args.add("--namespace=" + ctx.attr.namespace)
-    if ctx.attr.class_name:
-        args.add("--class-name=" + ctx.attr.class_name)
     if ctx.attr.package_prefix:
         args.add("--namespace=" + ctx.attr.package_prefix)
     if ctx.attr.package_name:
@@ -56,8 +60,9 @@ def _generate_parameters_impl(ctx):
 _generate_parameters = rule(
     implementation = _generate_parameters_impl,
     attrs = {
-        "class_name": attr.string(
-            doc = "Java class name",
+        "base_name": attr.string(
+            mandatory = True,
+            doc = "Base name for the output directory (TreeArtifact)",
         ),
         "language": attr.string(
             mandatory = True,
@@ -66,9 +71,6 @@ _generate_parameters = rule(
         ),
         "namespace": attr.string(
             doc = "C++ namespace (use :: for nested, e.g., 'outer::inner')",
-        ),
-        "out": attr.output(
-            mandatory = True,
         ),
         "package_name": attr.string(
             doc = "Go package name",
@@ -96,16 +98,17 @@ def generate_cc_parameters(
         base_name = None,
         namespace = None,
         visibility = None):
-    """Generate C++ header file from parameter library.
+    """Generate C++ header files from parameter library.
 
-    This rule generates a .h file. Consumers should wrap it in cc_library.
+    This rule generates a directory of .h files (one per parameter-version).
+    Consumers should wrap it in cc_library.
 
     Args:
         name: Name of the generation target
         parameter_library: Label of the parameter_library target (the validated YAML)
-        base_name: Base name for output file (optional, defaults to name)
+        base_name: Base name for output directory (optional, defaults to name)
         namespace: Optional C++ namespace (use :: for nested, e.g., "outer::inner")
-        visibility: Visibility of the generated header
+        visibility: Visibility of the generated headers
 
     Example:
         load("@fire//fire/starlark:parameters.bzl", "parameter_library")
@@ -135,7 +138,7 @@ def generate_cc_parameters(
     _generate_parameters(
         name = name,
         src = parameter_library,
-        out = base_name + ".h",
+        base_name = base_name,
         language = "cpp",
         namespace = namespace if namespace else "",
         visibility = visibility if visibility else ["//visibility:public"],
@@ -146,15 +149,16 @@ def generate_python_parameters(
         parameter_library,
         base_name = None,
         visibility = None):
-    """Generate Python module from parameter library.
+    """Generate Python module files from parameter library.
 
-    This rule generates a .py file. Consumers should wrap it in py_library.
+    This rule generates a directory of .py files (one per parameter-version).
+    Consumers should wrap it in py_library.
 
     Args:
         name: Name of the generation target
         parameter_library: Label of the parameter_library target (the validated YAML)
-        base_name: Base name for output file (optional, defaults to name)
-        visibility: Visibility of the generated module
+        base_name: Base name for output directory (optional, defaults to name)
+        visibility: Visibility of the generated modules
 
     Example:
         load("@fire//fire/starlark:parameters.bzl", "parameter_library")
@@ -183,7 +187,7 @@ def generate_python_parameters(
     _generate_parameters(
         name = name,
         src = parameter_library,
-        out = base_name + ".py",
+        base_name = base_name,
         language = "python",
         visibility = visibility if visibility else ["//visibility:public"],
     )
@@ -191,19 +195,18 @@ def generate_python_parameters(
 def generate_java_parameters(
         name,
         parameter_library,
-        class_name = None,
         package_prefix = None,
         visibility = None):
-    """Generate Java class from parameter library.
+    """Generate Java class files from parameter library.
 
-    This rule generates a .java file. Consumers should wrap it in java_library.
+    This rule generates a directory of .java files (one per parameter-version).
+    Consumers should wrap it in java_library.
 
     Args:
         name: Name of the generation target
         parameter_library: Label of the parameter_library target (the validated YAML)
-        class_name: Name of the generated class (optional, derived from name if not provided)
         package_prefix: Optional package prefix (e.g., "com.example")
-        visibility: Visibility of the generated class
+        visibility: Visibility of the generated classes
 
     Example:
         load("@fire//fire/starlark:parameters.bzl", "parameter_library")
@@ -218,7 +221,6 @@ def generate_java_parameters(
         generate_java_parameters(
             name = "vehicle_params_java_src",
             parameter_library = ":vehicle_params",
-            class_name = "VehicleParams",
             package_prefix = "com.example",
         )
 
@@ -228,19 +230,12 @@ def generate_java_parameters(
         )
     """
 
-    # Derive class_name if not provided
-    if not class_name:
-        base_name = name
-        parts = base_name.split("_")
-        class_name = "".join([word.capitalize() for word in parts])
-
     # Use custom rule for code generation
     _generate_parameters(
         name = name,
         src = parameter_library,
-        out = class_name + ".java",
+        base_name = name,
         language = "java",
-        class_name = class_name,
         package_prefix = package_prefix if package_prefix else "",
         visibility = visibility if visibility else ["//visibility:public"],
     )
@@ -249,17 +244,16 @@ def generate_go_parameters(
         name,
         parameter_library,
         base_name = None,
-        package_name = None,
         visibility = None):
-    """Generate Go source file from parameter library.
+    """Generate Go source files from parameter library.
 
-    This rule generates a .go file. Consumers should wrap it in go_library.
+    This rule generates a directory with sub-packages (one per parameter-version).
+    Go consumers need per-sub-package go_library targets.
 
     Args:
         name: Name of the generation target
         parameter_library: Label of the parameter_library target (the validated YAML)
-        base_name: Base name for output file (optional, defaults to name)
-        package_name: Go package name (optional, derived from base_name if not provided)
+        base_name: Base name for output directory (optional, defaults to name)
         visibility: Visibility of the generated source
 
     Example:
@@ -278,25 +272,20 @@ def generate_go_parameters(
         )
 
         go_library(
-            name = "vehicle_params_go",
+            name = "wheel_count_v1_go",
             srcs = [":vehicle_params_go_src"],
-            importpath = "github.com/example/vehicle_params",
+            importpath = "examples/vehicle_params/wheel_count_v1",
         )
     """
     if not base_name:
         base_name = name
 
-    # Derive package name if not provided
-    if not package_name:
-        package_name = base_name.replace("_", "")
-
     # Use custom rule for code generation
     _generate_parameters(
         name = name,
         src = parameter_library,
-        out = base_name + ".go",
+        base_name = base_name,
         language = "go",
-        package_name = package_name,
         visibility = visibility if visibility else ["//visibility:public"],
     )
 
@@ -305,16 +294,16 @@ def generate_rust_parameters(
         parameter_library,
         base_name = None,
         visibility = None):
-    """Generate Rust module from parameter library.
+    """Generate Rust module files from parameter library.
 
-    This rule generates a .rs file. Consumers can include it directly in
-    rust_library/rust_binary/rust_test srcs.
+    This rule generates a directory of .rs files (one per parameter-version).
+    Consumers can include files directly via include!() or #[path].
 
     Args:
         name: Name of the generation target
         parameter_library: Label of the parameter_library target (the validated YAML)
-        base_name: Base name for output file (optional, defaults to name)
-        visibility: Visibility of the generated module
+        base_name: Base name for output directory (optional, defaults to name)
+        visibility: Visibility of the generated modules
 
     Example:
         load("@fire//fire/starlark:parameters.bzl", "parameter_library")
@@ -331,7 +320,6 @@ def generate_rust_parameters(
             parameter_library = ":vehicle_params",
         )
 
-        # Can use directly in srcs (Rust doesn't need a separate library wrapper)
         rust_test(
             name = "test",
             srcs = ["test.rs", ":vehicle_params_rs"],
@@ -344,7 +332,7 @@ def generate_rust_parameters(
     _generate_parameters(
         name = name,
         src = parameter_library,
-        out = base_name + ".rs",
+        base_name = base_name,
         language = "rust",
         visibility = visibility if visibility else ["//visibility:public"],
     )

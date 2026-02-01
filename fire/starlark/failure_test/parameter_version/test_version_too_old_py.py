@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Test that requesting a version newer than available causes runtime error."""
+"""Test that importing a version that doesn't exist causes import error."""
 
-from fire.starlark.failure_test.parameter_version.test_params import test_value
+# test_value_v3 does not exist (max version is v2), so this should fail
+from fire.starlark.failure_test.parameter_version.test_params_py.test_value_v3 import (
+    TEST_VALUE,
+)
 
-# Parameter is at version 2, but we request version 3
-# This should raise RuntimeError
-value = test_value(3)
-print(f"Value: {value}")
+print(f"Value: {TEST_VALUE}")

@@ -1,23 +1,25 @@
 #include <iostream>
-#include "test_params.h"  // Root package - no prefix needed
+#include "test_params_cc/max_speed_v1.h"
+#include "test_params_cc/min_braking_distance_v1.h"
+#include "test_params_cc/update_rate_v1.h"
 
 int main() {
-    // Test that generated constants are accessible via version-checked functions
-    std::cout << "Max Speed: " << max_speed<1>() << " m/s" << std::endl;
-    std::cout << "Min Braking Distance: " << min_braking_distance<1>() << " m" << std::endl;
-    std::cout << "Update Rate: " << update_rate<1>() << " Hz" << std::endl;
+    // Test that generated constants are accessible
+    std::cout << "Max Speed: " << MAX_SPEED << " m/s" << std::endl;
+    std::cout << "Min Braking Distance: " << MIN_BRAKING_DISTANCE << " m" << std::endl;
+    std::cout << "Update Rate: " << UPDATE_RATE << " Hz" << std::endl;
 
     // Basic validation
-    if (max_speed<1>() != 30.0) {
-        std::cerr << "ERROR: max_speed has wrong value!" << std::endl;
+    if (MAX_SPEED != 30.0) {
+        std::cerr << "ERROR: MAX_SPEED has wrong value!" << std::endl;
         return 1;
     }
-    if (min_braking_distance<1>() != 50.0) {
-        std::cerr << "ERROR: min_braking_distance has wrong value!" << std::endl;
+    if (MIN_BRAKING_DISTANCE != 50.0) {
+        std::cerr << "ERROR: MIN_BRAKING_DISTANCE has wrong value!" << std::endl;
         return 1;
     }
-    if (update_rate<1>() != 100) {
-        std::cerr << "ERROR: update_rate has wrong value!" << std::endl;
+    if (UPDATE_RATE != 100) {
+        std::cerr << "ERROR: UPDATE_RATE has wrong value!" << std::endl;
         return 1;
     }
 

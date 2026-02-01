@@ -46,22 +46,19 @@ In file `vehicle_params.yaml`
 
 ```yaml
 parameters:
-  maximum_vehicle_velocity:
+  maximum_vehicle_velocity_v1:
     type: f64
     unit: m/s
     value: 55.0
-    version: 1
     description: Maximum design velocity for the vehicle
 
-  wheel_count:
+  wheel_count_v1:
     type: i32
     value: 4
-    version: 1
     description: Number of wheels on the vehicle
 
-  braking_distance_table:
+  braking_distance_table_v1:
     type: table
-    version: 2
     description: Braking distances under various conditions
     columns:
       - name: velocity
@@ -79,6 +76,46 @@ parameters:
       - [30.0, 0.7, 64.3]
 ```
 
+Parameter keys use a `_vN` suffix to encode the version (e.g., `maximum_vehicle_velocity_v1`).
+When a parameter is updated, add a new key with the next version while keeping the old one
+(e.g., `maximum_vehicle_velocity_v1` + `maximum_vehicle_velocity_v2`). Versions must be
+consecutive starting from 1.
+
+### Generated Directory Structure
+
+Code generation produces a directory (TreeArtifact) of per-parameter-version files:
+
+```text
+vehicle_params/              # TreeArtifact produced by codegen rule
+  wheel_count_v1.py          # One file per parameter per version
+  maximum_vehicle_velocity_v1.py
+  maximum_vehicle_velocity_v2.py
+  braking_distance_table_v1.py
+```
+
+**Go uses sub-packages** (since Go packages = directories):
+
+```text
+vehicle_params/
+  wheel_count_v1/
+    wheel_count_v1.go        # package wheel_count_v1
+  maximum_vehicle_velocity_v1/
+    maximum_vehicle_velocity_v1.go
+```
+
+**Java uses PascalCase class names:**
+
+```text
+vehicle_params/
+  WheelCountV1.java
+  MaximumVehicleVelocityV1.java
+```
+
+Each file exposes a simple constant (no accessor functions, no version dispatch).
+Version is encoded in the import/include path. Old versions that coexist with
+newer versions contain deprecation warnings. Non-existent versions produce natural
+build errors (file not found).
+
 ### Create Bazel Targets For the Parameters
 
 In your `BUILD.bazel` file (e.g., in `vehicle/dynamics/`):
@@ -94,7 +131,7 @@ parameter_library(
     src = "vehicle_params.yaml",
 )
 
-# Step 2: Generate C++ header file
+# Step 2: Generate C++ header directory
 generate_cc_parameters(
     name = "vehicle_params_h",
     parameter_library = ":vehicle_params",
@@ -115,28 +152,103 @@ cc_test(
 )
 ```
 
-### Consumption in C++ Code Example
+### Consumption in Code
 
-The generated header provides type-safe access to parameters:
+All imports/includes are **repository-relative** (e.g., `vehicle/dynamics/vehicle_params/...`).
+
+**C++ usage**
 
 ```cpp
-#include "vehicle/dynamics/vehicle_params.h"
+#include "vehicle/dynamics/vehicle_params/maximum_vehicle_velocity_v1.h"
+#include "vehicle/dynamics/vehicle_params/wheel_count_v1.h"
+#include "vehicle/dynamics/vehicle_params/braking_distance_table_v1.h"
 
 int main() {
-    // consume max velocity expecting version 1
-    double max_vel = maximum_vehicle_velocity<1>();
-    int wheels = wheel_count<1>;
+    double max_vel = MAXIMUM_VEHICLE_VELOCITY;
+    int wheels = WHEEL_COUNT;
 
     // Access table data
-    auto table = braking_distance_table<1>();
+    auto table = braking_distance_table();
     for (size_t i = 0; i < BRAKING_DISTANCE_TABLE_SIZE; ++i) {
         double velocity = table[i].velocity;
         double friction = table[i].friction_coefficient;
         double distance = table[i].braking_distance;
-        // ... use the values
     }
 
     return 0;
+}
+```
+
+**Python usage**
+
+```python
+from vehicle.dynamics.vehicle_params.maximum_vehicle_velocity_v1 import MAXIMUM_VEHICLE_VELOCITY
+from vehicle.dynamics.vehicle_params.wheel_count_v1 import WHEEL_COUNT
+from vehicle.dynamics.vehicle_params.braking_distance_table_v1 import BRAKING_DISTANCE_TABLE
+
+def test_parameters():
+    assert MAXIMUM_VEHICLE_VELOCITY == 55.0
+    assert WHEEL_COUNT == 4
+
+    for row in BRAKING_DISTANCE_TABLE:
+        print(f"v={row.velocity}, d={row.braking_distance}")
+```
+
+**Go usage**
+
+```go
+import (
+    velocity "yourproject/vehicle/dynamics/vehicle_params/maximum_vehicle_velocity_v1"
+    wheels "yourproject/vehicle/dynamics/vehicle_params/wheel_count_v1"
+    braking "yourproject/vehicle/dynamics/vehicle_params/braking_distance_table_v1"
+)
+
+func TestParameters(t *testing.T) {
+    if velocity.MaximumVehicleVelocity != 55.0 {
+        t.Error("Unexpected velocity")
+    }
+
+    for _, row := range braking.BrakingDistanceTable {
+        // Access row.Velocity, row.FrictionCoefficient, row.BrakingDistance
+    }
+}
+```
+
+**Rust usage**
+
+```rust
+#[path = "vehicle_params/maximum_vehicle_velocity_v1.rs"]
+mod maximum_vehicle_velocity_v1;
+
+#[path = "vehicle_params/braking_distance_table_v1.rs"]
+mod braking_distance_table_v1;
+
+#[test]
+fn test_parameters() {
+    assert_eq!(maximum_vehicle_velocity_v1::MAXIMUM_VEHICLE_VELOCITY, 55.0);
+    assert_eq!(braking_distance_table_v1::BRAKING_DISTANCE_TABLE_SIZE, 6);
+
+    for row in &braking_distance_table_v1::BRAKING_DISTANCE_TABLE {
+        println!("v={}, d={}", row.velocity, row.braking_distance);
+    }
+}
+```
+
+**Java usage**
+
+```java
+import com.example.MaximumVehicleVelocityV1;
+import com.example.BrakingDistanceTableV1;
+
+public class DynamicsTest {
+    @Test
+    public void testParameters() {
+        assertEquals(55.0, MaximumVehicleVelocityV1.VALUE, 0.001);
+
+        for (var row : BrakingDistanceTableV1.VALUE) {
+            // Access row.velocity(), row.frictionCoefficient(), row.brakingDistance()
+        }
+    }
 }
 ```
 
@@ -154,197 +266,67 @@ load("//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_go_param
 load("//fire/starlark:parameters.bzl", "parameter_library")
 
 # Validate and create parameter library from YAML file
-# Namespace is auto-derived from package path: examples -> examples
 parameter_library(
     name = "vehicle_params",
     src = "vehicle_params.yaml",
 )
 
-# Generate C++ header with parameters
-# Consumes vehicle_params (validated YAML) and generates vehicle_params.h
+# Generate C++ headers (directory of per-param-version .h files)
 generate_cc_parameters(
     name = "vehicle_params_h",
     base_name = "vehicle_params",
     parameter_library = ":vehicle_params",
 )
 
-# Wrap in cc_library
 cc_library(
     name = "vehicle_params_cc",
     hdrs = [":vehicle_params_h"],
 )
 
-# Example: C++ header with custom namespace
-generate_cc_parameters(
-    name = "vehicle_params_custom_ns_h",
-    base_name = "vehicle_params_custom_ns",
-    namespace = "my_project::vehicle::params",
-    parameter_library = ":vehicle_params",
-)
-
-# Wrap in cc_library
-cc_library(
-    name = "vehicle_params_cc_custom_ns",
-    hdrs = [":vehicle_params_custom_ns_h"],
-)
-
-# Generate Python module with parameters
-# Consumes vehicle_params (validated YAML) and generates vehicle_params.py
+# Generate Python modules (directory of per-param-version .py files)
 generate_python_parameters(
     name = "vehicle_params_py_src",
     base_name = "vehicle_params",
     parameter_library = ":vehicle_params",
 )
 
-# Wrap in py_library
 py_library(
     name = "vehicle_params_py",
     srcs = [":vehicle_params_py_src"],
 )
 
-# Example: Second Python library (demonstrates multiple targets from same params)
-generate_python_parameters(
-    name = "vehicle_params_py_alt_src",
-    base_name = "vehicle_params_py_alt",
-    parameter_library = ":vehicle_params",
-)
-
-py_library(
-    name = "vehicle_params_py_alt",
-    srcs = [":vehicle_params_py_alt_src"],
-)
-
-# Generate Java class with parameters
-# Consumes vehicle_params (validated YAML) and generates VehicleParams.java
+# Generate Java classes (directory of per-param-version .java files)
 generate_java_parameters(
     name = "vehicle_params_java_src",
-    class_name = "VehicleParams",
     package_prefix = "com.example",
     parameter_library = ":vehicle_params",
 )
 
-# Wrap in java_library
 java_library(
     name = "vehicle_params_java",
     srcs = [":vehicle_params_java_src"],
 )
 
-# Generate Go source with parameters
-# Consumes vehicle_params (validated YAML) and generates vehicle_params.go
+# Generate Go source (directory of sub-packages)
 generate_go_parameters(
     name = "vehicle_params_go_src",
     base_name = "vehicle_params",
     parameter_library = ":vehicle_params",
 )
 
-# Wrap in go_library
+# Go needs per-sub-package go_library targets
 go_library(
-    name = "vehicle_params_go",
+    name = "wheel_count_v1_go",
     srcs = [":vehicle_params_go_src"],
-    importpath = "examples/vehicle_params",
+    importpath = "vehicle/dynamics/vehicle_params/wheel_count_v1",
 )
 
-# Example: Second Go library (demonstrates multiple targets from same params)
-generate_go_parameters(
-    name = "vehicle_params_go_alt_src",
-    base_name = "vehicle_params_alt",
-    parameter_library = ":vehicle_params",
-)
-
-go_library(
-    name = "vehicle_params_go_alt",
-    srcs = [":vehicle_params_go_alt_src"],
-    importpath = "examples/vehicle_params_go_alt",
-)
-
-# Generate Rust module with parameters
-# Consumes vehicle_params (validated YAML) and generates vehicle_params.rs
-# Rust can use generated .rs files directly in srcs (no wrapper needed)
+# Generate Rust modules (directory of per-param-version .rs files)
 generate_rust_parameters(
     name = "vehicle_params_rs",
     base_name = "vehicle_params",
     parameter_library = ":vehicle_params",
 )
-
-# Example: Second Rust module (demonstrates multiple targets from same params)
-generate_rust_parameters(
-    name = "vehicle_params_rs_alt",
-    base_name = "vehicle_params_rs_alt",
-    parameter_library = ":vehicle_params",
-)
-```
-
-### Consumption in Code
-
-**Python usage**
-
-```python
-from vehicle_params_py import (
-    maximum_vehicle_velocity,
-    wheel_count,
-    braking_distance_table_data,
-    BrakingDistanceTableRow,
-)
-
-def test_parameters():
-    assert maximum_vehicle_velocity(1) == 55.0
-    assert wheel_count(1) == 4
-
-    for row in braking_distance_table(1):
-        print(f"v={row.velocity}, μ={row.friction_coefficient}, d={row.braking_distance}")
-```
-
-**Java usage**
-
-```java
-import com.example.vehicle.dynamics.VehicleParams;
-
-public class DynamicsTest {
-    @Test
-    public void testParameters() {
-        assertEquals(55.0, VehicleParams.maximumVehicleVelocity(1));
-        assertEquals(4, VehicleParams.wheelCount(1));
-
-        for (var row : VehicleParams.brakingDistanceTable) {
-            // Access row.velocity(), row.frictionCoefficient(), row.brakingDistance()
-        }
-    }
-}
-```
-
-**Go usage**
-
-```go
-import dynamics "yourproject/vehicle/dynamics"
-
-func TestParameters(t *testing.T) {
-    if dynamics.MaximumVehicleVelocity(1) != 55.0 {
-        t.Error("Unexpected velocity")
-    }
-
-    for _, row := range dynamics.BrakingDistanceTable(1) {
-        // Access row.Velocity, row.FrictionCoefficient, row.BrakingDistance
-    }
-}
-```
-
-**Rust usage**
-
-```rust
-mod vehicle_params_rust;
-use vehicle_params_rust::*;
-
-#[test]
-fn test_parameters() {
-    assert_eq!(maximum_vehicle_velocity::<1>(), 55.0);
-    assert_eq!(wheel_count::<1>(), 4);
-    assert_eq!(BRAKING_DISTANCE_TABLE_SIZE, 6);
-
-    for row in braking_distance_table::<1>() {
-        // Access row.velocity, row.friction_coefficient, row.braking_distance
-        println!("v={}, μ={}, d={}", row.velocity, row.friction_coefficient, row.braking_distance);
-    }
-}
 ```
 
 ### Defining System Requirements
@@ -480,7 +462,7 @@ System requirements track their own versions in text line. Software requirements
 
 **Detecting Stale Requirements:**
 
-When a parent requirement version changes (e.g., REQ-VEL-001 v2 → v3), any child requirement still referencing `?version=2` is flagged as potentially needing review.
+When a parent requirement version changes (e.g., REQ-VEL-001 v2 -> v3), any child requirement still referencing `?version=2` is flagged as potentially needing review.
 
 ### Generating Reports with Bazel
 
@@ -539,7 +521,7 @@ bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:ch
 
 **Available Report Types**:
 
-- `traceability`: Full traceability matrix with Requirements → Parameters, Requirements → Requirements (with versions), Requirements → Standards
+- `traceability`: Full traceability matrix with Requirements -> Parameters, Requirements -> Requirements (with versions), Requirements -> Standards
 - `coverage`: Metrics showing percentage of requirements with parameter references and standard references
 - `change_impact`: Identifies requirements with stale parent version references
 - `compliance`: Compliance report for a specific standard

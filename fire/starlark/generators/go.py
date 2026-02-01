@@ -3,16 +3,23 @@
 from fire.starlark.generators.template_loader import render_template
 
 
-def generate_go(param_data: dict) -> str:
-    """Generate Go package from parameter data."""
-    namespace = param_data["namespace"]
-    parameters = param_data["parameters"]
+def generate_go_files(
+    items: list[dict],
+    package_name: str = "",
+) -> list[tuple[str, str]]:
+    """Generate per-parameter-version Go files in a single package.
 
-    # Get package name from last component of namespace
-    package_name = namespace.split(".")[-1]
-
-    return render_template(
-        "go.go.j2",
-        parameters=parameters,
-        package_name=package_name,
-    )
+    All files share the same Go package name (derived from the output directory).
+    Variable names include version suffixes to avoid conflicts.
+    Returns list of (relative_path, content) tuples.
+    """
+    files = []
+    for item in items:
+        filename = f"{item['base_name']}_v{item['version']}.go"
+        content = render_template(
+            "go_single.go.j2",
+            item=item,
+            package_name=package_name,
+        )
+        files.append((filename, content))
+    return files

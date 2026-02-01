@@ -1,13 +1,9 @@
-// Test that requesting a version newer than available causes compile error
+// Test that including a version that doesn't exist causes build error.
+// test_value_v3.rs does not exist (max version is v2), so this should fail.
 
-#[path = "test_params.rs"]
-mod test_params;
-
-use test_params::*;
+#[path = "test_params_rs/test_value_v3.rs"]
+mod test_value_v3;
 
 fn main() {
-    // Parameter is at version 2, but we request version 3
-    // This should cause a compile-time assert failure
-    let value = test_value::<3>();
-    println!("Value: {}", value);
+    println!("Value: {}", test_value_v3::TEST_VALUE);
 }

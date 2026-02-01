@@ -1,0 +1,47 @@
+// This file is auto-generated. Do not edit manually.
+{% if namespace %}
+package {{ namespace }};
+
+{% endif %}
+/**
+ * Generated parameter: {{ item.base_name }} v{{ item.version }}.
+ */
+{% if not item.is_latest %}
+@Deprecated
+{% endif %}
+public final class {{ class_name }} {
+
+    private {{ class_name }}() {
+        // Utility class, no instantiation
+    }
+
+{% if not item.is_latest %}
+    static {
+        System.err.println("WARNING: Parameter {{ item.base_name }} v{{ item.version }} has been updated to version {{ item.max_version }}. Please update your import.");
+    }
+
+{% endif %}
+{% if item.type == "table" %}
+{% set record_name = item.base_name | pascal_case + "Row" %}
+    public record {{ record_name }}({% for col in item.columns %}{{ col.type | java_type }} {{ col.name | camel_case }}{% if not loop.last %}, {% endif %}{% endfor %}) {}
+
+    public static final {{ record_name }}[] VALUE = new {{ record_name }}[] {
+{% for row in item.rows %}
+        new {{ record_name }}({% for i in range(item.columns | length) %}{% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}),
+{% endfor %}
+    };
+
+    public static final int SIZE = {{ item.rows | length }};
+
+{% else %}
+{% set java_type = item.type | java_type %}
+{% if item.type == "string" %}
+    public static final {{ java_type }} VALUE = "{{ item.value }}";
+{% elif item.type == "bool" %}
+    public static final {{ java_type }} VALUE = {% if item.value %}true{% else %}false{% endif %};
+{% else %}
+    public static final {{ java_type }} VALUE = {{ item.value }};
+{% endif %}
+
+{% endif %}
+}

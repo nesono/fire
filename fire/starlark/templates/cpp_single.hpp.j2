@@ -1,0 +1,54 @@
+#ifndef {{ guard_name }}
+#define {{ guard_name }}
+
+#include <cstddef>  // for size_t
+#include <cstdint>  // for int32_t, int64_t, uint32_t, uint64_t
+{% if not item.is_latest %}
+
+#pragma message("WARNING: Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.")
+{% endif %}
+
+{% if namespace %}
+namespace {{ namespace }} {
+
+{% endif %}
+{% if item.type == "table" %}
+{% set struct_name = item.base_name | pascal_case + "Row" %}
+struct {{ struct_name }} {
+{% for col in item.columns %}
+    {{ col.type | cpp_type }} {{ col.name }};{% if col.unit %}  ///< Unit: {{ col.unit }}{% endif %}
+
+{% endfor %}
+};
+
+{% set size = item.rows | length %}
+/// {{ item.description | default("") }}
+constexpr {{ struct_name }} {{ item.base_name | upper }}_DATA[] = {
+{% for row in item.rows %}
+    {{ "{" }}{% for i in range(item.columns | length) %}{% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
+{% endfor %}
+};
+
+constexpr size_t {{ item.base_name | upper }}_SIZE = {{ size }};
+
+constexpr const {{ struct_name }}* {{ item.base_name }}() {
+    return {{ item.base_name | upper }}_DATA;
+}
+
+constexpr size_t {{ item.base_name }}_size() {
+    return {{ item.base_name | upper }}_SIZE;
+}
+
+{% else %}
+{% set cpp_type = item.type | cpp_type %}
+{% set description = item.description | default("") %}
+{% if item.unit %}{% set description = description + " - Unit: " + item.unit %}{% endif %}
+/// {{ description }}
+constexpr {{ cpp_type }} {{ item.base_name | upper }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
+
+{% endif %}
+{% if namespace %}
+}  // namespace {{ namespace }}
+
+{% endif %}
+#endif  // {{ guard_name }}

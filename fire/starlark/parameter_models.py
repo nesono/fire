@@ -5,16 +5,26 @@ This module defines the Pydantic models that replace the JSON schema
 for validating parameter YAML files.
 """
 
+import re
+from collections import defaultdict
 from typing import Annotated, Any, Dict, List, Literal, Union
 
-from pydantic import BaseModel, Discriminator, Field, Tag, field_validator
+from pydantic import (
+    BaseModel,
+    Discriminator,
+    Field,
+    Tag,
+    field_validator,
+    model_validator,
+)
+
+_VERSION_SUFFIX_RE = re.compile(r"^([a-z][a-z0-9_]*)_v([1-9][0-9]*)$")
 
 
 class AllParamBase(BaseModel):
-    """Versioned parameter with description."""
+    """Parameter with description."""
 
     description: str = Field(min_length=1)
-    version: int = Field(ge=1)
 
 
 class UnitParamBase(AllParamBase):
@@ -146,3 +156,32 @@ class ParameterFile(BaseModel):
     parameters: Dict[str, Parameter] = Field(min_length=1)
 
     model_config = {"extra": "forbid"}
+
+    @model_validator(mode="after")
+    def validate_version_suffixes(self):
+        """Validate that all parameter keys use _vN suffix and versions are consecutive."""
+        groups: Dict[str, Dict[int, str]] = defaultdict(dict)
+
+        for key in self.parameters:
+            m = _VERSION_SUFFIX_RE.match(key)
+            if not m:
+                raise ValueError(
+                    f"Parameter key '{key}' must match pattern '<name>_v<N>' "
+                    f"where name is lowercase snake_case and N >= 1 "
+                    f"(e.g., 'wheel_count_v1')"
+                )
+            base_name = m.group(1)
+            version = int(m.group(2))
+            groups[base_name][version] = key
+
+        for base_name, versions in groups.items():
+            sorted_versions = sorted(versions.keys())
+            expected = list(range(1, len(sorted_versions) + 1))
+            if sorted_versions != expected:
+                actual = ", ".join(f"_v{v}" for v in sorted_versions)
+                raise ValueError(
+                    f"Versions for '{base_name}' must be consecutive starting "
+                    f"from 1. Found: {actual}"
+                )
+
+        return self
