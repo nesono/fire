@@ -22,21 +22,9 @@ fn main() {
     println!("Rust integration test PASSED");
 }
 
-#[cfg(test)]
-mod tests {
-    #[path = "../test_params_rs/max_speed_v1.rs"]
-    mod max_speed_v1;
-
-    #[path = "../test_params_rs/min_braking_distance_v1.rs"]
-    mod min_braking_distance_v1;
-
-    #[path = "../test_params_rs/update_rate_v1.rs"]
-    mod update_rate_v1;
-
-    #[test]
-    fn test_constants() {
-        assert_eq!(max_speed_v1::MAX_SPEED, 30.0);
-        assert_eq!(min_braking_distance_v1::MIN_BRAKING_DISTANCE, 50.0);
-        assert_eq!(update_rate_v1::UPDATE_RATE, 100);
-    }
+#[test]
+fn test_constants() {
+    assert_eq!(max_speed_v1::MAX_SPEED, 30.0);
+    assert_eq!(min_braking_distance_v1::MIN_BRAKING_DISTANCE, 50.0);
+    assert_eq!(update_rate_v1::UPDATE_RATE, 100);
 }
