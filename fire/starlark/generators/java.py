@@ -16,7 +16,7 @@ def generate_java_files(
         class_name = pascal_case(item["base_name"]) + "V" + str(item["version"])
         filename = f"{class_name}.java"
         content = render_template(
-            "java_single.java.j2",
+            "java.java.j2",
             item=item,
             namespace=namespace,
             class_name=class_name,

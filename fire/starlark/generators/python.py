@@ -12,6 +12,6 @@ def generate_python_files(items: list[dict]) -> list[tuple[str, str]]:
     files = []
     for item in items:
         filename = f"{item['base_name']}_v{item['version']}.py"
-        content = render_template("python_single.py.j2", item=item)
+        content = render_template("python.py.j2", item=item)
         files.append((filename, content))
     return files

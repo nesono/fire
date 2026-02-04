@@ -17,7 +17,7 @@ def generate_go_files(
     for item in items:
         filename = f"{item['base_name']}_v{item['version']}.go"
         content = render_template(
-            "go_single.go.j2",
+            "go.go.j2",
             item=item,
             package_name=package_name,
         )

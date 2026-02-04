@@ -30,7 +30,7 @@ def generate_cpp_files(
             + "_H"
         )
         content = render_template(
-            "cpp_single.hpp.j2",
+            "cpp.hpp.j2",
             item=item,
             namespace=namespace,
             guard_name=guard_name,

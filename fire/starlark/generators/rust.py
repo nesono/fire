@@ -11,6 +11,6 @@ def generate_rust_files(items: list[dict]) -> list[tuple[str, str]]:
     files = []
     for item in items:
         filename = f"{item['base_name']}_v{item['version']}.rs"
-        content = render_template("rust_single.rs.j2", item=item)
+        content = render_template("rust.rs.j2", item=item)
         files.append((filename, content))
     return files
