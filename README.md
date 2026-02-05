@@ -292,7 +292,7 @@ generate_python_parameters(
 
 py_library(
     name = "vehicle_params_py",
-    srcs = [":vehicle_params_py_src"],
+    data = [":vehicle_params_py_src"], # note that we need to use `data` here
 )
 
 # Generate Java classes (directory of per-param-version .java files)
