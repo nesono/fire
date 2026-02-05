@@ -86,7 +86,6 @@ generate_go_parameters(
 go_library(
     name = "vehicle_params_go",
     srcs = [":vehicle_params_go_src"],
-    importpath = "examples/vehicle_params_go",
 )
 
 # Second Go library set (directory: vehicle_params_go_alt/)
@@ -99,7 +98,6 @@ generate_go_parameters(
 go_library(
     name = "vehicle_params_go_alt",
     srcs = [":vehicle_params_go_alt_src"],
-    importpath = "examples/vehicle_params_go_alt",
 )
 
 # Generate Rust modules (directory: vehicle_params_rs/)
