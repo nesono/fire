@@ -237,15 +237,17 @@ fn test_parameters() {
 **Java usage**
 
 ```java
-import com.example.MaximumVehicleVelocityV1;
-import com.example.BrakingDistanceTableV1;
+import static com.example.VehicleParams.*;
 
 public class DynamicsTest {
     @Test
     public void testParameters() {
-        assertEquals(55.0, MaximumVehicleVelocityV1.VALUE, 0.001);
+        // Simple parameters accessed directly
+        assertEquals(55.0, MaximumVehicleVelocityV1, 0.001);
+        assertEquals(4, WheelCountV1);
 
-        for (var row : BrakingDistanceTableV1.VALUE) {
+        // Tables accessed through nested classes
+        for (var row : BrakingDistanceTableV1.TABLE) {
             // Access row.velocity(), row.frictionCoefficient(), row.brakingDistance()
         }
     }

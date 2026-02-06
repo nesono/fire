@@ -117,6 +117,11 @@ def main():
         dest="namespace",
         help="Java package namespace (e.g., com.example)",
     )
+    java_parser.add_argument(
+        "--class-name",
+        dest="class_name",
+        help="Java class name (defaults to PascalCase of output filename)",
+    )
 
     args = parser.parse_args()
 
@@ -153,7 +158,14 @@ def main():
     elif args.language == "rust":
         files = generate_rust_files(items)
     elif args.language == "java":
-        files = generate_java_files(items, namespace=namespace)
+        # Determine class name (default to PascalCase of output filename)
+        class_name = getattr(args, "class_name", None)
+        if not class_name:
+            # Derive from output filename (strip .srcjar if present)
+            output_name = Path(args.output).stem
+            # Convert to PascalCase: remove underscores and capitalize
+            class_name = "".join(word.capitalize() for word in output_name.split("_"))
+        files = generate_java_files(items, namespace=namespace, class_name=class_name)
     else:
         print(f"Error: Unknown language: {args.language}", file=sys.stderr)
         sys.exit(1)

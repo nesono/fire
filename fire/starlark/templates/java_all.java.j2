@@ -1,0 +1,68 @@
+// This file is auto-generated. Do not edit manually.
+package {{ namespace }};
+
+/**
+ * Generated Fire parameters.
+ * Contains all parameter versions as static members.
+ */
+public final class {{ class_name }} {
+
+    private {{ class_name }}() {
+        // Utility class, no instantiation
+    }
+
+{% for item in items %}
+{% set param_name = item.base_name | pascal_case + "V" + item.version | string %}
+{% if item.type == "table" %}
+    // {{ item.description | default("") }}
+    public static final class {{ param_name }} {
+        private {{ param_name }}() {}
+
+        public record {{ item.base_name | pascal_case }}Row(
+{%- for col in item.columns %}
+            {{ col.type | java_type }} {{ col.name | camel_case }}{{ "," if not loop.last else "" }}
+{%- endfor %}
+        ) {}
+
+        public static final {{ item.base_name | pascal_case }}Row[] TABLE = new {{ item.base_name | pascal_case }}Row[] {
+{% for row in item.rows %}
+            new {{ item.base_name | pascal_case }}Row(
+{%- for i in range(item.columns | length) -%}
+{%- if item.columns[i].type == "string" -%}
+"{{ row[i] }}"
+{%- elif item.columns[i].type == "bool" -%}
+{{ "true" if row[i] else "false" }}
+{%- else -%}
+{{ row[i] }}
+{%- endif -%}
+{{ ", " if not loop.last else "" }}
+{%- endfor -%}
+),
+{% endfor %}
+        };
+
+        public static final int SIZE = {{ item.rows | length }};
+{% if not item.is_latest %}
+
+        @Deprecated
+        public static final String DEPRECATED_MESSAGE = "Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.";
+{% endif %}
+    }
+{% else %}
+    /**
+     * {{ item.description | default("") }}
+     */
+{% if not item.is_latest %}
+    @Deprecated
+{% endif %}
+{% if item.type == "string" %}
+    public static final String {{ param_name }} = "{{ item.value }}";
+{% elif item.type == "bool" %}
+    public static final boolean {{ param_name }} = {{ "true" if item.value else "false" }};
+{% else %}
+    public static final {{ item.type | java_type }} {{ param_name }} = {{ item.value }};
+{% endif %}
+{% endif %}
+
+{% endfor %}
+}

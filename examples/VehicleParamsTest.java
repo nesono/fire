@@ -2,27 +2,28 @@ package com.example;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
+import static com.example.VehicleParamsJavaSrc.*;
 
 /**
  * Test for vehicle parameters in Java.
  *
- * This demonstrates how to use the generated per-parameter-version classes.
+ * This demonstrates how to use the consolidated parameter class.
  */
 public class VehicleParamsTest {
 
     @Test
     public void testSimpleParameters() {
-        // Access simple parameters as constants from per-version classes
-        assertEquals(55.0, MaximumVehicleVelocityV1.VALUE, 0.001);
-        assertEquals(4, WheelCountV1.VALUE);
-        assertEquals("TestVehicle", VehicleNameV1.VALUE);
-        assertEquals(false, DebugModeV1.VALUE);
+        // Access simple parameters directly from the consolidated class
+        assertEquals(55.0, MaximumVehicleVelocityV1, 0.001);
+        assertEquals(4, WheelCountV1);
+        assertEquals("TestVehicle", VehicleNameV1);
+        assertEquals(false, DebugModeV1);
     }
 
     @Test
     public void testTableParameters() {
-        // Access table parameter
-        BrakingDistanceTableV1.BrakingDistanceTableRow[] table = BrakingDistanceTableV1.VALUE;
+        // Access table parameter through nested class
+        BrakingDistanceTableV1.BrakingDistanceTableRow[] table = BrakingDistanceTableV1.TABLE;
 
         // Check we have the expected number of rows
         assertEquals(6, table.length);
@@ -48,7 +49,7 @@ public class VehicleParamsTest {
     @Test
     public void testRecordImmutability() {
         // Records are immutable by design in Java
-        BrakingDistanceTableV1.BrakingDistanceTableRow row = BrakingDistanceTableV1.VALUE[0];
+        BrakingDistanceTableV1.BrakingDistanceTableRow row = BrakingDistanceTableV1.TABLE[0];
 
         // Verify we can access the value
         assertEquals(10.0, row.velocity(), 0.001);

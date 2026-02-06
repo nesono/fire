@@ -38,6 +38,8 @@ def _generate_parameters_impl(ctx):
         args.add("--namespace=" + ctx.attr.package_prefix)
     if ctx.attr.package_name:
         args.add("--namespace=" + ctx.attr.package_name)
+    if ctx.attr.class_name:
+        args.add("--class-name=" + ctx.attr.class_name)
 
     # Get runfiles for the script
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
@@ -63,6 +65,9 @@ _generate_parameters = rule(
         "base_name": attr.string(
             mandatory = True,
             doc = "Base name for the output directory (TreeArtifact)",
+        ),
+        "class_name": attr.string(
+            doc = "Java class name (defaults to PascalCase of base_name)",
         ),
         "language": attr.string(
             mandatory = True,
@@ -196,16 +201,18 @@ def generate_java_parameters(
         name,
         parameter_library,
         package_prefix = None,
+        class_name = None,
         visibility = None):
     """Generate Java class files from parameter library.
 
-    This rule generates a directory of .java files (one per parameter-version).
+    This rule generates a single Java file containing all parameters.
     Consumers should wrap it in java_library.
 
     Args:
         name: Name of the generation target
         parameter_library: Label of the parameter_library target (the validated YAML)
         package_prefix: Optional package prefix (e.g., "com.example")
+        class_name: Optional class name (defaults to PascalCase of name, e.g., "VehicleParams")
         visibility: Visibility of the generated classes
 
     Example:
@@ -237,6 +244,7 @@ def generate_java_parameters(
         base_name = name,
         language = "java",
         package_prefix = package_prefix if package_prefix else "",
+        class_name = class_name if class_name else "",
         visibility = visibility if visibility else ["//visibility:public"],
     )
 
