@@ -17,6 +17,16 @@ requirement_library(
     ],
 )
 
+# Invalid DAL value (DAL-F) - should FAIL
+requirement_library(
+    name = "test_invalid_dal",
+    srcs = ["invalid_dal.md"],
+    tags = [
+        "failure_test",  # Expected to fail
+        "manual",  # Don't run in normal test runs
+    ],
+)
+
 # Invalid Sec type (string instead of bool) - should FAIL
 requirement_library(
     name = "test_invalid_sec",

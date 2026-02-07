@@ -17,6 +17,11 @@ _VALID_SIL_VALUES: Final = {
     "SIL-2",
     "SIL-3",
     "SIL-4",
+    "DAL-A",
+    "DAL-B",
+    "DAL-C",
+    "DAL-D",
+    "DAL-E",
     "QM",
 }
 
@@ -29,6 +34,11 @@ SilValue = Literal[
     "SIL-2",
     "SIL-3",
     "SIL-4",
+    "DAL-A",
+    "DAL-B",
+    "DAL-C",
+    "DAL-D",
+    "DAL-E",
     "QM",
 ]
 
@@ -51,13 +61,16 @@ class RequirementMetadata(BaseModel):
     @field_validator("sil", mode="before")
     @classmethod
     def validate_sil(cls, v: object) -> object:
-        """Accept valid SIL literals or TODO(KEY-1234)."""
+        """Accept valid SIL/ASIL/DAL literals or TODO(KEY-1234)."""
         if isinstance(v, str) and _TODO_PATTERN.match(v):
             return v
         if v not in _VALID_SIL_VALUES:
             raise ValueError(
-                f"Input should be {', '.join(sorted(_VALID_SIL_VALUES))}"
-                " or TODO(KEY-1234)"
+                "Input should be one of: "
+                "ASIL-A/B/C/D (ISO 26262), "
+                "SIL-1/2/3/4 (IEC 61508), "
+                "DAL-A/B/C/D/E (DO-178C/DO-254), "
+                "QM, or TODO(KEY-1234)"
             )
         return v
 
