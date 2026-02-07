@@ -6,8 +6,6 @@
 
 set -euo pipefail
 
-set -x
-
 echo "========================================="
 echo "Running Failure Tests"
 echo "========================================="
