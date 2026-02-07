@@ -1,0 +1,16 @@
+"""Tests for parameter versions where more than two versions are specified.
+
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:parameters.bzl", "parameter_library")
+
+parameter_library(
+    name = "too_many_versions",
+    src = "test_params.yaml",
+    tags = [
+        "failure_test",
+        "manual",
+        "too_many_versions",
+    ],
+)

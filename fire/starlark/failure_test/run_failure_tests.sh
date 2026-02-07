@@ -6,6 +6,8 @@
 
 set -euo pipefail
 
+set -x
+
 echo "========================================="
 echo "Running Failure Tests"
 echo "========================================="
@@ -113,6 +115,26 @@ for target in $FAILURE_TARGETS; do
                     echo "Exit code: $run_exit_code"
                     FAILURES=$((FAILURES + 1))
                 fi
+            fi
+        fi
+
+    elif has_tag "$target" "too_many_versions"; then
+        set +e
+        output=$(bazel build --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
+        build_exit_code=$?
+        set -e
+
+        if [ $build_exit_code -eq 0 ]; then
+            echo "❌ FAIL: Build should fail for too many versions test"
+            echo "Exit code: $build_exit_code"
+            echo "Output excerpt:"
+            echo "$output" | head -20
+            FAILURES=$((FAILURES + 1))
+        else
+            # Check for compile-time deprecation warning (C++)
+            if echo "$output" | grep -qiE "exceed two entries"; then
+                echo "✅ PASS: Build produced too many versions error"
+                SUCCESSES=$((SUCCESSES + 1))
             fi
         fi
 

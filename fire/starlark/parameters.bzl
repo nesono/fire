@@ -49,7 +49,8 @@ _validate_parameters = rule(
 def parameter_library(
         name,
         src,
-        visibility = None):
+        visibility = None,
+        tags = None):
     """Define and validate a parameter library from a YAML file.
 
     This macro validates the YAML file at build time
@@ -59,6 +60,7 @@ def parameter_library(
         name: Name of the library
         src: Path to the parameter YAML file (e.g., "vehicle_params.yaml")
         visibility: Visibility of the target
+        tags: Optional tags (e.g., ["manual", "failure_test"])
 
     Example:
         # Define parameters in a YAML file (vehicle_params.yaml):
@@ -85,6 +87,7 @@ def parameter_library(
         name = validation_name,
         src = src,
         out = name + "_validated.yaml",
+        tags = tags if tags else [],
     )
 
     # Main target is a filegroup containing the validated YAML
@@ -92,4 +95,5 @@ def parameter_library(
         name = name,
         srcs = [":" + validation_name],
         visibility = visibility if visibility else ["//visibility:public"],
+        tags = tags if tags else [],
     )
