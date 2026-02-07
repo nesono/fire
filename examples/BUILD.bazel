@@ -2,7 +2,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("@rules_go//go:def.bzl", "go_library", "go_test")
 load("@rules_java//java:defs.bzl", "java_library", "java_test")
 load("@rules_python//python:defs.bzl", "py_library", "py_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 load("//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_go_parameters", "generate_java_parameters", "generate_python_parameters", "generate_rust_parameters")
 load("//fire/starlark:parameters.bzl", "parameter_library")
 load("//fire/starlark:reports.bzl", "generate_report")
@@ -100,18 +100,28 @@ go_library(
     srcs = [":vehicle_params_go_alt_src"],
 )
 
-# Generate Rust modules (directory: vehicle_params_rs/)
+# Generate Rust source
 generate_rust_parameters(
-    name = "vehicle_params_rs",
-    base_name = "vehicle_params_rs",
+    name = "vehicle_params_rs_src",
     parameter_library = ":vehicle_params",
 )
 
-# Second Rust module (directory: vehicle_params_rs_alt/)
+rust_library(
+    name = "vehicle_params_rs",
+    srcs = [":vehicle_params_rs_src"],
+    edition = "2021",
+)
+
+# Second Rust library
 generate_rust_parameters(
-    name = "vehicle_params_rs_alt",
-    base_name = "vehicle_params_rs_alt",
+    name = "vehicle_params_rs_alt_src",
     parameter_library = ":vehicle_params",
+)
+
+rust_library(
+    name = "vehicle_params_rs_alt",
+    srcs = [":vehicle_params_rs_alt_src"],
+    edition = "2021",
 )
 
 # C++ tests
@@ -166,22 +176,18 @@ go_test(
 # Rust tests
 rust_test(
     name = "vehicle_params_rust_test",
-    srcs = [
-        "vehicle_params_test.rs",
-        ":vehicle_params_rs",
-    ],
+    srcs = ["vehicle_params_test.rs"],
     crate_root = "vehicle_params_test.rs",
     edition = "2021",
+    deps = [":vehicle_params_rs"],
 )
 
 rust_test(
     name = "vehicle_params_rust_alt_test",
-    srcs = [
-        "vehicle_params_alt_test.rs",
-        ":vehicle_params_rs_alt",
-    ],
+    srcs = ["vehicle_params_alt_test.rs"],
     crate_root = "vehicle_params_alt_test.rs",
     edition = "2021",
+    deps = [":vehicle_params_rs_alt"],
 )
 
 # Validate requirement documents

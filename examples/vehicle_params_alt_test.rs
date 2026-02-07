@@ -1,33 +1,20 @@
 // Test for alternate Rust parameter library
 
-#[path = "vehicle_params_rs_alt/maximum_vehicle_velocity_v3.rs"]
-mod maximum_vehicle_velocity_v3;
-
-#[path = "vehicle_params_rs_alt/wheel_count_v1.rs"]
-mod wheel_count_v1;
-
-#[path = "vehicle_params_rs_alt/vehicle_name_v1.rs"]
-mod vehicle_name_v1;
-
-#[path = "vehicle_params_rs_alt/debug_mode_v1.rs"]
-mod debug_mode_v1;
-
-#[path = "vehicle_params_rs_alt/braking_distance_table_v1.rs"]
-mod braking_distance_table_v1;
+use vehicle_params_rs_alt::*;
 
 #[test]
 fn test_alt_scalar_parameters() {
-    assert_eq!(maximum_vehicle_velocity_v3::MAXIMUM_VEHICLE_VELOCITY, 100.0);
-    assert_eq!(wheel_count_v1::WHEEL_COUNT, 4);
-    assert_eq!(vehicle_name_v1::VEHICLE_NAME, "TestVehicle");
-    assert_eq!(debug_mode_v1::DEBUG_MODE, false);
+    assert_eq!(MAXIMUM_VEHICLE_VELOCITY_V3, 100.0);
+    assert_eq!(WHEEL_COUNT_V1, 4);
+    assert_eq!(VEHICLE_NAME_V1, "TestVehicle");
+    assert_eq!(DEBUG_MODE_V1, false);
 }
 
 #[test]
 fn test_alt_table_parameter() {
-    assert_eq!(braking_distance_table_v1::BRAKING_DISTANCE_TABLE_SIZE, 6);
+    assert_eq!(BRAKING_DISTANCE_TABLE_V1_SIZE, 6);
 
-    let table = &braking_distance_table_v1::BRAKING_DISTANCE_TABLE;
+    let table = &BRAKING_DISTANCE_TABLE_V1;
     assert_eq!(table.len(), 6);
 
     let first_row = &table[0];

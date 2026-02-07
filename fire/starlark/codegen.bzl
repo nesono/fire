@@ -16,8 +16,11 @@ def _generate_parameters_impl(ctx):
 
     # Java needs a .srcjar (zip of .java files) since java_library
     # doesn't support TreeArtifact directories in srcs
+    # Rust generates a single lib.rs file for the same reason
     if language == "java":
         output = ctx.actions.declare_file(ctx.attr.base_name + ".srcjar")
+    elif language == "rust":
+        output = ctx.actions.declare_file(ctx.attr.base_name + ".rs")
     else:
         output = ctx.actions.declare_directory(ctx.attr.base_name)
 
@@ -302,21 +305,22 @@ def generate_rust_parameters(
         parameter_library,
         base_name = None,
         visibility = None):
-    """Generate Rust module files from parameter library.
+    """Generate Rust library file from parameter library.
 
-    This rule generates a directory of .rs files (one per parameter-version).
-    Consumers can include files directly via include!() or #[path].
+    This rule generates a single lib.rs file containing all parameter versions
+    as top-level constants with versioned names (e.g., MAXIMUM_VELOCITY_V3).
+    Consumers wrap it in rust_library for use as a dependency.
 
     Args:
         name: Name of the generation target
         parameter_library: Label of the parameter_library target (the validated YAML)
         base_name: Base name for output directory (optional, defaults to name)
-        visibility: Visibility of the generated modules
+        visibility: Visibility of the generated module
 
     Example:
         load("@fire//fire/starlark:parameters.bzl", "parameter_library")
         load("@fire//fire/starlark:codegen.bzl", "generate_rust_parameters")
-        load("@rules_rust//rust:defs.bzl", "rust_library")
+        load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
         parameter_library(
             name = "vehicle_params",
@@ -324,14 +328,24 @@ def generate_rust_parameters(
         )
 
         generate_rust_parameters(
-            name = "vehicle_params_rs",
+            name = "vehicle_params_rs_src",
             parameter_library = ":vehicle_params",
+        )
+
+        rust_library(
+            name = "vehicle_params_rs",
+            srcs = [":vehicle_params_rs_src"],
         )
 
         rust_test(
             name = "test",
-            srcs = ["test.rs", ":vehicle_params_rs"],
+            srcs = ["test.rs"],
+            deps = [":vehicle_params_rs"],
         )
+
+        # In test.rs:
+        # use vehicle_params_rs::*;
+        # // Use constants directly: MAXIMUM_VELOCITY_V3
     """
     if not base_name:
         base_name = name

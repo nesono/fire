@@ -1,0 +1,45 @@
+// Generated Rust parameters for Fire
+//
+// This file contains all parameter versions as top-level constants.
+
+{% for item in items %}
+{% if item.type == "table" %}
+{% set struct_name = item.base_name | pascal_case + "V" + item.version | string + "Row" %}
+/// Row structure for {{ item.base_name }} v{{ item.version }}
+#[derive(Debug, Clone, Copy)]
+pub struct {{ struct_name }} {
+{% for col in item.columns %}
+    pub {{ col.name }}: {{ col.type | rust_type }},
+{% endfor %}
+}
+
+{% set size = item.rows | length %}
+{% if not item.is_latest %}
+#[deprecated(note = "Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.")]
+{% endif %}
+/// {{ item.description | default("") }}
+pub const {{ item.base_name | upper }}_V{{ item.version }}: [{{ struct_name }}; {{ size }}] = [
+{% for row in item.rows %}
+    {{ struct_name }} { {% for i in range(item.columns | length) %}{{ item.columns[i].name }}: {% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} },
+{% endfor %}
+];
+
+{% if not item.is_latest %}
+#[deprecated(note = "Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.")]
+{% endif %}
+pub const {{ item.base_name | upper }}_V{{ item.version }}_SIZE: usize = {{ size }};
+
+{% else %}
+{% set rust_type = item.type | rust_type %}
+{% if not item.is_latest %}
+#[deprecated(note = "Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.")]
+{% endif %}
+/// {{ item.description | default("") }}
+{% if item.type == "string" %}
+pub const {{ item.base_name | upper }}_V{{ item.version }}: &str = "{{ item.value }}";
+{% else %}
+pub const {{ item.base_name | upper }}_V{{ item.version }}: {{ rust_type }} = {% if item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
+{% endif %}
+
+{% endif %}
+{% endfor %}
