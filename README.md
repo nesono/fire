@@ -366,7 +366,11 @@ Note that a requirement file can contain multiple of such requirements.
 
 **Text Fields:**
 
-- `SIL`: Safety Integrity Level - `ASIL-A/B/C/D`, `SIL-1/2/3/4`, `DAL-A/B/C/D/E`, or `QM`
+- `SIL`: Safety/Assurance Classification - supports multiple industry standards:
+  - `ASIL-A/B/C/D`: ISO 26262 (Automotive Safety Integrity Level)
+  - `SIL-1/2/3/4`: IEC 61508 (General Industrial Safety Integrity Level)
+  - `DAL-A/B/C/D/E`: DO-178C/DO-254 (Aviation Design Assurance Level)
+  - `QM`: Quality Management (no safety classification)
 - `Sec`: Security-related flag - `true` or `false`
 - `Version`: Positive integer version number (1, 2, 3, ...)
 
@@ -426,6 +430,26 @@ Software component requirements are derived from system requirements and follow 
 SIL: ASIL-D | Sec: false | Version: 2 | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001)
 
 The brake controller component shall calculate the required brake force...
+```
+
+**Aviation Example (DAL):**
+
+```markdown
+# Flight Control Requirements
+
+## REQ-FCS-001
+
+SIL: DAL-A | Sec: false | Version: 1
+
+**Flight Control Update Rate**
+
+The flight control system SHALL maintain the update rate defined by [@fcs_update_rate](/avionics/params.yaml?version=1#fcs_update_rate) to ensure deterministic real-time performance per DO-178C Level A requirements.
+
+### Verification
+
+- Timing analysis with worst-case execution time (WCET) analysis
+- Real-time operating system (RTOS) scheduler verification
+- Hardware-in-the-loop testing with flight scenarios
 ```
 
 Note that all requirement files can contain multiple requirements separated by

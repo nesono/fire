@@ -66,6 +66,62 @@ def test_valid_qm():
     assert metadata.sil == "QM"
 
 
+def test_valid_dal_a():
+    """Test valid DAL-A requirement."""
+    metadata = RequirementMetadata(id="REQ-010", sil="DAL-A", sec=True, version=1)
+    assert metadata.sil == "DAL-A"
+
+
+def test_valid_dal_b():
+    """Test valid DAL-B requirement."""
+    metadata = RequirementMetadata(id="REQ-011", sil="DAL-B", sec=True, version=1)
+    assert metadata.sil == "DAL-B"
+
+
+def test_valid_dal_c():
+    """Test valid DAL-C requirement."""
+    metadata = RequirementMetadata(id="REQ-012", sil="DAL-C", sec=False, version=1)
+    assert metadata.sil == "DAL-C"
+
+
+def test_valid_dal_d():
+    """Test valid DAL-D requirement."""
+    metadata = RequirementMetadata(id="REQ-013", sil="DAL-D", sec=False, version=1)
+    assert metadata.sil == "DAL-D"
+
+
+def test_valid_dal_e():
+    """Test valid DAL-E requirement."""
+    metadata = RequirementMetadata(id="REQ-014", sil="DAL-E", sec=False, version=1)
+    assert metadata.sil == "DAL-E"
+
+
+def test_invalid_dal_f():
+    """Test invalid DAL-F value (only A-E are valid)."""
+    with pytest.raises(ValidationError) as exc_info:
+        RequirementMetadata(
+            id="REQ-015",
+            sil="DAL-F",  # Invalid - DAL only goes to E
+            sec=True,
+            version=1,
+        )
+    errors = exc_info.value.errors()
+    assert "sil" in str(errors)
+
+
+def test_invalid_dal_lowercase():
+    """Test lowercase DAL value is invalid."""
+    with pytest.raises(ValidationError) as exc_info:
+        RequirementMetadata(
+            id="REQ-016",
+            sil="dal-a",  # Should be uppercase
+            sec=True,
+            version=1,
+        )
+    errors = exc_info.value.errors()
+    assert "sil" in str(errors)
+
+
 def test_invalid_sil_value():
     """Test invalid SIL value."""
     with pytest.raises(ValidationError) as exc_info:
