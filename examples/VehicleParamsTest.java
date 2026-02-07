@@ -23,21 +23,20 @@ public class VehicleParamsTest {
     @Test
     public void testTableParameters() {
         // Access table parameter through nested class
-        BrakingDistanceTableV1.BrakingDistanceTableRow[] table = BrakingDistanceTableV1.TABLE;
+        var table = BrakingDistanceTableV1.TABLE;
 
         // Check we have the expected number of rows
-        assertEquals(6, table.length);
-        assertEquals(6, BrakingDistanceTableV1.SIZE);
+        assertEquals(6, table.size());
 
         // Check first row using record accessor methods
-        BrakingDistanceTableV1.BrakingDistanceTableRow firstRow = table[0];
+        var firstRow = table.get(0);
         assertEquals(10.0, firstRow.velocity(), 0.001);
         assertEquals(0.7, firstRow.frictionCoefficient(), 0.001);
         assertEquals(7.1, firstRow.brakingDistance(), 0.001);
 
-        // Iterate over table
+        // Iterate over table with enhanced for-loop
         boolean found20ms = false;
-        for (BrakingDistanceTableV1.BrakingDistanceTableRow row : table) {
+        for (var row : table) {
             if (row.velocity() == 20.0 && row.frictionCoefficient() == 0.7) {
                 assertEquals(28.6, row.brakingDistance(), 0.001);
                 found20ms = true;
@@ -49,7 +48,7 @@ public class VehicleParamsTest {
     @Test
     public void testRecordImmutability() {
         // Records are immutable by design in Java
-        BrakingDistanceTableV1.BrakingDistanceTableRow row = BrakingDistanceTableV1.TABLE[0];
+        var row = BrakingDistanceTableV1.TABLE.get(0);
 
         // Verify we can access the value
         assertEquals(10.0, row.velocity(), 0.001);
