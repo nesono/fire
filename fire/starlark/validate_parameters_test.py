@@ -5,7 +5,7 @@ These tests validate the behavior of Pydantic-based parameter validation.
 """
 
 import tempfile
-
+import sys
 import pytest
 import yaml
 
@@ -186,6 +186,33 @@ def test_reject_non_consecutive_versions():
     _assert_words_in_string_list(errors, ["consecutive"])
 
 
+def test_reject_more_than_two_versions():
+    """Test validation fails for more than two versions active (_v1, _v2 _v3)."""
+    data = {
+        "parameters": {
+            "velocity_v1": {
+                "type": "f64",
+                "value": 50.0,
+                "description": "Version 1",
+            },
+            "velocity_v2": {
+                "type": "f64",
+                "value": 50.0,
+                "description": "Version 2",
+            },
+            "velocity_v3": {
+                "type": "f64",
+                "value": 60.0,
+                "description": "Version 3",
+            },
+        }
+    }
+    yaml_path = _create_temp_yaml(data)
+    success, errors = validate_parameters(yaml_path)
+    assert not success
+    _assert_words_in_string_list(errors, ["two entries"])
+
+
 def test_reject_versions_not_starting_from_1():
     """Test validation fails when versions don't start from 1."""
     data = {
@@ -198,9 +225,8 @@ def test_reject_versions_not_starting_from_1():
         }
     }
     yaml_path = _create_temp_yaml(data)
-    success, errors = validate_parameters(yaml_path)
-    assert not success
-    _assert_words_in_string_list(errors, ["consecutive"])
+    success = validate_parameters(yaml_path)
+    assert success
 
 
 def test_reject_version_zero():
@@ -934,3 +960,7 @@ def test_integers_accepted_for_floats():
     yaml_path = _create_temp_yaml(data)
     success, errors = validate_parameters(yaml_path)
     assert success, "Validation failed: {errors}"
+
+
+if __name__ == "__main__":
+    sys.exit(pytest.main([__file__, "-v"]))

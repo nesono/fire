@@ -181,7 +181,7 @@ class ParameterFile(BaseModel):
             expected = list(range(min_version, max_version + 1))
 
             actual = ", ".join(f"_v{v}" for v in sorted_versions)
-            if len(expected) > 2:
+            if len(sorted_versions) > 2:
                 raise ValueError(
                     f"Versions for '{base_name}' must not exceed two entries."
                     f" Found {actual}"
