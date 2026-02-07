@@ -233,54 +233,45 @@ def validate_parameter_reference(
     try:
         with open(abs_path, "r") as f:
             content = f.read()
-
-        # Check version if ref_version is specified
-        if ref_version is None:
-            return False, f"Parameter '{anchor}' misses version in {file_path}"
-
-        # Look for parameter definition using _vN suffix key format
-        # e.g., "  param_name_v2:" in the YAML file
-        versioned_key = f"{anchor}_v{ref_version}:"
-        if versioned_key not in content:
-            # Check if the base parameter exists at all (any version)
-            if f"{anchor}_v" not in content:
-                return False, f"Parameter '{anchor}' not found in {file_path}"
-            # Parameter exists but not at the requested version
-            # Find the max version available
-            max_version = 0
-            for line in content.split("\n"):
-                version_match = re.match(rf"^\s*{re.escape(anchor)}_v(\d+)\s*:", line)
-                if version_match:
-                    v = int(version_match.group(1))
-                    if v > max_version:
-                        max_version = v
-
-            if ref_version > max_version:
-                return (
-                    False,
-                    f"Parameter {anchor} expects a future version ({ref_version}), but max version is {max_version}",
-                )
-
-        # Find the max version to check for staleness warning
-        max_version = 0
-        for line in content.split("\n"):
-            version_match = re.match(rf"^\s*{re.escape(anchor)}_v(\d+)\s*:", line)
-            if version_match:
-                v = int(version_match.group(1))
-                if v > max_version:
-                    max_version = v
-
-        # ANSI color codes: \033[91m = light red, \033[0m = reset
-        # Print to stdout so Bazel shows these warnings even when validation passes
-        if max_version > 0 and ref_version < max_version:
-            print(
-                f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} is at version={max_version}"
-            )
-
-        return True, None
-
     except Exception as e:
         return False, f"Error reading {file_path}: {e}"
+
+    # Check version if ref_version is specified
+    if ref_version is None:
+        return False, f"Parameter '{anchor}' misses version in {file_path}"
+
+    # Find the max version to check for staleness warning
+    max_version = 0
+    for line in content.split("\n"):
+        version_match = re.match(rf"^\s*{re.escape(anchor)}_v(\d+)\s*:", line)
+        if version_match:
+            v = int(version_match.group(1))
+            if v > max_version:
+                max_version = v
+
+    # Look for parameter definition using _vN suffix key format
+    # e.g., "  param_name_v2:" in the YAML file
+    versioned_key = f"{anchor}_v{ref_version}:"
+    if versioned_key not in content:
+        # Check if the base parameter exists at all (any version)
+        if f"{anchor}_v" not in content:
+            return False, f"Parameter '{anchor}' not found in {file_path}"
+        # Parameter exists but not at the requested version
+        # Find the max version available
+        if ref_version > max_version:
+            return (
+                False,
+                f"Parameter {anchor} expects a future version ({ref_version}), but max version is {max_version}",
+            )
+
+    # ANSI color codes: \033[91m = light red, \033[0m = reset
+    # Print to stdout so Bazel shows these warnings even when validation passes
+    if max_version > 0 and ref_version < max_version:
+        print(
+            f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} is at version={max_version}"
+        )
+
+    return True, None
 
 
 def validate_requirement_reference(
