@@ -11,7 +11,7 @@ validation. Consumers control which language rules they use and which versions.
 def _generate_parameters_impl(ctx):
     """Implementation of parameter code generation rule."""
     script = ctx.executable._script
-    input_file = ctx.file.src
+    input_file = ctx.file.srcs
     language = ctx.attr.language
 
     # Java needs a .srcjar (zip of .java files) since java_library
@@ -83,7 +83,7 @@ _generate_parameters = rule(
         "package_prefix": attr.string(
             doc = "Java package prefix (e.g., 'com.example')",
         ),
-        "src": attr.label(
+        "srcs": attr.label(
             allow_single_file = [".yaml", ".yml"],
             mandatory = True,
             doc = "Parameter YAML file (validated)",
@@ -122,7 +122,7 @@ def generate_cc_parameters(
 
         parameter_library(
             name = "vehicle_params",
-            src = "vehicle_params.yaml",
+            srcs = "vehicle_params.yaml",
         )
 
         generate_cc_parameters(
@@ -142,7 +142,7 @@ def generate_cc_parameters(
     # Use custom rule for code generation
     _generate_parameters(
         name = name,
-        src = parameter_library,
+        srcs = parameter_library,
         base_name = base_name,
         language = "cpp",
         namespace = namespace if namespace else "",
@@ -172,7 +172,7 @@ def generate_python_parameters(
 
         parameter_library(
             name = "vehicle_params",
-            src = "vehicle_params.yaml",
+            srcs = "vehicle_params.yaml",
         )
 
         generate_python_parameters(
@@ -191,7 +191,7 @@ def generate_python_parameters(
     # Use custom rule for code generation
     _generate_parameters(
         name = name,
-        src = parameter_library,
+        srcs = parameter_library,
         base_name = base_name,
         language = "python",
         visibility = visibility if visibility else ["//visibility:public"],
@@ -222,7 +222,7 @@ def generate_java_parameters(
 
         parameter_library(
             name = "vehicle_params",
-            src = "vehicle_params.yaml",
+            srcs = "vehicle_params.yaml",
         )
 
         generate_java_parameters(
@@ -240,7 +240,7 @@ def generate_java_parameters(
     # Use custom rule for code generation
     _generate_parameters(
         name = name,
-        src = parameter_library,
+        srcs = parameter_library,
         base_name = name,
         language = "java",
         package_prefix = package_prefix if package_prefix else "",
@@ -271,7 +271,7 @@ def generate_go_parameters(
 
         parameter_library(
             name = "vehicle_params",
-            src = "vehicle_params.yaml",
+            srcs = "vehicle_params.yaml",
         )
 
         generate_go_parameters(
@@ -291,7 +291,7 @@ def generate_go_parameters(
     # Use custom rule for code generation
     _generate_parameters(
         name = name,
-        src = parameter_library,
+        srcs = parameter_library,
         base_name = base_name,
         language = "go",
         visibility = visibility if visibility else ["//visibility:public"],
@@ -320,7 +320,7 @@ def generate_rust_parameters(
 
         parameter_library(
             name = "vehicle_params",
-            src = "vehicle_params.yaml",
+            srcs = "vehicle_params.yaml",
         )
 
         generate_rust_parameters(
@@ -339,7 +339,7 @@ def generate_rust_parameters(
     # Use custom rule for code generation
     _generate_parameters(
         name = name,
-        src = parameter_library,
+        srcs = parameter_library,
         base_name = base_name,
         language = "rust",
         visibility = visibility if visibility else ["//visibility:public"],

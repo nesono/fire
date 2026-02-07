@@ -17,7 +17,7 @@ requirement_library(
 # Test parameter library
 parameter_library(
     name = "test_params",
-    src = "test_params.yaml",
+    srcs = "test_params.yaml",
 )
 
 # Non-absolute parent path - should FAIL

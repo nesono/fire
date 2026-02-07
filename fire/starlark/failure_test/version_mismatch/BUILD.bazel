@@ -24,7 +24,7 @@ requirement_library(
 # Parameter version mismatch test - should produce WARNING
 parameter_library(
     name = "test_params_v2",
-    src = "test_params_v2.yaml",
+    srcs = "test_params_v2.yaml",
 )
 
 requirement_library(

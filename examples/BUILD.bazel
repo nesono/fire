@@ -11,7 +11,7 @@ load("//fire/starlark:requirements.bzl", "requirement_library")
 # Validate and create parameter library from YAML file
 parameter_library(
     name = "vehicle_params",
-    src = "vehicle_params.yaml",
+    srcs = "vehicle_params.yaml",
 )
 
 # Generate C++ headers (directory: vehicle_params_cc/)
