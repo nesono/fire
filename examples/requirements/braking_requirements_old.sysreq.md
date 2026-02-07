@@ -2,9 +2,9 @@
 
 ## REQ-BRK-001
 
-SIL: ASIL-C | Sec: true | Version: 4
+SIL: ASIL-C | Sec: true | Version: 3
 
-**Emergency Braking Distance**
+**Emergency Braking Distance (Old version)**
 
 The vehicle SHALL be capable of performing emergency braking from any velocity up to
 maximum design velocity (see [REQ-VEL-001](/examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001)),

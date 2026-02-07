@@ -59,6 +59,8 @@ public final class {{ class_name }} {
     public static final String {{ param_name }} = "{{ item.value }}";
 {% elif item.type == "bool" %}
     public static final boolean {{ param_name }} = {{ "true" if item.value else "false" }};
+{% elif item.type == "f32" %}
+    public static final float {{ param_name }} = {{ item.value }}f;
 {% else %}
     public static final {{ item.type | java_type }} {{ param_name }} = {{ item.value }};
 {% endif %}

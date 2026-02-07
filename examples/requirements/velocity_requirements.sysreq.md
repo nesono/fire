@@ -14,7 +14,7 @@ This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www
 
 - Mechanical stress limits on drivetrain components
 - Tire rating specifications
-- Braking system performance envelope (see [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=2#REQ-BRK-001))
+- Braking system performance envelope (see [REQ-BRK-001](/examples/requirements/braking_requirements_old.sysreq.md?version=3#REQ-BRK-001))
 - Control system response time requirements
 
 ### Verification

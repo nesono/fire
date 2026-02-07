@@ -5,6 +5,12 @@ parameters:
     unit: m/s
     description: Maximum design velocity for the vehicle
 
+  maximum_vehicle_velocity_v2:
+    type: f32
+    value: 100.0
+    unit: m/s
+    description: Maximum design velocity for the vehicle
+
   wheel_count_v1:
     type: i32
     value: 4
