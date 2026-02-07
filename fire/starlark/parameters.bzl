@@ -6,7 +6,7 @@ Parameters are defined in YAML files and validated at build time.
 def _validate_parameters_impl(ctx):
     """Implementation of parameter validation rule."""
     script = ctx.executable._script
-    input_file = ctx.file.src
+    input_file = ctx.file.srcs
     output = ctx.outputs.out
 
     # Get runfiles for the script
@@ -32,7 +32,7 @@ _validate_parameters = rule(
         "out": attr.output(
             mandatory = True,
         ),
-        "src": attr.label(
+        "srcs": attr.label(
             allow_single_file = [".yaml", ".yml"],
             mandatory = True,
             doc = "Parameter YAML file to validate",

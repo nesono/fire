@@ -12,7 +12,7 @@ exports_files(["test_params.yaml"])
 # Validates test_params.yaml and makes it available for code generation
 parameter_library(
     name = "test_params",
-    src = "test_params.yaml",
+    srcs = "test_params.yaml",
 )
 
 # Generate C++ headers from parameters (directory: test_params_cc/)

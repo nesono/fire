@@ -128,7 +128,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 # Step 1: Validate parameters from YAML file
 parameter_library(
     name = "vehicle_params",
-    src = "vehicle_params.yaml",
+    srcs = "vehicle_params.yaml",
 )
 
 # Step 2: Generate C++ header directory
@@ -270,7 +270,7 @@ load("//fire/starlark:parameters.bzl", "parameter_library")
 # Validate and create parameter library from YAML file
 parameter_library(
     name = "vehicle_params",
-    src = "vehicle_params.yaml",
+    srcs = "vehicle_params.yaml",
 )
 
 # Generate C++ headers (directory of per-param-version .h files)
