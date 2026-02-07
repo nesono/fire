@@ -179,11 +179,17 @@ class ParameterFile(BaseModel):
             min_version = min(versions.keys())
             max_version = max(versions.keys())
             expected = list(range(min_version, max_version + 1))
-            if sorted_versions != expected:
-                actual = ", ".join(f"_v{v}" for v in sorted_versions)
+
+            actual = ", ".join(f"_v{v}" for v in sorted_versions)
+            if len(expected) > 2:
                 raise ValueError(
-                    f"Versions for '{base_name}' must be consecutive starting "
-                    f"from 1. Found: {actual}"
+                    f"Versions for '{base_name}' must not exceed two entries."
+                    f" Found {actual}"
+                )
+            if sorted_versions != expected:
+                raise ValueError(
+                    f"Versions for '{base_name}' must be consecutive."
+                    f" Found: {actual}"
                 )
 
         return self
