@@ -1,7 +1,7 @@
 """Test for vehicle parameters in Python."""
 
 # Import the generated per-parameter-version modules
-from examples.vehicle_params_py.maximum_vehicle_velocity_v1 import (
+from examples.vehicle_params_py.maximum_vehicle_velocity_v3 import (
     MAXIMUM_VEHICLE_VELOCITY,
 )
 from examples.vehicle_params_py.wheel_count_v1 import WHEEL_COUNT
@@ -16,7 +16,7 @@ from examples.vehicle_params_py.braking_distance_table_v1 import (
 
 def test_simple_parameters():
     """Test simple parameter access."""
-    assert MAXIMUM_VEHICLE_VELOCITY == 55.0
+    assert MAXIMUM_VEHICLE_VELOCITY == 100.0
     assert WHEEL_COUNT == 4
     assert VEHICLE_NAME == "TestVehicle"
     assert not DEBUG_MODE

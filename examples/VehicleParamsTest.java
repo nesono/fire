@@ -14,7 +14,7 @@ public class VehicleParamsTest {
     @Test
     public void testSimpleParameters() {
         // Access simple parameters directly from the consolidated class
-        assertEquals(55.0, MaximumVehicleVelocityV1, 0.001);
+        assertEquals(100.0, MaximumVehicleVelocityV3, 0.001);
         assertEquals(4, WheelCountV1);
         assertEquals("TestVehicle", VehicleNameV1);
         assertEquals(false, DebugModeV1);

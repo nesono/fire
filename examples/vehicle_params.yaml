@@ -1,11 +1,11 @@
 parameters:
-  maximum_vehicle_velocity_v1:
+  maximum_vehicle_velocity_v2:
     type: f64
     value: 55.0
     unit: m/s
     description: Maximum design velocity for the vehicle
 
-  maximum_vehicle_velocity_v2:
+  maximum_vehicle_velocity_v3:
     type: f32
     value: 100.0
     unit: m/s

@@ -176,7 +176,9 @@ class ParameterFile(BaseModel):
 
         for base_name, versions in groups.items():
             sorted_versions = sorted(versions.keys())
-            expected = list(range(1, len(sorted_versions) + 1))
+            min_version = min(versions.keys())
+            max_version = max(versions.keys())
+            expected = list(range(min_version, max_version + 1))
             if sorted_versions != expected:
                 actual = ", ".join(f"_v{v}" for v in sorted_versions)
                 raise ValueError(

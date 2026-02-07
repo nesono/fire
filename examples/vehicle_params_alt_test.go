@@ -8,8 +8,8 @@ import (
 )
 
 func TestAltSimpleParameters(t *testing.T) {
-	if vp.MaximumVehicleVelocityV1 != 55.0 {
-		t.Errorf("Expected MaximumVehicleVelocityV1 = 55.0, got %f", vp.MaximumVehicleVelocityV1)
+	if vp.MaximumVehicleVelocityV3 != 100.0 {
+		t.Errorf("Expected MaximumVehicleVelocityV3 = 100.0, got %f", vp.MaximumVehicleVelocityV3)
 	}
 
 	if vp.WheelCountV1 != 4 {
