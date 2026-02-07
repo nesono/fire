@@ -217,18 +217,14 @@ func TestParameters(t *testing.T) {
 **Rust usage**
 
 ```rust
-#[path = "vehicle_params/maximum_vehicle_velocity_v1.rs"]
-mod maximum_vehicle_velocity_v1;
-
-#[path = "vehicle_params/braking_distance_table_v1.rs"]
-mod braking_distance_table_v1;
+use vehicle_params_rs::*;
 
 #[test]
 fn test_parameters() {
-    assert_eq!(maximum_vehicle_velocity_v1::MAXIMUM_VEHICLE_VELOCITY, 55.0);
-    assert_eq!(braking_distance_table_v1::BRAKING_DISTANCE_TABLE_SIZE, 6);
+    assert_eq!(MAXIMUM_VEHICLE_VELOCITY_V1, 55.0);
+    assert_eq!(BRAKING_DISTANCE_TABLE_V1_SIZE, 6);
 
-    for row in &braking_distance_table_v1::BRAKING_DISTANCE_TABLE {
+    for row in &BRAKING_DISTANCE_TABLE_V1 {
         println!("v={}, d={}", row.velocity, row.braking_distance);
     }
 }

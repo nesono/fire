@@ -177,6 +177,16 @@ def main():
         with zipfile.ZipFile(output_path, "w") as zf:
             for rel_path, content in files:
                 zf.writestr(rel_path, content)
+    elif output_path.suffix == ".rs":
+        # Rust: write single lib.rs file directly
+        if len(files) != 1:
+            print(
+                f"Error: Expected single Rust file but got {len(files)}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        _, content = files[0]
+        output_path.write_text(content)
     else:
         # All other languages: write files into a directory (TreeArtifact)
         output_path.mkdir(parents=True, exist_ok=True)

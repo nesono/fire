@@ -11,7 +11,7 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@rules_go//go:def.bzl", "go_binary", "go_library")
 load("@rules_java//java:defs.bzl", "java_binary", "java_library")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 load("//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_go_parameters", "generate_java_parameters", "generate_python_parameters", "generate_rust_parameters")
 load("//fire/starlark:parameters.bzl", "parameter_library")
 
@@ -59,11 +59,15 @@ go_library(
     importpath = "fire/starlark/failure_test/parameter_version/test_params_go",
 )
 
-# Generate Rust code (directory of per-param-version .rs files)
+# Generate Rust code (single lib.rs file)
 generate_rust_parameters(
-    name = "test_params_rust",
-    base_name = "test_params_rs",
+    name = "test_params_rust_src",
     parameter_library = ":test_params",
+)
+
+rust_library(
+    name = "test_params_rs",
+    srcs = [":test_params_rust_src"],
 )
 
 # Generate Java code (directory of per-param-version .java files)
@@ -119,19 +123,16 @@ go_binary(
     deps = [":test_params_go_lib"],
 )
 
-# Rust - should fail to compile: file not found
+# Rust - should fail to compile: constant not found
 rust_binary(
     name = "test_version_too_old_rust",
-    srcs = [
-        "test_version_too_old_rust.rs",
-        ":test_params_rust",
-    ],
-    edition = "2021",
+    srcs = ["test_version_too_old_rust.rs"],
     tags = [
         "failure_test",
         "manual",
         "version_too_old",
     ],
+    deps = [":test_params_rs"],
 )
 
 # Java - should fail to compile: class not found
@@ -167,16 +168,13 @@ cc_binary(
 # Rust - should emit deprecation warning at compile time
 rust_binary(
     name = "test_version_upgraded_rust",
-    srcs = [
-        "test_version_upgraded_rust.rs",
-        ":test_params_rust",
-    ],
-    edition = "2021",
+    srcs = ["test_version_upgraded_rust.rs"],
     tags = [
         "failure_test",
         "manual",
         "version_upgraded",
     ],
+    deps = [":test_params_rs"],
 )
 
 # Python - should emit DeprecationWarning

@@ -1,11 +1,9 @@
-// Test that including v1 when v2 exists emits deprecation warning.
+// Test that using v1 when v2 exists emits deprecation warning.
 
-#[path = "test_params_rs/test_value_v1.rs"]
-mod test_value_v1;
+use test_params_rs::*;
 
 fn main() {
-    // v1 still works but has #[deprecated] attribute on sentinel
-    // Using the deprecated sentinel without #[allow(deprecated)] triggers a warning
-    let _ = test_value_v1::_DEPRECATED_SENTINEL;
-    println!("Value: {}", test_value_v1::TEST_VALUE);
+    // v1 still works but has #[deprecated] attribute
+    // Using it without #[allow(deprecated)] triggers a warning
+    println!("Value: {}", TEST_VALUE_V1);
 }
