@@ -1,9 +1,8 @@
-// Test that requesting an older version causes compile-time deprecation warning
-#include "fire/starlark/failure_test/parameter_version/test_params.h"
+// Test that including v1 when v2 exists emits deprecation warning.
+// test_value_v1.h has a #pragma message deprecation warning.
+#include "fire/starlark/failure_test/parameter_version/test_params_cc/test_value_v1.h"
 
 int main() {
-    // Parameter is at version 2, but we request version 1
-    // This should cause a deprecation warning at compile time
-    auto value = test::test_value<1>();
+    // v1 still works but should emit a compile-time warning
     return 0;
 }

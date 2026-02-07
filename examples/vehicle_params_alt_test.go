@@ -4,29 +4,29 @@ import (
 	"testing"
 
 	// Import from the alternate library
-	vehicle_params_go_alt "examples/vehicle_params_go_alt"
+	vp "examples/vehicle_params_go_alt"
 )
 
 func TestAltSimpleParameters(t *testing.T) {
-	if vehicle_params_go_alt.MaximumVehicleVelocity(1) != 55.0 {
-		t.Errorf("Expected MaximumVehicleVelocity = 55.0, got %f", vehicle_params_go_alt.MaximumVehicleVelocity(1))
+	if vp.MaximumVehicleVelocityV3 != 100.0 {
+		t.Errorf("Expected MaximumVehicleVelocityV3 = 100.0, got %f", vp.MaximumVehicleVelocityV3)
 	}
 
-	if vehicle_params_go_alt.WheelCount(1) != 4 {
-		t.Errorf("Expected WheelCount = 4, got %d", vehicle_params_go_alt.WheelCount(1))
+	if vp.WheelCountV1 != 4 {
+		t.Errorf("Expected WheelCountV1 = 4, got %d", vp.WheelCountV1)
 	}
 
-	if vehicle_params_go_alt.VehicleName(1) != "TestVehicle" {
-		t.Errorf("Expected VehicleName = TestVehicle, got %s", vehicle_params_go_alt.VehicleName(1))
+	if vp.VehicleNameV1 != "TestVehicle" {
+		t.Errorf("Expected VehicleNameV1 = TestVehicle, got %s", vp.VehicleNameV1)
 	}
 
-	if vehicle_params_go_alt.DebugMode(1) != false {
-		t.Errorf("Expected DebugMode = false, got %v", vehicle_params_go_alt.DebugMode(1))
+	if vp.DebugModeV1 != false {
+		t.Errorf("Expected DebugModeV1 = false, got %v", vp.DebugModeV1)
 	}
 }
 
 func TestAltTableParameters(t *testing.T) {
-	table := vehicle_params_go_alt.BrakingDistanceTable(1)
+	table := vp.BrakingDistanceTableV1
 
 	if len(table) != 6 {
 		t.Errorf("Expected 6 rows, got %d", len(table))

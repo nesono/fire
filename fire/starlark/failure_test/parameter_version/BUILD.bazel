@@ -1,8 +1,8 @@
 """Tests for parameter version checking.
 
 These tests verify that version mismatch detection works correctly:
-- Version too old (expected > actual): should fail at compile/runtime
-- Version upgraded (expected < actual): should emit warning
+- Version too old (expected > actual): file doesn't exist -> build/import error
+- Version upgraded (expected < actual): file exists with deprecation warning
 
 They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
 """
@@ -21,10 +21,10 @@ parameter_library(
     src = "test_params.yaml",
 )
 
-# Generate C++ code
+# Generate C++ code (directory of per-param-version .h files)
 generate_cc_parameters(
     name = "test_params_h",
-    base_name = "test_params",
+    base_name = "test_params_cc",
     namespace = "test",
     parameter_library = ":test_params",
 )
@@ -34,42 +34,41 @@ cc_library(
     hdrs = [":test_params_h"],
 )
 
-# Generate Python code
+# Generate Python code (directory of per-param-version .py files)
 generate_python_parameters(
     name = "test_params_py_src",
-    base_name = "test_params",
+    base_name = "test_params_py",
     parameter_library = ":test_params",
 )
 
 py_library(
     name = "test_params_py",
-    srcs = [":test_params_py_src"],
+    data = [":test_params_py_src"],
 )
 
-# Generate Go code
+# Generate Go code (directory of sub-packages)
 generate_go_parameters(
     name = "test_params_go_src",
-    base_name = "test_params",
+    base_name = "test_params_go",
     parameter_library = ":test_params",
 )
 
 go_library(
-    name = "test_params_go",
+    name = "test_params_go_lib",
     srcs = [":test_params_go_src"],
-    importpath = "fire/starlark/failure_test/parameter_version/test_params",
+    importpath = "fire/starlark/failure_test/parameter_version/test_params_go",
 )
 
-# Generate Rust code
+# Generate Rust code (directory of per-param-version .rs files)
 generate_rust_parameters(
     name = "test_params_rust",
-    base_name = "test_params",
+    base_name = "test_params_rs",
     parameter_library = ":test_params",
 )
 
-# Generate Java code
+# Generate Java code (directory of per-param-version .java files)
 generate_java_parameters(
     name = "test_params_java_src",
-    class_name = "TestParams",
     package_prefix = "fire.starlark.failure_test.parameter_version",
     parameter_library = ":test_params",
 )
@@ -81,9 +80,10 @@ java_library(
 
 # =============================================================================
 # Version Too Old Tests (expected > actual) - Should FAIL
+# File test_value_v3.{ext} does not exist -> build/import error
 # =============================================================================
 
-# C++ - should fail to compile with static_assert
+# C++ - should fail to compile: file not found
 cc_binary(
     name = "test_version_too_old_cpp",
     srcs = ["test_version_too_old_cpp.cc"],
@@ -95,7 +95,7 @@ cc_binary(
     deps = [":test_params_cc"],
 )
 
-# Python - should fail at runtime with RuntimeError
+# Python - should fail at import time: module not found
 py_binary(
     name = "test_version_too_old_py",
     srcs = ["test_version_too_old_py.py"],
@@ -107,7 +107,7 @@ py_binary(
     deps = [":test_params_py"],
 )
 
-# Go - should panic at runtime
+# Go - should fail to compile: package not found
 go_binary(
     name = "test_version_too_old_go",
     srcs = ["test_version_too_old_go.go"],
@@ -116,10 +116,10 @@ go_binary(
         "manual",
         "version_too_old",
     ],
-    deps = [":test_params_go"],
+    deps = [":test_params_go_lib"],
 )
 
-# Rust - should fail to compile with const assert
+# Rust - should fail to compile: file not found
 rust_binary(
     name = "test_version_too_old_rust",
     srcs = [
@@ -134,7 +134,7 @@ rust_binary(
     ],
 )
 
-# Java - should fail at runtime with IllegalArgumentException
+# Java - should fail to compile: class not found
 java_binary(
     name = "test_version_too_old_java",
     srcs = ["TestVersionTooOld.java"],
@@ -149,6 +149,7 @@ java_binary(
 
 # =============================================================================
 # Version Upgraded Tests (expected < actual) - Should WARN
+# File test_value_v1.{ext} exists with deprecation warning
 # =============================================================================
 
 # C++ - should emit deprecation warning at compile time
@@ -190,7 +191,7 @@ py_binary(
     deps = [":test_params_py"],
 )
 
-# Go - should print warning to stdout
+# Go - should have Deprecated doc comment
 go_binary(
     name = "test_version_upgraded_go",
     srcs = ["test_version_upgraded_go.go"],
@@ -199,13 +200,14 @@ go_binary(
         "manual",
         "version_upgraded",
     ],
-    deps = [":test_params_go"],
+    deps = [":test_params_go_lib"],
 )
 
-# Java - should print warning to stderr
+# Java - should have @Deprecated annotation
 java_binary(
     name = "test_version_upgraded_java",
     srcs = ["TestVersionUpgraded.java"],
+    javacopts = ["-Xlint:deprecation"],
     main_class = "fire.starlark.failure_test.parameter_version.TestVersionUpgraded",
     tags = [
         "failure_test",

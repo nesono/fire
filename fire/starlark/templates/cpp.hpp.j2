@@ -3,119 +3,50 @@
 
 #include <cstddef>  // for size_t
 #include <cstdint>  // for int32_t, int64_t, uint32_t, uint64_t
+{% if not item.is_latest %}
+
+#pragma message("WARNING: Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.")
+{% endif %}
 
 {% if namespace %}
 namespace {{ namespace }} {
 
 {% endif %}
-{% for param in parameters if param.type == "table" %}
-{% set struct_name = param.name | pascal_case + "Row" %}
+{% if item.type == "table" %}
+{% set struct_name = item.base_name | pascal_case + "Row" %}
 struct {{ struct_name }} {
-{% for col in param.columns %}
+{% for col in item.columns %}
     {{ col.type | cpp_type }} {{ col.name }};{% if col.unit %}  ///< Unit: {{ col.unit }}{% endif %}
 
 {% endfor %}
 };
 
-{% endfor %}
-{% for param in parameters %}
-{% set const_name = param.name | upper %}
-{% set version = param.version | default(1) %}
-{% set description = param.description | default("") %}
-{% if param.unit %}{% set description = description + " - Unit: " + param.unit %}{% endif %}
-{% if param.type == "table" %}
-{% set struct_name = param.name | pascal_case + "Row" %}
-{% set size = param.rows | length %}
-namespace detail {
-constexpr {{ struct_name }} {{ const_name }}_DATA[] = {
-{% for row in param.rows %}
-    {{ "{" }}{% for i in range(param.columns | length) %}{% if param.columns[i].type == "string" %}"{{ row[i] }}"{% elif param.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
+{% set size = item.rows | length %}
+/// {{ item.description | default("") }}
+constexpr {{ struct_name }} {{ item.base_name | upper }}_DATA[] = {
+{% for row in item.rows %}
+    {{ "{" }}{% for i in range(item.columns | length) %}{% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
 {% endfor %}
 };
-}  // namespace detail
 
-constexpr size_t {{ const_name }}_SIZE = {{ size }};
+constexpr size_t {{ item.base_name | upper }}_SIZE = {{ size }};
 
-{% if version > 1 %}
-/// {{ description }}
-/// Access {{ param.name }} with version check (current version: {{ version }})
-template<int ExpectedVersion>
-[[deprecated("Parameter {{ param.name }} has been updated to version {{ version }}")]]
-constexpr const {{ struct_name }}* {{ param.name }}_outdated() {
-    return detail::{{ const_name }}_DATA;
+constexpr const {{ struct_name }}* {{ item.base_name }}() {
+    return {{ item.base_name | upper }}_DATA;
 }
 
-template<int ExpectedVersion>
-[[nodiscard]] constexpr const {{ struct_name }}* {{ param.name }}() {
-    if constexpr (ExpectedVersion > {{ version }}) {
-        static_assert(ExpectedVersion <= {{ version }},
-            "Parameter {{ param.name }} version {{ version }} is older than expected version");
-        return nullptr;  // Never reached
-    } else if constexpr (ExpectedVersion < {{ version }}) {
-        return {{ param.name }}_outdated<ExpectedVersion>();
-    } else {
-        return detail::{{ const_name }}_DATA;
-    }
-}
-
-constexpr size_t {{ param.name }}_size() {
-    return {{ const_name }}_SIZE;
+constexpr size_t {{ item.base_name }}_size() {
+    return {{ item.base_name | upper }}_SIZE;
 }
 
 {% else %}
+{% set cpp_type = item.type | cpp_type %}
+{% set description = item.description | default("") %}
+{% if item.unit %}{% set description = description + " - Unit: " + item.unit %}{% endif %}
 /// {{ description }}
-/// Access {{ param.name }} with version check (current version: {{ version }})
-template<int ExpectedVersion>
-[[nodiscard]] constexpr const {{ struct_name }}* {{ param.name }}() {
-    static_assert(ExpectedVersion <= {{ version }},
-        "Parameter {{ param.name }} version {{ version }} is older than expected version");
-    return detail::{{ const_name }}_DATA;
-}
-
-constexpr size_t {{ param.name }}_size() {
-    return {{ const_name }}_SIZE;
-}
+constexpr {{ cpp_type }} {{ item.base_name | upper }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
 
 {% endif %}
-{% else %}
-{% set cpp_type = param.type | cpp_type %}
-namespace detail { constexpr {{ cpp_type }} {{ const_name }}_VALUE = {% if param.type == "string" %}"{{ param.value }}"{% elif param.type == "bool" %}{% if param.value %}true{% else %}false{% endif %}{% else %}{{ param.value }}{% endif %}; }
-
-{% if version > 1 %}
-/// {{ description }}
-template<int ExpectedVersion>
-[[deprecated("Parameter {{ param.name }} has been updated to version {{ version }}")]]
-constexpr {{ cpp_type }} {{ param.name }}_outdated() {
-    return detail::{{ const_name }}_VALUE;
-}
-
-/// Access {{ param.name }} with version check (current version: {{ version }})
-template<int ExpectedVersion>
-[[nodiscard]] constexpr {{ cpp_type }} {{ param.name }}() {
-    if constexpr (ExpectedVersion > {{ version }}) {
-        static_assert(ExpectedVersion <= {{ version }},
-            "Parameter {{ param.name }} version {{ version }} is older than expected version");
-        return {};  // Never reached
-    } else if constexpr (ExpectedVersion < {{ version }}) {
-        return {{ param.name }}_outdated<ExpectedVersion>();
-    } else {
-        return detail::{{ const_name }}_VALUE;
-    }
-}
-
-{% else %}
-/// {{ description }}
-/// Access {{ param.name }} with version check (current version: {{ version }})
-template<int ExpectedVersion>
-[[nodiscard]] constexpr {{ cpp_type }} {{ param.name }}() {
-    static_assert(ExpectedVersion <= {{ version }},
-        "Parameter {{ param.name }} version {{ version }} is older than expected version");
-    return detail::{{ const_name }}_VALUE;
-}
-
-{% endif %}
-{% endif %}
-{% endfor %}
 {% if namespace %}
 }  // namespace {{ namespace }}
 

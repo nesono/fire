@@ -1,5 +1,6 @@
 """Tests for pydantic_tools module."""
 
+import sys
 import pytest
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
@@ -82,7 +83,7 @@ def test_greater_than_equal():
         _SimpleModel(name="x", version=0, value=1.0, enabled=True)
     errors = format_validation_errors(exc_info.value)
     assert len(errors) == 1
-    assert ">=" in errors[0]
+    assert "greater than or equal" in errors[0]
 
 
 def test_extra_forbidden():
@@ -129,3 +130,7 @@ def test_multiple_errors():
 def test_empty_validation_error_list():
     errors = format_validation_errors(None)
     assert errors == []
+
+
+if __name__ == "__main__":
+    sys.exit(pytest.main([__file__, "-v"]))

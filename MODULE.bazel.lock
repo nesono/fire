@@ -486,7 +486,7 @@
     "@@rules_mypy+//mypy:types.bzl%types": {
       "general": {
         "bzlTransitiveDigest": "NRCQLKlh6DMNV8O7wtrrgFwoxCrepDJ64vJWgl4xKIo=",
-        "usagesDigest": "/zcnnorO6kiqdXnDzQooiFkb7h8+sBvWL9MgCK2yNR4=",
+        "usagesDigest": "NIykM+YzLuSMkfXmEj4a5vre9qrMcuWXSgMk/U16+Ek=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},

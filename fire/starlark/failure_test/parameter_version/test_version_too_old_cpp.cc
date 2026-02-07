@@ -1,9 +1,7 @@
-// Test that requesting a version newer than available causes compile error
-#include "fire/starlark/failure_test/parameter_version/test_params.h"
+// Test that requesting a version that doesn't exist causes build error.
+// test_value_v3.h does not exist (max version is v2), so this should fail.
+#include "fire/starlark/failure_test/parameter_version/test_params_cc/test_value_v3.h"
 
 int main() {
-    // Parameter is at version 2, but we request version 3
-    // This should cause a static_assert failure
-    auto value = test::test_value<3>();
     return 0;
 }

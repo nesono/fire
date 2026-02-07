@@ -1,6 +1,10 @@
 parameters:
-  test_value:
+  test_value_v1:
+    type: f64
+    value: 40.0
+    description: Test parameter at version 1
+
+  test_value_v2:
     type: f64
     value: 42.0
     description: Test parameter at version 2
-    version: 2

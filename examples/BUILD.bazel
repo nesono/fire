@@ -9,27 +9,24 @@ load("//fire/starlark:reports.bzl", "generate_report")
 load("//fire/starlark:requirements.bzl", "requirement_library")
 
 # Validate and create parameter library from YAML file
-# Namespace is auto-derived from package path: examples -> examples
 parameter_library(
     name = "vehicle_params",
     src = "vehicle_params.yaml",
 )
 
-# Generate C++ header with parameters
-# Consumes vehicle_params (validated YAML) and generates vehicle_params.h
+# Generate C++ headers (directory: vehicle_params_cc/)
 generate_cc_parameters(
     name = "vehicle_params_h",
-    base_name = "vehicle_params",
+    base_name = "vehicle_params_cc",
     parameter_library = ":vehicle_params",
 )
 
-# Wrap in cc_library
 cc_library(
     name = "vehicle_params_cc",
     hdrs = [":vehicle_params_h"],
 )
 
-# Example: C++ header with custom namespace
+# C++ headers with custom namespace (directory: vehicle_params_custom_ns/)
 generate_cc_parameters(
     name = "vehicle_params_custom_ns_h",
     base_name = "vehicle_params_custom_ns",
@@ -37,27 +34,24 @@ generate_cc_parameters(
     parameter_library = ":vehicle_params",
 )
 
-# Wrap in cc_library
 cc_library(
     name = "vehicle_params_cc_custom_ns",
     hdrs = [":vehicle_params_custom_ns_h"],
 )
 
-# Generate Python module with parameters
-# Consumes vehicle_params (validated YAML) and generates vehicle_params.py
+# Generate Python modules (directory: vehicle_params_py/)
 generate_python_parameters(
     name = "vehicle_params_py_src",
-    base_name = "vehicle_params",
+    base_name = "vehicle_params_py",
     parameter_library = ":vehicle_params",
 )
 
-# Wrap in py_library
 py_library(
     name = "vehicle_params_py",
-    srcs = [":vehicle_params_py_src"],
+    data = [":vehicle_params_py_src"],
 )
 
-# Example: Second Python library (demonstrates multiple targets from same params)
+# Second Python library (directory: vehicle_params_py_alt/)
 generate_python_parameters(
     name = "vehicle_params_py_alt_src",
     base_name = "vehicle_params_py_alt",
@@ -66,83 +60,74 @@ generate_python_parameters(
 
 py_library(
     name = "vehicle_params_py_alt",
-    srcs = [":vehicle_params_py_alt_src"],
+    data = [":vehicle_params_py_alt_src"],
 )
 
-# Generate Java class with parameters
-# Consumes vehicle_params (validated YAML) and generates VehicleParams.java
+# Generate Java classes (directory: vehicle_params_java/)
 generate_java_parameters(
     name = "vehicle_params_java_src",
-    class_name = "VehicleParams",
     package_prefix = "com.example",
     parameter_library = ":vehicle_params",
 )
 
-# Wrap in java_library
 java_library(
     name = "vehicle_params_java",
     srcs = [":vehicle_params_java_src"],
 )
 
-# Generate Go source with parameters
-# Consumes vehicle_params (validated YAML) and generates vehicle_params.go
+# Generate Go source (directory: vehicle_params_go/)
 generate_go_parameters(
     name = "vehicle_params_go_src",
-    base_name = "vehicle_params",
+    base_name = "vehicle_params_go",
     parameter_library = ":vehicle_params",
 )
 
-# Wrap in go_library
+# Go library wrapping all generated parameter files (single package)
 go_library(
     name = "vehicle_params_go",
     srcs = [":vehicle_params_go_src"],
-    importpath = "examples/vehicle_params",
 )
 
-# Example: Second Go library (demonstrates multiple targets from same params)
+# Second Go library set (directory: vehicle_params_go_alt/)
 generate_go_parameters(
     name = "vehicle_params_go_alt_src",
-    base_name = "vehicle_params_alt",
+    base_name = "vehicle_params_go_alt",
     parameter_library = ":vehicle_params",
 )
 
 go_library(
     name = "vehicle_params_go_alt",
     srcs = [":vehicle_params_go_alt_src"],
-    importpath = "examples/vehicle_params_go_alt",
 )
 
-# Generate Rust module with parameters
-# Consumes vehicle_params (validated YAML) and generates vehicle_params.rs
-# Rust can use generated .rs files directly in srcs (no wrapper needed)
+# Generate Rust modules (directory: vehicle_params_rs/)
 generate_rust_parameters(
     name = "vehicle_params_rs",
-    base_name = "vehicle_params",
+    base_name = "vehicle_params_rs",
     parameter_library = ":vehicle_params",
 )
 
-# Example: Second Rust module (demonstrates multiple targets from same params)
+# Second Rust module (directory: vehicle_params_rs_alt/)
 generate_rust_parameters(
     name = "vehicle_params_rs_alt",
     base_name = "vehicle_params_rs_alt",
     parameter_library = ":vehicle_params",
 )
 
-# C++ test that uses the generated parameters
+# C++ tests
 cc_test(
     name = "vehicle_params_cc_test",
     srcs = ["vehicle_params_test.cc"],
     deps = [":vehicle_params_cc"],
 )
 
-# C++ test that uses the generated parameters with custom namespace
 cc_test(
     name = "vehicle_params_cc_custom_ns_test",
     srcs = ["vehicle_params_custom_ns_test.cc"],
     deps = [":vehicle_params_cc_custom_ns"],
 )
 
-# Python test that uses the generated parameters
+# Python tests
 py_test(
     name = "vehicle_params_py_test",
     srcs = ["vehicle_params_test.py"],
@@ -150,7 +135,6 @@ py_test(
     deps = [":vehicle_params_py"],
 )
 
-# Python test for alternate library
 py_test(
     name = "vehicle_params_py_alt_test",
     srcs = ["vehicle_params_alt_test.py"],
@@ -158,7 +142,7 @@ py_test(
     deps = [":vehicle_params_py_alt"],
 )
 
-# Java test that uses the generated parameters
+# Java test
 java_test(
     name = "vehicle_params_java_test",
     srcs = ["VehicleParamsTest.java"],
@@ -166,21 +150,20 @@ java_test(
     deps = [":vehicle_params_java"],
 )
 
-# Go test that uses the generated parameters
+# Go tests
 go_test(
     name = "vehicle_params_go_test",
     srcs = ["vehicle_params_test.go"],
     deps = [":vehicle_params_go"],
 )
 
-# Go test for alternate library
 go_test(
     name = "vehicle_params_go_alt_test",
     srcs = ["vehicle_params_alt_test.go"],
     deps = [":vehicle_params_go_alt"],
 )
 
-# Rust test that uses the generated parameters
+# Rust tests
 rust_test(
     name = "vehicle_params_rust_test",
     srcs = [
@@ -191,7 +174,6 @@ rust_test(
     edition = "2021",
 )
 
-# Rust test for alternate library
 rust_test(
     name = "vehicle_params_rust_alt_test",
     srcs = [
@@ -202,14 +184,13 @@ rust_test(
     edition = "2021",
 )
 
-# Validate requirement documents (system requirements)
+# Validate requirement documents
 requirement_library(
     name = "vehicle_requirements",
     srcs = glob(["requirements/*.md"]),
-    deps = [":vehicle_params"],  # System requirements reference parameter files
+    deps = [":vehicle_params"],
 )
 
-# Validate software component requirement documents
 requirement_library(
     name = "component_requirements",
     srcs = glob([
@@ -218,12 +199,12 @@ requirement_library(
         "vehicle_status/doc/*.swreq.md",
     ]),
     deps = [
-        ":vehicle_params",  # Component requirements also reference parameter files
-        ":vehicle_requirements",  # Component requirements reference system requirements
+        ":vehicle_params",
+        ":vehicle_requirements",
     ],
 )
 
-# Generate traceability matrix report
+# Reports
 generate_report(
     name = "traceability_matrix",
     srcs = glob(["requirements/*.md"]),
@@ -231,7 +212,6 @@ generate_report(
     report_type = "traceability",
 )
 
-# Generate coverage report
 generate_report(
     name = "coverage_report",
     srcs = glob(["requirements/*.md"]),
@@ -239,7 +219,6 @@ generate_report(
     report_type = "coverage",
 )
 
-# Generate change impact analysis
 generate_report(
     name = "change_impact_report",
     srcs = glob(["requirements/*.md"]),
@@ -247,12 +226,11 @@ generate_report(
     report_type = "change_impact",
 )
 
-# Generate ISO 26262 compliance report
 generate_report(
     name = "compliance_report",
     srcs = glob(["requirements/*.md"]),
     out = "COMPLIANCE_ISO26262.md",
-    critical_type = "safety",  # Highlight safety requirements
+    critical_type = "safety",
     report_type = "compliance",
     standard = "ISO 26262",
 )

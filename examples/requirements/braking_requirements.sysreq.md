@@ -2,7 +2,7 @@
 
 ## REQ-BRK-001
 
-SIL: ASIL-C | Sec: true | Version: 2
+SIL: ASIL-C | Sec: true | Version: 4
 
 **Emergency Braking Distance**
 
