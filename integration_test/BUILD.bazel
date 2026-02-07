@@ -39,7 +39,6 @@ generate_rust_parameters(
 rust_library(
     name = "test_params_rs",
     srcs = [":test_params_rs_src"],
-    edition = "2021",
     visibility = ["//visibility:public"],
 )
 

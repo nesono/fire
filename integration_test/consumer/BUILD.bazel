@@ -22,6 +22,5 @@ rust_test(
     name = "test_rust_test",
     srcs = ["test_rust.rs"],
     crate_root = "test_rust.rs",
-    edition = "2021",
     deps = ["//:test_params_rs"],
 )
