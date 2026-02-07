@@ -1,6 +1,7 @@
 #ifndef {{ guard_name }}
 #define {{ guard_name }}
 
+#include <array>     // for std::array
 #include <cstddef>  // for size_t
 #include <cstdint>  // for int32_t, int64_t, uint32_t, uint64_t
 {% if not item.is_latest %}
@@ -23,20 +24,14 @@ struct {{ struct_name }} {
 
 {% set size = item.rows | length %}
 /// {{ item.description | default("") }}
-constexpr {{ struct_name }} {{ item.base_name | upper }}_DATA[] = {
+constexpr std::array<{{ struct_name }}, {{ size }}> {{ item.base_name | upper }} = {{ "{" }}{
 {% for row in item.rows %}
     {{ "{" }}{% for i in range(item.columns | length) %}{% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
 {% endfor %}
-};
+}};
 
-constexpr size_t {{ item.base_name | upper }}_SIZE = {{ size }};
-
-constexpr const {{ struct_name }}* {{ item.base_name }}() {
-    return {{ item.base_name | upper }}_DATA;
-}
-
-constexpr size_t {{ item.base_name }}_size() {
-    return {{ item.base_name | upper }}_SIZE;
+constexpr const std::array<{{ struct_name }}, {{ size }}>& {{ item.base_name }}() {
+    return {{ item.base_name | upper }};
 }
 
 {% else %}

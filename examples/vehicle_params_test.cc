@@ -30,12 +30,12 @@ int main() {
             << std::endl;
 
   // Test table parameter
-  assert(BRAKING_DISTANCE_TABLE_SIZE == 6);
-  std::cout << "✓ BRAKING_DISTANCE_TABLE_SIZE = " << BRAKING_DISTANCE_TABLE_SIZE
+  const auto& table = braking_distance_table();
+  assert(table.size() == 6);
+  std::cout << "✓ braking_distance_table().size() = " << table.size()
             << std::endl;
 
   // Test first row of table
-  auto table = braking_distance_table();
   assert(table[0].velocity == 10.0);
   assert(table[0].friction_coefficient == 0.7);
   assert(table[0].braking_distance == 7.1);
@@ -51,10 +51,10 @@ int main() {
             << table[5].friction_coefficient << ", "
             << table[5].braking_distance << "}" << std::endl;
 
-  // Test iteration over table
+  // Test iteration over table with modern range-based for loop
   double total_distance = 0.0;
-  for (size_t i = 0; i < BRAKING_DISTANCE_TABLE_SIZE; ++i) {
-    total_distance += table[i].braking_distance;
+  for (const auto& row : table) {
+    total_distance += row.braking_distance;
   }
   std::cout << "✓ Total braking distance across all entries = "
             << total_distance << " m" << std::endl;
