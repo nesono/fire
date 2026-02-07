@@ -30,13 +30,13 @@ int main() {
   std::cout << "✓ DEBUG_MODE = " << (DEBUG_MODE ? "true" : "false")
             << std::endl;
 
-  // Test table parameter
-  assert(BRAKING_DISTANCE_TABLE_SIZE == 6);
-  std::cout << "✓ BRAKING_DISTANCE_TABLE_SIZE = " << BRAKING_DISTANCE_TABLE_SIZE
+  // Test table parameter with std::array
+  const auto& table = braking_distance_table();
+  assert(table.size() == 6);
+  std::cout << "✓ braking_distance_table().size() = " << table.size()
             << std::endl;
 
   // Test first row of table
-  auto table = braking_distance_table();
   assert(table[0].velocity == 10.0);
   assert(table[0].friction_coefficient == 0.7);
   assert(table[0].braking_distance == 7.1);
