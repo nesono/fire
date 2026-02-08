@@ -47,22 +47,20 @@ In file `vehicle_params.yaml`
 ```yaml
 parameters:
   maximum_vehicle_velocity_v1:
-    type: f64
+    value: 55.0 # Type inferred as f64 from YAML float
     unit: m/s
-    value: 55.0
     description: Maximum design velocity for the vehicle
 
   wheel_count_v1:
-    type: i32
-    value: 4
+    value: 4 # Type inferred as i64 from YAML integer
     description: Number of wheels on the vehicle
 
   braking_distance_table_v1:
-    type: table
+    type: table # Tables require explicit type declaration
     description: Braking distances under various conditions
     columns:
       - name: velocity
-        type: f64
+        type: f64 # Column types are explicit
         unit: m/s
       - name: friction_coefficient
         type: f64
@@ -76,7 +74,15 @@ parameters:
       - [30.0, 0.7, 64.3]
 ```
 
-Parameter keys use a `_vN` suffix to encode the version (e.g., `maximum_vehicle_velocity_v1`).
+**Type Inference**: Types are automatically inferred from YAML native types:
+
+- YAML integer (e.g., `42`) → `i64` (64-bit signed integer)
+- YAML float (e.g., `42.0`) → `f64` (64-bit double)
+- YAML boolean (e.g., `true`, `false`) → `bool`
+- YAML string (e.g., `"text"`) → `string`
+- Tables require explicit `type: table` and typed columns
+
+**Versioning**: Parameter keys use a `_vN` suffix to encode the version (e.g., `maximum_vehicle_velocity_v1`).
 When a parameter is updated, add a new key with the next version while keeping the old one
 (e.g., `maximum_vehicle_velocity_v1` + `maximum_vehicle_velocity_v2`). Versions must be
 consecutive starting from 1.
