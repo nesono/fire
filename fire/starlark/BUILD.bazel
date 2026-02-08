@@ -1,5 +1,8 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 
+# Load ty_test for type checking
+load("//tools/lint:linters.bzl", "ty_test")
+
 exports_files([
     "parameters.bzl",
     "requirements.bzl",
@@ -159,4 +162,40 @@ py_test(
         "@pip//pydantic",
         "@pip//pytest",
     ],
+)
+
+py_library(
+    name = "ty_test_lib",
+    srcs = ["ty_test.py"],
+)
+
+# Type checking tests for all Python libraries
+ty_test(
+    name = "parameter_models_typecheck",
+    srcs = [":parameter_models"],
+)
+
+ty_test(
+    name = "pydantic_tools_typecheck",
+    srcs = [":pydantic_tools"],
+)
+
+ty_test(
+    name = "validate_parameters_typecheck",
+    srcs = [":validate_parameters_lib"],
+)
+
+ty_test(
+    name = "requirement_models_typecheck",
+    srcs = [":requirement_models"],
+)
+
+ty_test(
+    name = "validate_cross_references_typecheck",
+    srcs = [":validate_cross_references_lib"],
+)
+
+ty_test(
+    name = "ty_test",
+    srcs = [":ty_test_lib"],
 )

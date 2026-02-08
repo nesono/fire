@@ -1,0 +1,3 @@
+"""Linter configurations."""
+
+exports_files(["linters.bzl"])
