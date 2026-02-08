@@ -1,15 +1,12 @@
 parameters:
   max_speed_v1:
-    type: f64
     value: 30.0
     description: Maximum allowed speed in m/s
 
   min_braking_distance_v1:
-    type: f64
     value: 50.0
     description: Minimum braking distance in meters
 
   update_rate_v1:
-    type: i32
     value: 100
     description: System update rate in Hz

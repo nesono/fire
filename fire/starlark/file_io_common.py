@@ -68,3 +68,30 @@ def load_yaml_safe(file_path: str) -> tuple[Any | None, str | None]:
         return None, f"Permission denied: {file_path}"
     except Exception as e:
         return None, f"Error loading YAML from {file_path}: {e}"
+
+
+def write_yaml_safe(file_path: str, data: Any) -> str | None:
+    """Safely write data to YAML file with consistent error handling.
+
+    Args:
+        file_path: Path to YAML file to write
+        data: Data to serialize to YAML
+
+    Returns:
+        Error message if failed, None if successful
+
+    Example:
+        >>> error = write_yaml_safe("config.yaml", {"key": "value"})
+        >>> if error:
+        ...     print(f"Failed: {error}")
+    """
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
+            return None
+    except PermissionError:
+        return f"Permission denied: {file_path}"
+    except yaml.YAMLError as e:
+        return f"Error serializing YAML to {file_path}: {e}"
+    except Exception as e:
+        return f"Error writing YAML to {file_path}: {e}"

@@ -1,28 +1,23 @@
 parameters:
   maximum_vehicle_velocity_v2:
-    type: f64
     value: 55.0
     unit: m/s
     description: Maximum design velocity for the vehicle
 
   maximum_vehicle_velocity_v3:
-    type: f32
     value: 100.0
     unit: m/s
     description: Maximum design velocity for the vehicle
 
   wheel_count_v1:
-    type: i32
     value: 4
     description: Number of wheels on the vehicle
 
   vehicle_name_v1:
-    type: string
     value: TestVehicle
     description: Vehicle identifier for testing
 
   debug_mode_v1:
-    type: bool
     value: false
     description: Enable debug output
 
