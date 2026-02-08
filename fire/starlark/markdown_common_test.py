@@ -1,5 +1,9 @@
 """Tests for fire/starlark/markdown_common.py"""
 
+import sys
+
+import pytest
+
 from fire.starlark import markdown_common
 
 
@@ -97,7 +101,7 @@ class TestExtractRequirementReferences:
     def test_requirement_with_underscores(self):
         text = "[REQ_SYS_001](design.md)"
         refs = markdown_common.extract_requirement_references(text)
-        assert refs == []  # Underscores not allowed, only hyphens
+        assert refs == [("REQ_SYS_001", "design.md")]  # Underscores are allowed
 
     def test_requirement_must_end_with_md(self):
         text = "[REQ-001](design.txt)"
@@ -108,3 +112,7 @@ class TestExtractRequirementReferences:
         text = "[REQ-001](path/to/design.md)"
         refs = markdown_common.extract_requirement_references(text)
         assert refs == [("REQ-001", "path/to/design.md")]
+
+
+if __name__ == "__main__":
+    sys.exit(pytest.main([__file__, "-v"]))

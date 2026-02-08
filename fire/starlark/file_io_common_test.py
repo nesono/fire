@@ -1,6 +1,8 @@
 """Tests for fire/starlark/file_io_common.py"""
 
-import pytest  # noqa: F401 - needed for tmp_path fixture
+import sys
+
+import pytest
 
 from fire.starlark import file_io_common
 
@@ -51,7 +53,7 @@ class TestLoadYamlSafe:
 
     def test_load_invalid_yaml(self, tmp_path):
         yaml_file = tmp_path / "invalid.yaml"
-        yaml_file.write_text("key: value\n  bad indentation")
+        yaml_file.write_text("key: value\n\t\tinvalid\ttabs")
 
         data, error = file_io_common.load_yaml_safe(str(yaml_file))
         assert data is None
@@ -94,3 +96,7 @@ root:
         data, error = file_io_common.load_yaml_safe(str(yaml_file))
         assert data == {"root": {"level1": {"level2": "value", "list": ["a", "b"]}}}
         assert error is None
+
+
+if __name__ == "__main__":
+    sys.exit(pytest.main([__file__, "-v"]))

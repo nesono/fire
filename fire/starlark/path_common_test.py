@@ -1,5 +1,9 @@
 """Tests for fire/starlark/path_common.py"""
 
+import sys
+
+import pytest
+
 from fire.starlark import path_common
 
 
@@ -110,3 +114,7 @@ class TestValidateReferencePath:
         assert normalized == ""
         assert error is not None
         assert "Requirement path" in error
+
+
+if __name__ == "__main__":
+    sys.exit(pytest.main([__file__, "-v"]))
