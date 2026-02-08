@@ -77,3 +77,22 @@ The typecheck config checks code formatting with ty.
 Always keep the documentation up to date. When changing the interfaces or
 behavior, make sure that there is no contradicting documentation in the
 repository.
+
+## PR Format
+
+Please use the following format as a blueprint for PR descriptions:
+
+### Summary
+
+Short summary of what changed with this PR. Focus on the what, not the why.
+
+### Implementation Summary
+
+Summarize what was changed and what design choices were made and their
+potential ramifications.
+
+### Testing
+
+Summarize what test strategy you used and what modalities you used (unit test,
+integration tests, failure tests, etc.) and give a brief summary if what tests
+you added and or modified.
