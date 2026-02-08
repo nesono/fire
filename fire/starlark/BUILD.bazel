@@ -66,6 +66,12 @@ py_library(
     srcs = ["markdown_common.py"],
 )
 
+# Common utilities - report generation
+py_library(
+    name = "report_common",
+    srcs = ["report_common.py"],
+)
+
 # Python library for parameter validation
 py_library(
     name = "validate_parameters_lib",
@@ -115,6 +121,7 @@ py_binary(
     srcs = ["generate_report.py"],
     main = "generate_report.py",
     visibility = ["//visibility:public"],
+    deps = [":report_common"],
 )
 
 py_test(

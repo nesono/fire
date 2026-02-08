@@ -3,6 +3,8 @@
 
 import sys
 
+from fire.starlark import report_common
+
 
 def parse_simple_yaml(yaml_text):
     """DEPRECATED: Simple YAML parser for requirement frontmatter.
@@ -205,77 +207,80 @@ def generate_traceability_matrix(requirements_data):
     lines = []
     lines.append("# Traceability Matrix")
     lines.append("")
+
+    # Requirements -> Parameters table
     lines.append("## Requirements -> Parameters")
     lines.append("")
-    lines.append("| Requirement | Title | Parameters |")
-    lines.append("|-------------|-------|------------|")
-
+    rows = []
     for req_id, frontmatter in requirements_data:
         title = frontmatter.get("title", "")
-        params = []
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if "parameters" in frontmatter["references"]:
-                params = frontmatter["references"]["parameters"]
+        params = report_common.extract_references(frontmatter, "parameters")
+        params_str = report_common.format_reference_list(params)
+        rows.append([req_id, title, params_str])
 
-        params_str = ", ".join([f"`{p}`" for p in params]) if params else "-"
-        lines.append(f"| {req_id} | {title} | {params_str} |")
+    lines.extend(
+        report_common.build_markdown_table(["Requirement", "Title", "Parameters"], rows)
+    )
 
+    # Requirements -> Requirements table
     lines.append("")
     lines.append("## Requirements -> Requirements")
     lines.append("")
-    lines.append("| Requirement | Version | Title | Parent Requirements (Version) |")
-    lines.append("|-------------|---------|-------|-------------------------------|")
-
+    rows = []
     for req_id, frontmatter in requirements_data:
         title = frontmatter.get("title", "")
-        version = frontmatter.get("version", "-")
-        reqs = []
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if "requirements" in frontmatter["references"]:
-                req_refs = frontmatter["references"]["requirements"]
-                for ref in req_refs:
-                    if isinstance(ref, str):
-                        reqs.append(ref)
-                    elif isinstance(ref, dict) and "id" in ref:
-                        if "version" in ref:
-                            reqs.append(f"{ref['id']} (v{ref['version']})")
-                        else:
-                            reqs.append(ref["id"])
+        version = str(frontmatter.get("version", "-"))
+        req_refs = report_common.extract_references(frontmatter, "requirements")
 
-        reqs_str = ", ".join(reqs) if reqs else "-"
-        lines.append(f"| {req_id} | {version} | {title} | {reqs_str} |")
+        # Format requirement references with versions
+        formatted_reqs = []
+        for ref in req_refs:
+            if isinstance(ref, str):
+                formatted_reqs.append(ref)
+            elif isinstance(ref, dict) and "id" in ref:
+                if "version" in ref:
+                    formatted_reqs.append(f"{ref['id']} (v{ref['version']})")
+                else:
+                    formatted_reqs.append(ref["id"])
 
+        reqs_str = ", ".join(formatted_reqs) if formatted_reqs else "-"
+        rows.append([req_id, version, title, reqs_str])
+
+    lines.extend(
+        report_common.build_markdown_table(
+            ["Requirement", "Version", "Title", "Parent Requirements (Version)"], rows
+        )
+    )
+
+    # Requirements -> Tests table
     lines.append("")
     lines.append("## Requirements -> Tests")
     lines.append("")
-    lines.append("| Requirement | Title | Tests |")
-    lines.append("|-------------|-------|-------|")
-
+    rows = []
     for req_id, frontmatter in requirements_data:
         title = frontmatter.get("title", "")
-        tests = []
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if "tests" in frontmatter["references"]:
-                tests = frontmatter["references"]["tests"]
+        tests = report_common.extract_references(frontmatter, "tests")
+        tests_str = report_common.format_reference_list(tests)
+        rows.append([req_id, title, tests_str])
 
-        tests_str = ", ".join([f"`{t}`" for t in tests]) if tests else "-"
-        lines.append(f"| {req_id} | {title} | {tests_str} |")
+    lines.extend(
+        report_common.build_markdown_table(["Requirement", "Title", "Tests"], rows)
+    )
 
+    # Requirements -> Standards table
     lines.append("")
     lines.append("## Requirements -> Standards")
     lines.append("")
-    lines.append("| Requirement | Title | Standards |")
-    lines.append("|-------------|-------|-----------|")
-
+    rows = []
     for req_id, frontmatter in requirements_data:
         title = frontmatter.get("title", "")
-        standards = []
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if "standards" in frontmatter["references"]:
-                standards = frontmatter["references"]["standards"]
-
+        standards = report_common.extract_references(frontmatter, "standards")
         standards_str = "<br>".join(standards) if standards else "-"
-        lines.append(f"| {req_id} | {title} | {standards_str} |")
+        rows.append([req_id, title, standards_str])
+
+    lines.extend(
+        report_common.build_markdown_table(["Requirement", "Title", "Standards"], rows)
+    )
 
     return "\n".join(lines)
 
@@ -293,57 +298,61 @@ def generate_coverage_report(requirements_data):
     )
     lines.append("")
 
+    # Count requirements with each reference type
     total_reqs = len(requirements_data)
-    reqs_with_params = 0
-    reqs_with_tests = 0
-    reqs_with_standards = 0
+    reqs_with_params = sum(
+        1
+        for _, fm in requirements_data
+        if report_common.extract_references(fm, "parameters")
+    )
+    reqs_with_tests = sum(
+        1
+        for _, fm in requirements_data
+        if report_common.extract_references(fm, "tests")
+    )
+    reqs_with_standards = sum(
+        1
+        for _, fm in requirements_data
+        if report_common.extract_references(fm, "standards")
+    )
 
-    for _, frontmatter in requirements_data:
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            refs = frontmatter["references"]
-            if "parameters" in refs and refs["parameters"]:
-                reqs_with_params += 1
-            if "tests" in refs and refs["tests"]:
-                reqs_with_tests += 1
-            if "standards" in refs and refs["standards"]:
-                reqs_with_standards += 1
-
+    # Calculate coverage percentages
     param_coverage = (reqs_with_params * 100) // total_reqs if total_reqs > 0 else 0
     test_coverage = (reqs_with_tests * 100) // total_reqs if total_reqs > 0 else 0
     standard_coverage = (
         (reqs_with_standards * 100) // total_reqs if total_reqs > 0 else 0
     )
 
+    # Summary table
     lines.append("## Summary")
     lines.append("")
-    lines.append("| Metric | Count | Percentage |")
-    lines.append("|--------|-------|------------|")
-    lines.append(f"| Total Requirements | {total_reqs} | 100% |")
-    lines.append(
-        f"| Requirements with Parameter References | {reqs_with_params} | {param_coverage}% |"
-    )
-    lines.append(
-        f"| Requirements with Linked Tests | {reqs_with_tests} | {test_coverage}% |"
-    )
-    lines.append(
-        f"| Requirements with Standard References | {reqs_with_standards} | {standard_coverage}% |"
+    rows = [
+        ["Total Requirements", str(total_reqs), "100%"],
+        [
+            "Requirements with Parameter References",
+            str(reqs_with_params),
+            f"{param_coverage}%",
+        ],
+        ["Requirements with Linked Tests", str(reqs_with_tests), f"{test_coverage}%"],
+        [
+            "Requirements with Standard References",
+            str(reqs_with_standards),
+            f"{standard_coverage}%",
+        ],
+    ]
+    lines.extend(
+        report_common.build_markdown_table(["Metric", "Count", "Percentage"], rows)
     )
     lines.append("")
 
     # Requirements without parameter references
     lines.append("## Requirements without Parameter References")
     lines.append("")
-    missing_params = []
-    for req_id, frontmatter in requirements_data:
-        has_params = False
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if (
-                "parameters" in frontmatter["references"]
-                and frontmatter["references"]["parameters"]
-            ):
-                has_params = True
-        if not has_params:
-            missing_params.append((req_id, frontmatter.get("title", "")))
+    missing_params = [
+        (req_id, fm.get("title", ""))
+        for req_id, fm in requirements_data
+        if not report_common.extract_references(fm, "parameters")
+    ]
 
     if missing_params:
         for req_id, title in missing_params:
@@ -356,17 +365,11 @@ def generate_coverage_report(requirements_data):
     # Requirements without linked tests
     lines.append("## Requirements without Linked Tests")
     lines.append("")
-    missing_tests = []
-    for req_id, frontmatter in requirements_data:
-        has_tests = False
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if (
-                "tests" in frontmatter["references"]
-                and frontmatter["references"]["tests"]
-            ):
-                has_tests = True
-        if not has_tests:
-            missing_tests.append((req_id, frontmatter.get("title", "")))
+    missing_tests = [
+        (req_id, fm.get("title", ""))
+        for req_id, fm in requirements_data
+        if not report_common.extract_references(fm, "tests")
+    ]
 
     if missing_tests:
         for req_id, title in missing_tests:
@@ -396,16 +399,11 @@ def generate_change_impact(requirements_data):
     # Find stale requirements
     stale_requirements = []
     for req_id, frontmatter in requirements_data:
-        if "references" not in frontmatter or not isinstance(
-            frontmatter["references"], dict
-        ):
-            continue
-        if "requirements" not in frontmatter["references"]:
+        req_refs = report_common.extract_references(frontmatter, "requirements")
+        if not req_refs:
             continue
 
-        req_refs = frontmatter["references"]["requirements"]
         stale_parents = []
-
         for ref in req_refs:
             if isinstance(ref, dict) and "id" in ref and "version" in ref:
                 parent_id = ref["id"]
@@ -496,21 +494,15 @@ def generate_compliance_report(requirements_data, standard_name, critical_type=N
         reqs_by_type[req_type].append((req_id, frontmatter))
 
         # Check standard reference
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if "standards" in frontmatter["references"]:
-                standards = frontmatter["references"]["standards"]
-                for std in standards:
-                    if standard_name.lower() in std.lower():
-                        reqs_with_standard.append((req_id, frontmatter))
-                        break
+        standards = report_common.extract_references(frontmatter, "standards")
+        for std in standards:
+            if standard_name.lower() in std.lower():
+                reqs_with_standard.append((req_id, frontmatter))
+                break
 
         # Check linked tests
-        if "references" in frontmatter and isinstance(frontmatter["references"], dict):
-            if (
-                "tests" in frontmatter["references"]
-                and frontmatter["references"]["tests"]
-            ):
-                reqs_with_tests.append((req_id, frontmatter))
+        if report_common.extract_references(frontmatter, "tests"):
+            reqs_with_tests.append((req_id, frontmatter))
 
     total_reqs = len(requirements_data)
 
