@@ -1,4 +1,3 @@
-parameters:
-  test_param_v1:
-    value: 42.0
-    description: Test parameter
+test_param_v1:
+  value: 42.0
+  description: Test parameter

@@ -1,43 +1,42 @@
-parameters:
-  maximum_vehicle_velocity_v2:
-    value: 55.0
-    unit: m/s
-    description: Maximum design velocity for the vehicle
+maximum_vehicle_velocity_v2:
+  value: 55.0
+  unit: m/s
+  description: Maximum design velocity for the vehicle
 
-  maximum_vehicle_velocity_v3:
-    value: 100.0
-    unit: m/s
-    description: Maximum design velocity for the vehicle
+maximum_vehicle_velocity_v3:
+  value: 100.0
+  unit: m/s
+  description: Maximum design velocity for the vehicle
 
-  wheel_count_v1:
-    value: 4
-    description: Number of wheels on the vehicle
+wheel_count_v1:
+  value: 4
+  description: Number of wheels on the vehicle
 
-  vehicle_name_v1:
-    value: TestVehicle
-    description: Vehicle identifier for testing
+vehicle_name_v1:
+  value: TestVehicle
+  description: Vehicle identifier for testing
 
-  debug_mode_v1:
-    value: false
-    description: Enable debug output
+debug_mode_v1:
+  value: false
+  description: Enable debug output
 
-  braking_distance_table_v1:
-    type: table
-    description: Braking distances under various conditions
-    columns:
-      - name: velocity
-        type: f64
-        unit: m/s
-      - name: friction_coefficient
-        type: f64
-        unit: dimensionless
-      - name: braking_distance
-        type: f64
-        unit: m
-    rows:
-      - [10.0, 0.7, 7.1]
-      - [20.0, 0.7, 28.6]
-      - [30.0, 0.7, 64.3]
-      - [10.0, 0.3, 16.7]
-      - [20.0, 0.3, 66.7]
-      - [30.0, 0.3, 150.0]
+braking_distance_table_v1:
+  type: table
+  description: Braking distances under various conditions
+  columns:
+    - name: velocity
+      type: f64
+      unit: m/s
+    - name: friction_coefficient
+      type: f64
+      unit: dimensionless
+    - name: braking_distance
+      type: f64
+      unit: m
+  rows:
+    - [10.0, 0.7, 7.1]
+    - [20.0, 0.7, 28.6]
+    - [30.0, 0.7, 64.3]
+    - [10.0, 0.3, 16.7]
+    - [20.0, 0.3, 66.7]
+    - [30.0, 0.3, 150.0]
