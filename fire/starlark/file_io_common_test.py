@@ -1,5 +1,7 @@
 """Tests for fire/starlark/file_io_common.py"""
 
+import pytest  # noqa: F401 - needed for tmp_path fixture
+
 from fire.starlark import file_io_common
 
 

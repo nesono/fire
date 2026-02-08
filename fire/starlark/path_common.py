@@ -49,7 +49,7 @@ def extract_version_from_url(full_url: str) -> tuple[str, int | None]:
     return clean_path, version
 
 
-def normalize_repo_path(path: str) -> tuple[bool, str, str | None]:
+def normalize_repo_path(path: str) -> tuple[str, str | None]:
     """Validate and normalize repository-relative paths.
 
     Repository-relative paths must start with "/" to indicate they are
@@ -59,20 +59,18 @@ def normalize_repo_path(path: str) -> tuple[bool, str, str | None]:
         path: Path string to validate and normalize
 
     Returns:
-        Tuple of (is_valid, normalized_path, error_msg) where:
-        - is_valid: True if path is valid
+        Tuple of (normalized_path, error_msg) where:
         - normalized_path: Path with leading "/" removed (empty if invalid)
-        - error_msg: Error message if invalid, None otherwise
+        - error_msg: Error message if invalid, None if valid
 
     Example:
         >>> normalize_repo_path("/path/to/file.yaml")
-        (True, "path/to/file.yaml", None)
+        ("path/to/file.yaml", None)
         >>> normalize_repo_path("relative/path.yaml")
-        (False, "", "Path must be repository-relative (start with /)")
+        ("", "Path must be repository-relative (start with /)")
     """
     if not path.startswith("/"):
         return (
-            False,
             "",
             "Path must be repository-relative (start with /) to ensure "
             "unambiguous references across the workspace",
@@ -80,14 +78,14 @@ def normalize_repo_path(path: str) -> tuple[bool, str, str | None]:
 
     # Strip leading slash for filesystem operations
     normalized = path[1:]
-    return (True, normalized, None)
+    return (normalized, None)
 
 
 def validate_reference_path(
     path: str,
     expected_extension: str | list[str] | None = None,
     ref_type: str = "reference",
-) -> tuple[bool, str, str | None]:
+) -> tuple[str, str | None]:
     """Validate reference paths with optional extension checking.
 
     Combines repository-relative validation with file extension checking.
@@ -98,18 +96,18 @@ def validate_reference_path(
         ref_type: Description of reference type for error messages
 
     Returns:
-        Tuple of (is_valid, normalized_path, error_msg)
+        Tuple of (normalized_path, error_msg) where error_msg is None if valid
 
     Example:
         >>> validate_reference_path("/params.yaml", ".yaml")
-        (True, "params.yaml", None)
+        ("params.yaml", None)
         >>> validate_reference_path("/doc.md", [".md", ".txt"])
-        (True, "doc.md", None)
+        ("doc.md", None)
     """
     # First validate repository-relative format
-    is_valid, normalized, error = normalize_repo_path(path)
-    if not is_valid:
-        return (False, "", error)
+    normalized, error = normalize_repo_path(path)
+    if error:
+        return ("", error)
 
     # Check file extension if specified
     if expected_extension is not None:
@@ -121,9 +119,8 @@ def validate_reference_path(
         if not any(path.endswith(ext) for ext in extensions):
             ext_list = ", ".join(extensions)
             return (
-                False,
                 "",
                 f"{ref_type.capitalize()} path must end with {ext_list}, got: {path}",
             )
 
-    return (True, normalized, None)
+    return (normalized, None)

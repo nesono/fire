@@ -5,11 +5,12 @@ markdown references used in requirements documents.
 """
 
 import re
+from typing import Final
 
 # Regex patterns for markdown reference parsing
-MARKDOWN_LINK_PATTERN = r"\[([^\]]+)\]\(([^\)]+)\)"
-PARAM_REFERENCE_PATTERN = r"\[@([a-zA-Z_][a-zA-Z0-9_]*)\]\(([^)]+)\)"
-REQUIREMENT_REFERENCE_PATTERN = r"\[([A-Z][A-Z0-9_-]+)\]\(([^)]+\.md[^)]*)\)"
+MARKDOWN_LINK_PATTERN: Final = r"\[([^\]]+)\]\(([^\)]+)\)"
+PARAM_REFERENCE_PATTERN: Final = r"\[@([a-zA-Z_][a-zA-Z0-9_]*)\]\(([^)]+)\)"
+REQUIREMENT_REFERENCE_PATTERN: Final = r"\[([A-Z][A-Z0-9_-]+)\]\(([^)]+\.md[^)]*)\)"
 
 
 def extract_markdown_links(text: str) -> list[tuple[str, str]]:

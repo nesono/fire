@@ -47,31 +47,24 @@ class TestNormalizeRepoPath:
     """Tests for normalize_repo_path function."""
 
     def test_valid_absolute_path(self):
-        is_valid, normalized, error = path_common.normalize_repo_path(
-            "/path/to/file.yaml"
-        )
-        assert is_valid is True
+        normalized, error = path_common.normalize_repo_path("/path/to/file.yaml")
         assert normalized == "path/to/file.yaml"
         assert error is None
 
     def test_valid_root_file(self):
-        is_valid, normalized, error = path_common.normalize_repo_path("/file.yaml")
-        assert is_valid is True
+        normalized, error = path_common.normalize_repo_path("/file.yaml")
         assert normalized == "file.yaml"
         assert error is None
 
     def test_invalid_relative_path(self):
-        is_valid, normalized, error = path_common.normalize_repo_path(
-            "relative/path.yaml"
-        )
-        assert is_valid is False
+        normalized, error = path_common.normalize_repo_path("relative/path.yaml")
         assert normalized == ""
+        assert error is not None
         assert "repository-relative" in error
         assert "start with /" in error
 
     def test_empty_path(self):
-        is_valid, normalized, error = path_common.normalize_repo_path("")
-        assert is_valid is False
+        normalized, error = path_common.normalize_repo_path("")
         assert normalized == ""
         assert error is not None
 
@@ -80,47 +73,40 @@ class TestValidateReferencePath:
     """Tests for validate_reference_path function."""
 
     def test_valid_path_with_extension(self):
-        is_valid, normalized, error = path_common.validate_reference_path(
-            "/params.yaml", ".yaml"
-        )
-        assert is_valid is True
+        normalized, error = path_common.validate_reference_path("/params.yaml", ".yaml")
         assert normalized == "params.yaml"
         assert error is None
 
     def test_valid_path_with_multiple_extensions(self):
-        is_valid, normalized, error = path_common.validate_reference_path(
+        normalized, error = path_common.validate_reference_path(
             "/doc.md", [".md", ".txt"]
         )
-        assert is_valid is True
         assert normalized == "doc.md"
         assert error is None
 
     def test_invalid_extension(self):
-        is_valid, normalized, error = path_common.validate_reference_path(
-            "/params.json", ".yaml"
-        )
-        assert is_valid is False
+        normalized, error = path_common.validate_reference_path("/params.json", ".yaml")
         assert normalized == ""
+        assert error is not None
         assert ".yaml" in error
 
     def test_invalid_path_format(self):
-        is_valid, normalized, error = path_common.validate_reference_path(
+        normalized, error = path_common.validate_reference_path(
             "relative.yaml", ".yaml"
         )
-        assert is_valid is False
+        assert normalized == ""
+        assert error is not None
         assert "repository-relative" in error
 
     def test_no_extension_check(self):
-        is_valid, normalized, error = path_common.validate_reference_path(
-            "/any/file.ext", None
-        )
-        assert is_valid is True
+        normalized, error = path_common.validate_reference_path("/any/file.ext", None)
         assert normalized == "any/file.ext"
         assert error is None
 
     def test_custom_ref_type_in_error(self):
-        is_valid, normalized, error = path_common.validate_reference_path(
+        normalized, error = path_common.validate_reference_path(
             "/file.txt", ".md", ref_type="requirement"
         )
-        assert is_valid is False
+        assert normalized == ""
+        assert error is not None
         assert "Requirement path" in error

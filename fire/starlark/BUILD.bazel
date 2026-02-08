@@ -50,14 +50,12 @@ py_library(
 py_library(
     name = "path_common",
     srcs = ["path_common.py"],
-    visibility = ["//visibility:public"],
 )
 
 # Common utilities - file I/O
 py_library(
     name = "file_io_common",
     srcs = ["file_io_common.py"],
-    visibility = ["//visibility:public"],
     deps = ["@pip//pyyaml"],
 )
 
@@ -65,7 +63,6 @@ py_library(
 py_library(
     name = "markdown_common",
     srcs = ["markdown_common.py"],
-    visibility = ["//visibility:public"],
 )
 
 # Python library for parameter validation
