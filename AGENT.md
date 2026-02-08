@@ -78,6 +78,9 @@ Always keep the documentation up to date. When changing the interfaces or
 behavior, make sure that there is no contradicting documentation in the
 repository.
 
+Please keep the information to the points mentioned, no other information like
+Test Results, "Benefits", etc.
+
 ## PR Format
 
 Please use the following format as a blueprint for PR descriptions:
