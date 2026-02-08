@@ -7,18 +7,53 @@ for validating parameter YAML files.
 
 import re
 from collections import defaultdict
-from typing import Annotated, Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Literal, Union
 
 from pydantic import (
     BaseModel,
-    Discriminator,
     Field,
-    Tag,
     field_validator,
     model_validator,
 )
 
 _VERSION_SUFFIX_RE = re.compile(r"^([a-z][a-z0-9_]*)_v([1-9][0-9]*)$")
+
+
+def infer_parameter_type(data: Dict[str, Any]) -> str:
+    """Infer parameter type from the value field.
+
+    Args:
+        data: Parameter dictionary with at least a 'value' field
+
+    Returns:
+        Inferred type string: 'i64', 'f64', 'bool', 'string', or 'table'
+
+    Raises:
+        ValueError: If type cannot be inferred or value is None
+    """
+    # Table type must be explicit (has columns/rows)
+    if "type" in data:
+        return data["type"]
+
+    if "value" not in data:
+        raise ValueError("Parameter must have 'value' field")
+
+    value = data["value"]
+
+    if value is None:
+        raise ValueError("Cannot infer type from NoneType")
+
+    # Check bool BEFORE int (bool is subclass of int in Python)
+    if isinstance(value, bool):
+        return "bool"
+    elif isinstance(value, int):
+        return "i64"
+    elif isinstance(value, float):
+        return "f64"
+    elif isinstance(value, str):
+        return "string"
+    else:
+        raise ValueError(f"Cannot infer type from {type(value).__name__}")
 
 
 class AllParamBase(BaseModel):
@@ -37,17 +72,8 @@ class Column(BaseModel):
     """Column definition for table parameters."""
 
     name: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
-    type: Literal["i32", "i64", "u32", "u64", "f32", "f64", "string", "bool"]
+    type: Literal["i64", "f64", "string", "bool"]
     unit: str | None = None
-
-    model_config = {"extra": "forbid"}
-
-
-class I32Parameter(UnitParamBase):
-    """32-bit signed integer parameter."""
-
-    type: Literal["i32"]
-    value: int = Field(strict=True, ge=-2147483648, lt=2147483647)
 
     model_config = {"extra": "forbid"}
 
@@ -56,34 +82,7 @@ class I64Parameter(UnitParamBase):
     """64-bit signed integer parameter."""
 
     type: Literal["i64"]
-    value: int = Field(strict=True, ge=-9223372036854775808, lt=9223372036854775807)
-
-    model_config = {"extra": "forbid"}
-
-
-class U32Parameter(UnitParamBase):
-    """32-bit unsigned integer parameter."""
-
-    type: Literal["u32"]
-    value: int = Field(strict=True, ge=0, le=4294967295)
-
-    model_config = {"extra": "forbid"}
-
-
-class U64Parameter(UnitParamBase):
-    """64-bit unsigned integer parameter."""
-
-    type: Literal["u64"]
-    value: int = Field(strict=True, ge=0, le=18446744073709551615)
-
-    model_config = {"extra": "forbid"}
-
-
-class F32Parameter(UnitParamBase):
-    """32-bit float parameter."""
-
-    type: Literal["f32"]
-    value: float = Field(strict=True)
+    value: int = Field(strict=True)
 
     model_config = {"extra": "forbid"}
 
@@ -133,20 +132,13 @@ class TableParameter(AllParamBase):
     model_config = {"extra": "forbid"}
 
 
-# Discriminated union of all parameter types based on 'type' field
-Parameter = Annotated[
-    Union[
-        Annotated[I32Parameter, Tag("i32")],
-        Annotated[I64Parameter, Tag("i64")],
-        Annotated[U32Parameter, Tag("u32")],
-        Annotated[U64Parameter, Tag("u64")],
-        Annotated[F32Parameter, Tag("f32")],
-        Annotated[F64Parameter, Tag("f64")],
-        Annotated[StringParameter, Tag("string")],
-        Annotated[BoolParameter, Tag("bool")],
-        Annotated[TableParameter, Tag("table")],
-    ],
-    Discriminator("type"),
+# Union of all parameter types (type field injected by ParameterFile validator)
+Parameter = Union[
+    I64Parameter,
+    F64Parameter,
+    StringParameter,
+    BoolParameter,
+    TableParameter,
 ]
 
 
@@ -156,6 +148,32 @@ class ParameterFile(BaseModel):
     parameters: Dict[str, Parameter] = Field(min_length=1)
 
     model_config = {"extra": "forbid"}
+
+    @model_validator(mode="before")
+    @classmethod
+    def inject_inferred_types(cls, data: Any) -> Any:
+        """Inject inferred types into parameter definitions before validation.
+
+        For scalar parameters without an explicit 'type' field, infer the type
+        from the Python type of the 'value' field (which comes from YAML parsing).
+        """
+        if not isinstance(data, dict) or "parameters" not in data:
+            return data
+
+        parameters = data.get("parameters", {})
+        if not isinstance(parameters, dict):
+            return data
+
+        # Inject type field for each parameter if not present
+        for param_name, param_data in parameters.items():
+            if isinstance(param_data, dict) and "type" not in param_data:
+                try:
+                    param_data["type"] = infer_parameter_type(param_data)
+                except ValueError as e:
+                    # Re-raise with parameter name context
+                    raise ValueError(f"Parameter '{param_name}': {e}") from e
+
+        return data
 
     @model_validator(mode="after")
     def validate_version_suffixes(self):

@@ -71,3 +71,9 @@ end of the test code - otherwise Bazel won't run the test.
 
 Also run bazel testing both with --config=typecheck and without it.
 The typecheck config checks code formatting with ty.
+
+## Documentation
+
+Always keep the documentation up to date. When changing the interfaces or
+behavior, make sure that there is no contradicting documentation in the
+repository.
