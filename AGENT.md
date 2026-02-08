@@ -11,7 +11,8 @@ Never commit directly to the `main` branch, always ensure there is a branch
 ready to create a (new) PR from.
 
 Always write in TDD style. Write a small test first, make it fail, make it
-succeed, refactor.
+succeed, refactor. Please make sure to always go through these steps, don't
+skip the making the test fail step, to ensure that the tests are actually run.
 
 Always prefer small changes to big changes. Don't create comments unless they
 provide semantics that are not obvious from the code.
@@ -45,7 +46,6 @@ Formatters used:
 - Black
 - Ruff
 - Buildifier
-- Mypy
 
 Ensure not to add any secrets to the code, they will be detected by
 
@@ -65,3 +65,9 @@ one parameter, which is the Python version to use
 
 Also make sure that the failure tests are running successful, which are started
 using `fire/starlark/failure_test/run_failure_tests.sh`.
+
+Please also ensure to use pytest and that there is a pytest.main() call at the
+end of the test code - otherwise Bazel won't run the test.
+
+Also run bazel testing both with --config=typecheck and without it.
+The typecheck config checks code formatting with ty.
