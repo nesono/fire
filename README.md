@@ -45,33 +45,32 @@ Add parameters to a YAML file, e.g. like the following:
 In file `vehicle_params.yaml`
 
 ```yaml
-parameters:
-  maximum_vehicle_velocity_v1:
-    value: 55.0 # Type inferred as f64 from YAML float
-    unit: m/s
-    description: Maximum design velocity for the vehicle
+maximum_vehicle_velocity_v1:
+  value: 55.0 # Type inferred as f64 from YAML float
+  unit: m/s
+  description: Maximum design velocity for the vehicle
 
-  wheel_count_v1:
-    value: 4 # Type inferred as i64 from YAML integer
-    description: Number of wheels on the vehicle
+wheel_count_v1:
+  value: 4 # Type inferred as i64 from YAML integer
+  description: Number of wheels on the vehicle
 
-  braking_distance_table_v1:
-    type: table # Tables require explicit type declaration
-    description: Braking distances under various conditions
-    columns:
-      - name: velocity
-        type: f64 # Column types are explicit
-        unit: m/s
-      - name: friction_coefficient
-        type: f64
-        unit: dimensionless
-      - name: braking_distance
-        type: f64
-        unit: m
-    rows:
-      - [10.0, 0.7, 7.1]
-      - [20.0, 0.7, 28.6]
-      - [30.0, 0.7, 64.3]
+braking_distance_table_v1:
+  type: table # Tables require explicit type declaration
+  description: Braking distances under various conditions
+  columns:
+    - name: velocity
+      type: f64 # Column types are explicit
+      unit: m/s
+    - name: friction_coefficient
+      type: f64
+      unit: dimensionless
+    - name: braking_distance
+      type: f64
+      unit: m
+  rows:
+    - [10.0, 0.7, 7.1]
+    - [20.0, 0.7, 28.6]
+    - [30.0, 0.7, 64.3]
 ```
 
 **Type Inference**: Types are automatically inferred from YAML native types:

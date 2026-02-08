@@ -38,12 +38,12 @@ def yaml_to_items(yaml_data):
     Each item contains all information needed to render a single
     parameter-version file.
     """
-    params = yaml_data.get("parameters", {})
+    # Parameters are at root level (no 'parameters' wrapper)
     groups = defaultdict(list)
 
     version_re = re.compile(r"^(.+)_v(\d+)$")
 
-    for key, param_def in params.items():
+    for key, param_def in yaml_data.items():
         m = version_re.match(key)
         if m:
             base_name = m.group(1)

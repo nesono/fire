@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Literal, Union
 from pydantic import (
     BaseModel,
     Field,
+    RootModel,
     field_validator,
     model_validator,
 )
@@ -142,12 +143,13 @@ Parameter = Union[
 ]
 
 
-class ParameterFile(BaseModel):
-    """Root model for parameter YAML files."""
+class ParameterFile(RootModel[Dict[str, Parameter]]):
+    """Root model for parameter YAML files.
 
-    parameters: Dict[str, Parameter] = Field(min_length=1)
+    Parameters are defined at the root level without a 'parameters' wrapper.
+    """
 
-    model_config = {"extra": "forbid"}
+    root: Dict[str, Parameter] = Field(min_length=1)
 
     @model_validator(mode="before")
     @classmethod
@@ -157,15 +159,11 @@ class ParameterFile(BaseModel):
         For scalar parameters without an explicit 'type' field, infer the type
         from the Python type of the 'value' field (which comes from YAML parsing).
         """
-        if not isinstance(data, dict) or "parameters" not in data:
-            return data
-
-        parameters = data.get("parameters", {})
-        if not isinstance(parameters, dict):
+        if not isinstance(data, dict):
             return data
 
         # Inject type field for each parameter if not present
-        for param_name, param_data in parameters.items():
+        for param_name, param_data in data.items():
             if isinstance(param_data, dict) and "type" not in param_data:
                 try:
                     param_data["type"] = infer_parameter_type(param_data)
@@ -180,7 +178,7 @@ class ParameterFile(BaseModel):
         """Validate that all parameter keys use _vN suffix and versions are consecutive."""
         groups: Dict[str, Dict[int, str]] = defaultdict(dict)
 
-        for key in self.parameters:
+        for key in self.root:
             m = _VERSION_SUFFIX_RE.match(key)
             if not m:
                 raise ValueError(
