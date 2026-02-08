@@ -18,3 +18,8 @@ build --java_language_version=17
 build --tool_java_language_version=17
 build --java_runtime_version=remotejdk_17
 build --tool_java_runtime_version=remotejdk_17
+
+# Ty type checking (opt-in for development)
+# Usage: bazel build --config=typecheck //...
+build:typecheck --aspects //tools/lint:linters.bzl%ty
+build:typecheck --output_groups=+rules_lint_report
