@@ -158,17 +158,10 @@ def validate_parameter_reference(
         file_path = param_path
         anchor = param_name
 
-    # Check that path is repository-relative (starts with /)
-    if not file_path.startswith("/"):
-        return (
-            False,
-            f"Parameter reference path must be repository-relative (start with /): '{param_path}'",
-        )
-
-    # Strip leading slash for repository-relative paths (e.g., /examples/foo.yaml -> examples/foo.yaml)
-    # Markdown uses /path for repository-relative, but os.path.join treats it as absolute
-    if file_path.startswith("/"):
-        file_path = file_path[1:]
+    # Normalize repository-relative path
+    file_path, error = path_common.normalize_repo_path(file_path)
+    if error:
+        return (False, f"Parameter reference {error}: '{param_path}'")
 
     # Check that link text matches anchor
     if param_name != anchor:
@@ -242,23 +235,10 @@ def validate_requirement_reference(
     req_id, req_path, workspace_root, ref_version=None, source_file=None
 ):
     """Validate that a requirement reference exists and check version if specified."""
-    # Check that path is repository-relative (starts with /)
-    # Extract the path part before checking (handle fragments and query params)
-    path_to_check = req_path.split("#")[0] if "#" in req_path else req_path
-    path_to_check = (
-        path_to_check.split("?")[0] if "?" in path_to_check else path_to_check
-    )
-
-    if not path_to_check.startswith("/"):
-        return (
-            False,
-            f"Requirement reference path must be repository-relative (start with /): '{req_path}'",
-        )
-
-    # Strip leading slash for repository-relative paths (e.g., /examples/foo.md -> examples/foo.md)
-    # Markdown uses /path for repository-relative, but os.path.join treats it as absolute
-    if req_path.startswith("/"):
-        req_path = req_path[1:]
+    # Normalize repository-relative path
+    req_path, error = path_common.normalize_repo_path(req_path)
+    if error:
+        return (False, f"Requirement reference {error}: '{req_path}'")
 
     # Remove fragment if present (e.g., path.md#REQ-ID -> path.md)
     path_without_fragment = req_path.split("#")[0] if "#" in req_path else req_path
@@ -365,10 +345,11 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
         # Check if this parameter file is in allowed_deps (strict dependency checking)
         # Only enforce if allowed_deps is not None (i.e., was explicitly passed)
         if allowed_deps is not None:
-            # Strip leading slash for comparison
-            normalized_path = (
-                param_path[1:] if param_path.startswith("/") else param_path
-            )
+            # Normalize path for dependency checking
+            if param_path.startswith("/"):
+                normalized_path, _ = path_common.normalize_repo_path(param_path)
+            else:
+                normalized_path = param_path
             # Remove fragment if present
             normalized_path = (
                 normalized_path.split("#")[0]
@@ -402,8 +383,12 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
         # Check if this requirement is in allowed_deps (strict dependency checking)
         # Only enforce if allowed_deps is not None (i.e., was explicitly passed)
         if allowed_deps is not None:
-            # Strip leading slash and fragment for comparison
-            normalized_path = req_path[1:] if req_path.startswith("/") else req_path
+            # Normalize path for dependency checking
+            if req_path.startswith("/"):
+                normalized_path, _ = path_common.normalize_repo_path(req_path)
+            else:
+                normalized_path = req_path
+            # Remove fragment if present
             normalized_path = (
                 normalized_path.split("#")[0]
                 if "#" in normalized_path
