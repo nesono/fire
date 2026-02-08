@@ -1,6 +1,6 @@
 """Java code generator for Fire parameters."""
 
-from fire.starlark.generators.template_loader import render_template
+from fire.starlark.generators.generator_common import generate_file_aggregate
 
 
 def generate_java_files(
@@ -12,16 +12,9 @@ def generate_java_files(
 
     Returns list of (relative_path, content) tuples with one aggregated file.
     """
-    files = []
-
-    # Generate single aggregated class containing all parameters
-    filename = f"{class_name}.java"
-    content = render_template(
+    return generate_file_aggregate(
+        items,
         "java_all.java.j2",
-        items=items,
-        namespace=namespace,
-        class_name=class_name,
+        f"{class_name}.java",
+        {"namespace": namespace, "class_name": class_name},
     )
-    files.append((filename, content))
-
-    return files
