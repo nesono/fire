@@ -8,9 +8,9 @@ the Pydantic parameter models.
 import argparse
 import sys
 
-import yaml
 from pydantic import ValidationError  # type: ignore
 
+from fire.starlark import file_io_common
 from fire.starlark.parameter_models import ParameterFile  # type: ignore
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
 
@@ -27,12 +27,6 @@ _DISCRIMINATOR_TAGS = [
 ]
 
 
-def load_yaml(yaml_path):
-    """Load YAML file."""
-    with open(yaml_path, "r") as f:
-        return yaml.safe_load(f)
-
-
 def validate_parameters(yaml_path):
     """Validate parameter YAML file using Pydantic models.
 
@@ -42,12 +36,9 @@ def validate_parameters(yaml_path):
     Returns:
         Tuple of (success, errors) where errors is a list of error messages.
     """
-    try:
-        data = load_yaml(yaml_path)
-    except yaml.YAMLError as e:
-        return False, [f"Invalid YAML syntax: {e}"]
-    except Exception as e:
-        return False, [f"Failed to load YAML: {e}"]
+    data, error = file_io_common.load_yaml_safe(yaml_path)
+    if error:
+        return False, [error]
 
     if data is None:
         return False, ["YAML file is empty"]

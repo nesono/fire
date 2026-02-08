@@ -19,7 +19,7 @@ import sys
 
 from typing import Final
 
-from fire.starlark import markdown_common, path_common
+from fire.starlark import file_io_common, markdown_common, path_common
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
 
 _BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
@@ -187,11 +187,9 @@ def validate_parameter_reference(
             return False, f"Parameter file does not exist: {file_path}"
 
     # Read file and check if parameter is defined
-    try:
-        with open(abs_path, "r") as f:
-            content = f.read()
-    except Exception as e:
-        return False, f"Error reading {file_path}: {e}"
+    content, error = file_io_common.read_file_safe(abs_path)
+    if error:
+        return False, error
 
     # Check version if ref_version is specified
     if ref_version is None:
@@ -259,42 +257,37 @@ def validate_requirement_reference(
         return False, f"Requirement file does not exist: {req_path}"
 
     # Read file and verify it contains the correct requirement ID
-    try:
-        with open(abs_path, "r") as f:
-            content = f.read()
+    content, error = file_io_common.read_file_safe(abs_path)
+    if error:
+        return False, error
 
-        # Parse inline metadata (pipe-separated format)
-        metadata, validation_error = parse_inline_metadata_for_requirement(
-            content, req_id
-        )
+    # Parse inline metadata (pipe-separated format)
+    metadata, validation_error = parse_inline_metadata_for_requirement(content, req_id)
 
-        if metadata is None:
-            if validation_error:
-                error_messages = format_validation_errors(validation_error)
-                return (
-                    False,
-                    f"Requirement file {req_path} validation failed: {'; '.join(error_messages)}",
-                )
-            else:
-                return (
-                    False,
-                    f"Requirement file {req_path} does not contain ID '{req_id}'",
-                )
+    if metadata is None:
+        if validation_error:
+            error_messages = format_validation_errors(validation_error)
+            return (
+                False,
+                f"Requirement file {req_path} validation failed: {'; '.join(error_messages)}",
+            )
+        else:
+            return (
+                False,
+                f"Requirement file {req_path} does not contain ID '{req_id}'",
+            )
 
-        # Check version if ref_version is specified
-        if ref_version is not None:
-            actual_version = metadata.version
-            # ANSI color codes: \033[91m = light red, \033[0m = reset
-            # Print to stdout so Bazel shows these warnings even when validation passes
-            if actual_version != ref_version:
-                print(
-                    f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} is at version={actual_version}"
-                )
+    # Check version if ref_version is specified
+    if ref_version is not None:
+        actual_version = metadata.version
+        # ANSI color codes: \033[91m = light red, \033[0m = reset
+        # Print to stdout so Bazel shows these warnings even when validation passes
+        if actual_version != ref_version:
+            print(
+                f"\033[91mWARNING:\033[0m REQUIREMENT VERSION MISMATCH! {source_file}: Reference to {req_id} specifies version={ref_version}, but {path_without_fragment} is at version={actual_version}"
+            )
 
-        return True, None
-
-    except Exception as e:
-        return False, f"Error reading {req_path}: {e}"
+    return True, None
 
 
 def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
@@ -309,11 +302,9 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
     if allowed_deps is None:
         allowed_deps = set()
 
-    try:
-        with open(file_path, "r") as f:
-            content = f.read()
-    except Exception as e:
-        return [f"Error reading {file_path}: {e}"]
+    content, error = file_io_common.read_file_safe(file_path)
+    if error:
+        return [error]
 
     # Validate no bare/malformed TODOs in the entire file
     errors.extend(validate_no_bare_todos(content, file_path))

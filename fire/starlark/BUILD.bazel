@@ -72,6 +72,7 @@ py_library(
     srcs = ["validate_parameters.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":file_io_common",
         ":parameter_models",
         ":pydantic_tools",
         "@pip//pydantic",
@@ -86,6 +87,7 @@ py_binary(
     main = "validate_parameters.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":file_io_common",
         ":parameter_models",
         ":pydantic_tools",
         "@pip//pydantic",
@@ -99,6 +101,7 @@ py_binary(
     main = "validate_cross_references.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":file_io_common",
         ":markdown_common",
         ":path_common",
         ":pydantic_tools",
@@ -121,6 +124,7 @@ py_test(
         "validate_parameters_test.py",
     ],
     deps = [
+        ":file_io_common",
         ":parameter_models",
         ":pydantic_tools",
         "@pip//pydantic",
@@ -148,6 +152,7 @@ py_library(
     srcs = ["validate_cross_references.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":file_io_common",
         ":markdown_common",
         ":path_common",
         ":pydantic_tools",
