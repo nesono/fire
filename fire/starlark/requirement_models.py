@@ -6,6 +6,8 @@ from typing import Literal, Optional, Union, Final
 
 from pydantic import BaseModel, Field, field_validator
 
+from fire.starlark import markdown_common
+
 _TODO_PATTERN: Final = re.compile(r"^TODO\([A-Z]+-[0-9]+\)$")
 
 _VALID_SIL_VALUES: Final = {
@@ -95,7 +97,7 @@ class RequirementMetadata(BaseModel):
             return v
 
         # Check markdown link format: [TEXT](URL)
-        match = re.match(r"\[([^\]]+)\]\(([^\)]+)\)", v)
+        match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, v)
         if not match:
             raise ValueError(
                 "parent must be a markdown link: [REQ-ID](/path.md?version=N#REQ-ID)"
