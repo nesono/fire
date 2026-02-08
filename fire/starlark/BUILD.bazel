@@ -136,7 +136,10 @@ py_library(
         "requirement_models.py",
     ],
     visibility = ["//visibility:public"],
-    deps = ["@pip//pydantic"],
+    deps = [
+        ":markdown_common",
+        "@pip//pydantic",
+    ],
 )
 
 # Python library for cross-reference validation
