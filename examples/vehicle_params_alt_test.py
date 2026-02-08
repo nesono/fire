@@ -2,7 +2,7 @@
 
 # Import from the alternate library
 from examples.vehicle_params_py_alt.maximum_vehicle_velocity_v3 import (
-    MAXIMUM_VEHICLE_VELOCITY,
+    MAXIMUM_VEHICLE_VELOCITY_MPS,
 )
 from examples.vehicle_params_py_alt.wheel_count_v1 import WHEEL_COUNT
 from examples.vehicle_params_py_alt.vehicle_name_v1 import VEHICLE_NAME
@@ -15,7 +15,7 @@ from examples.vehicle_params_py_alt.braking_distance_table_v1 import (
 
 def test_simple_parameters():
     """Test simple parameter access."""
-    assert MAXIMUM_VEHICLE_VELOCITY == 100.0
+    assert MAXIMUM_VEHICLE_VELOCITY_MPS == 100.0
     assert WHEEL_COUNT == 4
     assert VEHICLE_NAME == "TestVehicle"
     assert not DEBUG_MODE

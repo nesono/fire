@@ -13,8 +13,8 @@ int main() {
   using namespace my_project::vehicle::params;
 
   // Test simple float parameter
-  assert(MAXIMUM_VEHICLE_VELOCITY == 100.0);
-  std::cout << "✓ MAXIMUM_VEHICLE_VELOCITY = " << MAXIMUM_VEHICLE_VELOCITY
+  assert(MAXIMUM_VEHICLE_VELOCITY_MPS == 100.0);
+  std::cout << "✓ MAXIMUM_VEHICLE_VELOCITY_MPS = " << MAXIMUM_VEHICLE_VELOCITY_MPS
             << " m/s" << std::endl;
 
   // Test integer parameter
