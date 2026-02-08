@@ -1,7 +1,9 @@
 test_value_v1:
   value: 40.0
+  unit: m/s
   description: Test parameter at version 1
 
 test_value_v2:
   value: 42.0
+  unit: m/s
   description: Test parameter at version 2

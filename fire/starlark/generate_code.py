@@ -32,13 +32,44 @@ from fire.starlark.generators.python import generate_python_files
 from fire.starlark.generators.rust import generate_rust_files
 
 
+def normalize_unit_suffix(unit: str) -> str:
+    """Convert unit string to valid identifier suffix.
+
+    Args:
+        unit: Unit string (e.g., "m/s", "m/s^2", "m^3")
+
+    Returns:
+        Normalized suffix (e.g., "mps", "mps2", "m3")
+
+    Examples:
+        "m/s"    -> "mps"    (meters per second)
+        "m/s^2"  -> "mps2"   (meters per second squared)
+        "rad/s"  -> "radps"  (radians per second)
+        "m^3"    -> "m3"     (cubic meters)
+        "kg/m^3" -> "kgpm3"  (kilograms per cubic meter)
+        "m"      -> "m"      (meters)
+        "dimensionless" -> ""
+    """
+    if not unit or unit.lower() == "dimensionless":
+        return ""
+
+    suffix = unit.lower()
+    suffix = suffix.replace("/", "p")  # "/" means "per" -> "p"
+    suffix = suffix.replace("^", "")  # Remove caret, keep exponent
+    suffix = suffix.replace("·", "")  # Remove SI dot (if used)
+    suffix = suffix.replace("*", "")  # Remove asterisk (if used)
+    suffix = suffix.replace(" ", "")  # Remove spaces
+    suffix = suffix.replace("-", "")  # Remove hyphens (for negative exponents)
+
+    return suffix
+
+
 def yaml_to_items(yaml_data):
     """Convert YAML parameter format to flat list of per-version items.
 
     Each item contains all information needed to render a single
     parameter-version file.
     """
-    # Parameters are at root level (no 'parameters' wrapper)
     groups = defaultdict(list)
 
     version_re = re.compile(r"^(.+)_v(\d+)$")
@@ -55,6 +86,7 @@ def yaml_to_items(yaml_data):
         entry = {
             "base_name": base_name,
             "version": version,
+            "unit_suffix": normalize_unit_suffix(param_def.get("unit", "")),
         }
         entry.update(param_def)
         groups[base_name].append(entry)

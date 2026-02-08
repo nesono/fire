@@ -21,16 +21,26 @@ class {{ item.base_name | pascal_case }}Row:
     {{ col.name }}: {{ col.type | python_type }}
 {% endfor %}
 
+{% if item.unit_suffix %}
+{% set const_name = (item.base_name + "_" + item.unit_suffix) | upper %}
+{% else %}
+{% set const_name = item.base_name | upper %}
+{% endif %}
 
-{{ item.base_name | upper }} = [
+{{ const_name }} = [
 {% for row in item.rows %}
     {{ item.base_name | pascal_case }}Row({% for i in range(item.columns | length) %}{{ item.columns[i].name }}={% if item.columns[i].type == "string" %}"{{ row[i] }}"{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}),
 {% endfor %}
 ]
 
-{{ item.base_name | upper }}_SIZE = {{ item.rows | length }}
+{{ const_name }}_SIZE = {{ item.rows | length }}
 {% else %}
+{% if item.unit_suffix %}
+{% set const_name = (item.base_name + "_" + item.unit_suffix) | upper %}
+{% else %}
+{% set const_name = item.base_name | upper %}
+{% endif %}
 
-{{ item.base_name | upper }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{{ item.value }}{% else %}{{ item.value }}{% endif %}
+{{ const_name }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{{ item.value }}{% else %}{{ item.value }}{% endif %}
 
 {% endif %}

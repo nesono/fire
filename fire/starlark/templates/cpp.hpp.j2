@@ -23,23 +23,33 @@ struct {{ struct_name }} {
 };
 
 {% set size = item.rows | length %}
+{% if item.unit_suffix %}
+{% set const_name = (item.base_name + "_" + item.unit_suffix) | upper %}
+{% else %}
+{% set const_name = item.base_name | upper %}
+{% endif %}
 /// {{ item.description | default("") }}
-constexpr std::array<{{ struct_name }}, {{ size }}> {{ item.base_name | upper }} = {{ "{" }}{
+constexpr std::array<{{ struct_name }}, {{ size }}> {{ const_name }} = {{ "{" }}{
 {% for row in item.rows %}
     {{ "{" }}{% for i in range(item.columns | length) %}{% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
 {% endfor %}
 }};
 
 constexpr const std::array<{{ struct_name }}, {{ size }}>& {{ item.base_name }}() {
-    return {{ item.base_name | upper }};
+    return {{ const_name }};
 }
 
 {% else %}
 {% set cpp_type = item.type | cpp_type %}
+{% if item.unit_suffix %}
+{% set const_name = (item.base_name + "_" + item.unit_suffix) | upper %}
+{% else %}
+{% set const_name = item.base_name | upper %}
+{% endif %}
 {% set description = item.description | default("") %}
 {% if item.unit %}{% set description = description + " - Unit: " + item.unit %}{% endif %}
 /// {{ description }}
-constexpr {{ cpp_type }} {{ item.base_name | upper }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
+constexpr {{ cpp_type }} {{ const_name }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
 
 {% endif %}
 {% if namespace %}

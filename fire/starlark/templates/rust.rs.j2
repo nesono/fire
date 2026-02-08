@@ -10,22 +10,32 @@ pub struct {{ struct_name }} {
 }
 
 {% set size = item.rows | length %}
+{% if item.unit_suffix %}
+{% set const_name = (item.base_name + "_" + item.unit_suffix) | upper %}
+{% else %}
+{% set const_name = item.base_name | upper %}
+{% endif %}
 {% if not item.is_latest %}
 #[deprecated(note = "Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.")]
 pub const _DEPRECATED_SENTINEL: () = ();
 
 {% endif %}
 /// {{ item.description | default("") }}
-pub const {{ item.base_name | upper }}: [{{ struct_name }}; {{ size }}] = [
+pub const {{ const_name }}: [{{ struct_name }}; {{ size }}] = [
 {% for row in item.rows %}
     {{ struct_name }} { {% for i in range(item.columns | length) %}{{ item.columns[i].name }}: {% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} },
 {% endfor %}
 ];
 
-pub const {{ item.base_name | upper }}_SIZE: usize = {{ size }};
+pub const {{ const_name }}_SIZE: usize = {{ size }};
 
 {% else %}
 {% set rust_type = item.type | rust_type %}
+{% if item.unit_suffix %}
+{% set const_name = (item.base_name + "_" + item.unit_suffix) | upper %}
+{% else %}
+{% set const_name = item.base_name | upper %}
+{% endif %}
 {% if not item.is_latest %}
 #[deprecated(note = "Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.")]
 pub const _DEPRECATED_SENTINEL: () = ();
@@ -33,9 +43,9 @@ pub const _DEPRECATED_SENTINEL: () = ();
 {% endif %}
 /// {{ item.description | default("") }}
 {% if item.type == "string" %}
-pub const {{ item.base_name | upper }}: &str = "{{ item.value }}";
+pub const {{ const_name }}: &str = "{{ item.value }}";
 {% else %}
-pub const {{ item.base_name | upper }}: {{ rust_type }} = {% if item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
+pub const {{ const_name }}: {{ rust_type }} = {% if item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
 {% endif %}
 
 {% endif %}
