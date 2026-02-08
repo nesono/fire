@@ -89,6 +89,13 @@ def yaml_to_items(yaml_data):
             "unit_suffix": normalize_unit_suffix(param_def.get("unit", "")),
         }
         entry.update(param_def)
+
+        # Add unit suffixes to table column names
+        if entry.get("type") == "table" and "columns" in entry:
+            for col in entry["columns"]:
+                col_unit = col.get("unit", "")
+                col["unit_suffix"] = normalize_unit_suffix(col_unit)
+
         groups[base_name].append(entry)
 
     items = []

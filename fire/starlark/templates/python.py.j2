@@ -18,7 +18,12 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class {{ item.base_name | pascal_case }}Row:
 {% for col in item.columns %}
-    {{ col.name }}: {{ col.type | python_type }}
+{% if col.unit_suffix %}
+{% set field_name = col.name + "_" + col.unit_suffix %}
+{% else %}
+{% set field_name = col.name %}
+{% endif %}
+    {{ field_name }}: {{ col.type | python_type }}
 {% endfor %}
 
 {% if item.unit_suffix %}
@@ -29,7 +34,7 @@ class {{ item.base_name | pascal_case }}Row:
 
 {{ const_name }} = [
 {% for row in item.rows %}
-    {{ item.base_name | pascal_case }}Row({% for i in range(item.columns | length) %}{{ item.columns[i].name }}={% if item.columns[i].type == "string" %}"{{ row[i] }}"{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}),
+    {{ item.base_name | pascal_case }}Row({% for i in range(item.columns | length) %}{% if item.columns[i].unit_suffix %}{{ item.columns[i].name }}_{{ item.columns[i].unit_suffix }}{% else %}{{ item.columns[i].name }}{% endif %}={% if item.columns[i].type == "string" %}"{{ row[i] }}"{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}),
 {% endfor %}
 ]
 

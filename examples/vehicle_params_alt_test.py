@@ -27,9 +27,9 @@ def test_table_parameters():
 
     first_row = BRAKING_DISTANCE_TABLE[0]
     assert isinstance(first_row, BrakingDistanceTableRow)
-    assert first_row.velocity == 10.0
+    assert first_row.velocity_mps == 10.0
     assert first_row.friction_coefficient == 0.7
-    assert first_row.braking_distance == 7.1
+    assert first_row.braking_distance_m == 7.1
 
 
 if __name__ == "__main__":

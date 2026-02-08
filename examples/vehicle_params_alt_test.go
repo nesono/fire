@@ -33,13 +33,13 @@ func TestAltTableParameters(t *testing.T) {
 	}
 
 	firstRow := table[0]
-	if firstRow.Velocity != 10.0 {
-		t.Errorf("Expected first row velocity = 10.0, got %f", firstRow.Velocity)
+	if firstRow.VelocityMps != 10.0 {
+		t.Errorf("Expected first row velocity = 10.0, got %f", firstRow.VelocityMps)
 	}
 	if firstRow.FrictionCoefficient != 0.7 {
 		t.Errorf("Expected first row friction = 0.7, got %f", firstRow.FrictionCoefficient)
 	}
-	if firstRow.BrakingDistance != 7.1 {
-		t.Errorf("Expected first row braking distance = 7.1, got %f", firstRow.BrakingDistance)
+	if firstRow.BrakingDistanceM != 7.1 {
+		t.Errorf("Expected first row braking distance = 7.1, got %f", firstRow.BrakingDistanceM)
 	}
 }

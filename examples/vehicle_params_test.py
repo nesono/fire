@@ -30,12 +30,12 @@ def test_table_parameters():
     # Check first row
     first_row = BRAKING_DISTANCE_TABLE[0]
     assert isinstance(first_row, BrakingDistanceTableRow)
-    assert first_row.velocity == 10.0
+    assert first_row.velocity_mps == 10.0
     assert first_row.friction_coefficient == 0.7
-    assert first_row.braking_distance == 7.1
+    assert first_row.braking_distance_m == 7.1
 
     # Check that we can iterate over the table
-    velocities = [row.velocity for row in BRAKING_DISTANCE_TABLE]
+    velocities = [row.velocity_mps for row in BRAKING_DISTANCE_TABLE]
     assert 10.0 in velocities
     assert 20.0 in velocities
     assert 30.0 in velocities
@@ -47,7 +47,7 @@ def test_table_immutability():
 
     # Try to modify a field (should raise error due to frozen=True)
     try:
-        first_row.velocity = 999.0
+        first_row.velocity_mps = 999.0
         assert False, "Should not be able to modify frozen dataclass"
     except AttributeError:
         pass  # Expected

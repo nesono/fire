@@ -9,7 +9,12 @@
 #[derive(Debug, Clone, Copy)]
 pub struct {{ struct_name }} {
 {% for col in item.columns %}
-    pub {{ col.name }}: {{ col.type | rust_type }},
+{% if col.unit_suffix %}
+{% set field_name = col.name + "_" + col.unit_suffix %}
+{% else %}
+{% set field_name = col.name %}
+{% endif %}
+    pub {{ field_name }}: {{ col.type | rust_type }},
 {% endfor %}
 }
 
@@ -25,7 +30,7 @@ pub struct {{ struct_name }} {
 /// {{ item.description | default("") }}
 pub const {{ const_name }}_V{{ item.version }}: [{{ struct_name }}; {{ size }}] = [
 {% for row in item.rows %}
-    {{ struct_name }} { {% for i in range(item.columns | length) %}{{ item.columns[i].name }}: {% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} },
+    {{ struct_name }} { {% for i in range(item.columns | length) %}{% if item.columns[i].unit_suffix %}{{ item.columns[i].name }}_{{ item.columns[i].unit_suffix }}{% else %}{{ item.columns[i].name }}{% endif %}: {% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} },
 {% endfor %}
 ];
 

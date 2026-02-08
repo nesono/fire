@@ -37,12 +37,12 @@ int main() {
             << std::endl;
 
   // Test first row of table
-  assert(table[0].velocity == 10.0);
+  assert(table[0].velocity_mps == 10.0);
   assert(table[0].friction_coefficient == 0.7);
-  assert(table[0].braking_distance == 7.1);
-  std::cout << "✓ braking_distance_table()[0] = {" << table[0].velocity << ", "
+  assert(table[0].braking_distance_m == 7.1);
+  std::cout << "✓ braking_distance_table()[0] = {" << table[0].velocity_mps << ", "
             << table[0].friction_coefficient << ", "
-            << table[0].braking_distance << "}" << std::endl;
+            << table[0].braking_distance_m << "}" << std::endl;
 
   std::cout << "\nAll custom namespace tests passed!" << std::endl;
   return 0;

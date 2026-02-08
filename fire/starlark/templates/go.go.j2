@@ -28,7 +28,12 @@ func init() {
 // {{ struct_name }} represents a row of the {{ item.base_name }} table.
 type {{ struct_name }} struct {
 {% for col in item.columns %}
-    {{ col.name | pascal_case }} {{ col.type | go_type }}
+{% if col.unit_suffix %}
+{% set field_name = (col.name + "_" + col.unit_suffix) | pascal_case %}
+{% else %}
+{% set field_name = col.name | pascal_case %}
+{% endif %}
+    {{ field_name }} {{ col.type | go_type }}
 {% endfor %}
 }
 
@@ -38,7 +43,7 @@ type {{ struct_name }} struct {
 {% endif %}
 var {{ param_name_pascal }}{{ var_suffix }} = []{{ struct_name }}{
 {% for row in item.rows %}
-    {{ "{" }}{% for i in range(item.columns | length) %}{{ item.columns[i].name | pascal_case }}: {% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
+    {{ "{" }}{% for i in range(item.columns | length) %}{% if item.columns[i].unit_suffix %}{{ (item.columns[i].name + "_" + item.columns[i].unit_suffix) | pascal_case }}{% else %}{{ item.columns[i].name | pascal_case }}{% endif %}: {% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
 {% endfor %}
 }
 

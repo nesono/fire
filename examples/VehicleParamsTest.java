@@ -30,15 +30,15 @@ public class VehicleParamsTest {
 
         // Check first row using record accessor methods
         var firstRow = table.get(0);
-        assertEquals(10.0, firstRow.velocity(), 0.001);
+        assertEquals(10.0, firstRow.velocityMps(), 0.001);
         assertEquals(0.7, firstRow.frictionCoefficient(), 0.001);
-        assertEquals(7.1, firstRow.brakingDistance(), 0.001);
+        assertEquals(7.1, firstRow.brakingDistanceM(), 0.001);
 
         // Iterate over table with enhanced for-loop
         boolean found20ms = false;
         for (var row : table) {
-            if (row.velocity() == 20.0 && row.frictionCoefficient() == 0.7) {
-                assertEquals(28.6, row.brakingDistance(), 0.001);
+            if (row.velocityMps() == 20.0 && row.frictionCoefficient() == 0.7) {
+                assertEquals(28.6, row.brakingDistanceM(), 0.001);
                 found20ms = true;
             }
         }
@@ -51,6 +51,6 @@ public class VehicleParamsTest {
         var row = BrakingDistanceTableV1.TABLE.get(0);
 
         // Verify we can access the value
-        assertEquals(10.0, row.velocity(), 0.001);
+        assertEquals(10.0, row.velocityMps(), 0.001);
     }
 }

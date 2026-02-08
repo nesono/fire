@@ -19,15 +19,15 @@ fn test_table_parameter() {
 
     // Test first row
     let first_row = &table[0];
-    assert_eq!(first_row.velocity, 10.0);
+    assert_eq!(first_row.velocity_mps, 10.0);
     assert_eq!(first_row.friction_coefficient, 0.7);
-    assert_eq!(first_row.braking_distance, 7.1);
+    assert_eq!(first_row.braking_distance_m, 7.1);
 
     // Test iteration
     for row in table {
-        assert!(row.velocity > 0.0);
+        assert!(row.velocity_mps > 0.0);
         assert!(row.friction_coefficient > 0.0);
-        assert!(row.braking_distance > 0.0);
+        assert!(row.braking_distance_m > 0.0);
     }
 }
 
@@ -36,7 +36,7 @@ fn test_struct_derives() {
     let table = &BRAKING_DISTANCE_TABLE_V1;
     let row = table[0];
     let row_copy = row;
-    assert_eq!(row.velocity, row_copy.velocity);
+    assert_eq!(row.velocity_mps, row_copy.velocity_mps);
 
     // Test that the struct can be debugged
     let debug_str = format!("{:?}", row);

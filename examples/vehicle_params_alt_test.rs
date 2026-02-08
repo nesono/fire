@@ -18,7 +18,7 @@ fn test_alt_table_parameter() {
     assert_eq!(table.len(), 6);
 
     let first_row = &table[0];
-    assert_eq!(first_row.velocity, 10.0);
+    assert_eq!(first_row.velocity_mps, 10.0);
     assert_eq!(first_row.friction_coefficient, 0.7);
-    assert_eq!(first_row.braking_distance, 7.1);
+    assert_eq!(first_row.braking_distance_m, 7.1);
 }

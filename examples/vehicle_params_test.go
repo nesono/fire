@@ -35,22 +35,22 @@ func TestTableParameters(t *testing.T) {
 
 	// Check first row
 	firstRow := table[0]
-	if firstRow.Velocity != 10.0 {
-		t.Errorf("Expected first row velocity = 10.0, got %f", firstRow.Velocity)
+	if firstRow.VelocityMps != 10.0 {
+		t.Errorf("Expected first row velocity = 10.0, got %f", firstRow.VelocityMps)
 	}
 	if firstRow.FrictionCoefficient != 0.7 {
 		t.Errorf("Expected first row friction = 0.7, got %f", firstRow.FrictionCoefficient)
 	}
-	if firstRow.BrakingDistance != 7.1 {
-		t.Errorf("Expected first row braking distance = 7.1, got %f", firstRow.BrakingDistance)
+	if firstRow.BrakingDistanceM != 7.1 {
+		t.Errorf("Expected first row braking distance = 7.1, got %f", firstRow.BrakingDistanceM)
 	}
 
 	// Iterate over table
 	found20ms := false
 	for _, row := range table {
-		if row.Velocity == 20.0 && row.FrictionCoefficient == 0.7 {
-			if row.BrakingDistance != 28.6 {
-				t.Errorf("Expected braking distance = 28.6 for 20 m/s, got %f", row.BrakingDistance)
+		if row.VelocityMps == 20.0 && row.FrictionCoefficient == 0.7 {
+			if row.BrakingDistanceM != 28.6 {
+				t.Errorf("Expected braking distance = 28.6 for 20 m/s, got %f", row.BrakingDistanceM)
 			}
 			found20ms = true
 		}
@@ -69,8 +69,8 @@ func TestTableLookup(t *testing.T) {
 	found := false
 
 	for _, row := range vp.BrakingDistanceTableV1 {
-		if row.Velocity == velocity && row.FrictionCoefficient == friction {
-			brakingDist = row.BrakingDistance
+		if row.VelocityMps == velocity && row.FrictionCoefficient == friction {
+			brakingDist = row.BrakingDistanceM
 			found = true
 			break
 		}
@@ -89,7 +89,7 @@ func TestTableLookup(t *testing.T) {
 func BenchmarkTableLookup(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for _, row := range vp.BrakingDistanceTableV1 {
-			_ = row.BrakingDistance
+			_ = row.BrakingDistanceM
 		}
 	}
 }
