@@ -1,6 +1,6 @@
 """Go code generator for Fire parameters."""
 
-from fire.starlark.generators.template_loader import render_template
+from fire.starlark.generators.generator_common import generate_files_per_item
 
 
 def generate_go_files(
@@ -13,13 +13,9 @@ def generate_go_files(
     Variable names include version suffixes to avoid conflicts.
     Returns list of (relative_path, content) tuples.
     """
-    files = []
-    for item in items:
-        filename = f"{item['base_name']}_v{item['version']}.go"
-        content = render_template(
-            "go.go.j2",
-            item=item,
-            package_name=package_name,
-        )
-        files.append((filename, content))
-    return files
+    return generate_files_per_item(
+        items,
+        "go.go.j2",
+        lambda item: f"{item['base_name']}_v{item['version']}.go",
+        lambda item: {"package_name": package_name},
+    )

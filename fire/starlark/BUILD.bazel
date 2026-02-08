@@ -14,6 +14,7 @@ py_binary(
     srcs = [
         "generate_code.py",
         "generators/cpp.py",
+        "generators/generator_common.py",
         "generators/go.py",
         "generators/java.py",
         "generators/python.py",

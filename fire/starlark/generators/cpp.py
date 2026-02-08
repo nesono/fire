@@ -1,6 +1,6 @@
 """C++ code generator for Fire parameters."""
 
-from fire.starlark.generators.template_loader import render_template
+from fire.starlark.generators.generator_common import generate_files_per_item
 
 
 def generate_cpp_files(
@@ -12,12 +12,9 @@ def generate_cpp_files(
 
     Returns list of (relative_path, content) tuples.
     """
-    # Determine namespace
-    namespace = cpp_namespace or ""
 
-    files = []
-    for item in items:
-        filename = f"{item['base_name']}_v{item['version']}.h"
+    def context_builder(item: dict) -> dict:
+        """Build context with include guard for C++ header."""
         # Create include guard from package path + filename
         if package_path:
             repo_path = (
@@ -29,11 +26,11 @@ def generate_cpp_files(
             repo_path.upper().replace("/", "_").replace(".", "_").replace("-", "_")
             + "_H"
         )
-        content = render_template(
-            "cpp.hpp.j2",
-            item=item,
-            namespace=namespace,
-            guard_name=guard_name,
-        )
-        files.append((filename, content))
-    return files
+        return {"namespace": cpp_namespace or "", "guard_name": guard_name}
+
+    return generate_files_per_item(
+        items,
+        "cpp.hpp.j2",
+        lambda item: f"{item['base_name']}_v{item['version']}.h",
+        context_builder,
+    )

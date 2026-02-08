@@ -1,6 +1,6 @@
 """Rust code generator for Fire parameters."""
 
-from fire.starlark.generators.template_loader import render_template
+from fire.starlark.generators.generator_common import generate_file_aggregate
 
 
 def generate_rust_files(items: list[dict]) -> list[tuple[str, str]]:
@@ -8,10 +8,4 @@ def generate_rust_files(items: list[dict]) -> list[tuple[str, str]]:
 
     Returns list of (relative_path, content) tuples.
     """
-    files = []
-
-    # Generate single lib.rs file with all parameters
-    lib_content = render_template("rust_all.rs.j2", items=items)
-    files.append(("lib.rs", lib_content))
-
-    return files
+    return generate_file_aggregate(items, "rust_all.rs.j2", "lib.rs")
