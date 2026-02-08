@@ -46,6 +46,28 @@ py_library(
     deps = ["@pip//pydantic"],
 )
 
+# Common utilities - path handling
+py_library(
+    name = "path_common",
+    srcs = ["path_common.py"],
+    visibility = ["//visibility:public"],
+)
+
+# Common utilities - file I/O
+py_library(
+    name = "file_io_common",
+    srcs = ["file_io_common.py"],
+    visibility = ["//visibility:public"],
+    deps = ["@pip//pyyaml"],
+)
+
+# Common utilities - markdown parsing
+py_library(
+    name = "markdown_common",
+    srcs = ["markdown_common.py"],
+    visibility = ["//visibility:public"],
+)
+
 # Python library for parameter validation
 py_library(
     name = "validate_parameters_lib",
@@ -157,6 +179,37 @@ py_test(
     deps = [
         ":pydantic_tools",
         "@pip//pydantic",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "path_common_test",
+    size = "small",
+    srcs = ["path_common_test.py"],
+    deps = [
+        ":path_common",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "file_io_common_test",
+    size = "small",
+    srcs = ["file_io_common_test.py"],
+    deps = [
+        ":file_io_common",
+        "@pip//pytest",
+        "@pip//pyyaml",
+    ],
+)
+
+py_test(
+    name = "markdown_common_test",
+    size = "small",
+    srcs = ["markdown_common_test.py"],
+    deps = [
+        ":markdown_common",
         "@pip//pytest",
     ],
 )
