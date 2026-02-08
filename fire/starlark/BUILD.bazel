@@ -98,6 +98,8 @@ py_binary(
     main = "validate_cross_references.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":markdown_common",
+        ":path_common",
         ":pydantic_tools",
         ":requirement_models",
         "@pip//pydantic",
@@ -142,6 +144,8 @@ py_library(
     srcs = ["validate_cross_references.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":markdown_common",
+        ":path_common",
         ":pydantic_tools",
         ":requirement_models",
         "@pip//pydantic",

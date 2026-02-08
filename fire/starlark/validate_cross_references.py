@@ -18,6 +18,8 @@ import re
 import sys
 
 from typing import Final
+
+from fire.starlark import markdown_common, path_common
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
 
 _BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
@@ -99,7 +101,7 @@ def parse_inline_metadata_for_requirement(content, req_id):
         if value.startswith("[") and "](" in value:
             # This is a parent reference - extract just the requirement ID
             # Format: [REQ-ID](/path/to/file.md?version=N#REQ-ID)
-            match = re.match(r"\[([^\]]+)\]\(([^\)]+)\)", value)
+            match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, value)
             if match:
                 frontmatter[key] = value  # Keep full markdown link for parent
                 continue
@@ -128,56 +130,18 @@ def extract_markdown_references(body):
     param_refs = []
     req_refs = []
 
-    # Pattern for [@param](path?version=N#param)
-    param_pattern = r"\[@([a-zA-Z_][a-zA-Z0-9_]*)\]\(([^)]+)\)"
-    for match in re.finditer(param_pattern, body):
+    # Extract parameter references using common pattern
+    for match in re.finditer(markdown_common.PARAM_REFERENCE_PATTERN, body):
         param_name = match.group(1)
         full_url = match.group(2)
-
-        # Extract version from query parameter if present
-        version = None
-        clean_path = full_url
-        if "?" in full_url:
-            path_part, query_part = full_url.split("?", 1)
-            # Extract query string (before # if present)
-            query_str = query_part.split("#")[0] if "#" in query_part else query_part
-            # Parse version=N
-            for param in query_str.split("&"):
-                if "=" in param:
-                    key, value = param.split("=", 1)
-                    if key == "version" and value.isdigit():
-                        version = int(value)
-            # Reconstruct clean path with fragment if present
-            clean_path = path_part
-            if "#" in query_part:
-                clean_path = clean_path + "#" + query_part.split("#")[1]
-
+        clean_path, version = path_common.extract_version_from_url(full_url)
         param_refs.append((param_name, clean_path, version))
 
-    # Pattern for [REQ-ID](path.md?version=N#anchor) or [REQ-ID](path.md)
-    req_pattern = r"\[([A-Z][A-Z0-9_-]+)\]\(([^)]+\.md[^)]*)\)"
-    for match in re.finditer(req_pattern, body):
+    # Extract requirement references using common pattern
+    for match in re.finditer(markdown_common.REQUIREMENT_REFERENCE_PATTERN, body):
         req_id = match.group(1)
         full_url = match.group(2)
-
-        # Extract version from query parameter if present
-        version = None
-        clean_path = full_url
-        if "?" in full_url:
-            path_part, query_part = full_url.split("?", 1)
-            # Extract query string (before # if present)
-            query_str = query_part.split("#")[0] if "#" in query_part else query_part
-            # Parse version=N
-            for param in query_str.split("&"):
-                if "=" in param:
-                    key, value = param.split("=", 1)
-                    if key == "version" and value.isdigit():
-                        version = int(value)
-            # Reconstruct clean path with fragment if present
-            clean_path = path_part
-            if "#" in query_part:
-                clean_path = clean_path + "#" + query_part.split("#")[1]
-
+        clean_path, version = path_common.extract_version_from_url(full_url)
         req_refs.append((req_id, clean_path, version))
 
     return param_refs, req_refs
