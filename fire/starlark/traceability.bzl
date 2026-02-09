@@ -1,5 +1,19 @@
 """Bazel rules for source-to-requirement traceability."""
 
+def _dict_to_json(d):
+    """Convert a Starlark string_list_dict to a JSON string."""
+    if not d:
+        return "{}"
+    pairs = []
+    for key, values in d.items():
+        escaped_key = key.replace("\\", "\\\\").replace('"', '\\"')
+        items = []
+        for v in values:
+            escaped_v = v.replace("\\", "\\\\").replace('"', '\\"')
+            items.append('"%s"' % escaped_v)
+        pairs.append('"%s": [%s]' % (escaped_key, ", ".join(items)))
+    return "{%s}" % ", ".join(pairs)
+
 def _extract_source_traceability_impl(ctx):
     """Implementation of source traceability extraction rule."""
     script = ctx.executable._script
@@ -18,17 +32,21 @@ def _extract_source_traceability_impl(ctx):
         args.add("--dep")
         args.add(dep.short_path)
 
-    # Add source files (positional)
-    args.add("--")
-    for src in ctx.files.srcs:
-        args.add(src.short_path)
+    # Serialize implements and verifies mappings as JSON
+    if ctx.attr.implements:
+        args.add("--implements-json")
+        args.add(_dict_to_json(ctx.attr.implements))
+
+    if ctx.attr.verifies:
+        args.add("--verifies-json")
+        args.add(_dict_to_json(ctx.attr.verifies))
 
     # Get runfiles for the script
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
 
     # Run extraction script
     ctx.actions.run(
-        inputs = ctx.files.srcs + ctx.files.deps + script_runfiles,
+        inputs = ctx.files.deps + script_runfiles,
         outputs = [output],
         executable = script,
         arguments = [args],
@@ -48,15 +66,18 @@ _extract_source_traceability = rule(
         "deps": attr.label_list(
             allow_files = [".md"],
             default = [],
-            doc = "Requirement libraries that these source files implement or test",
+            doc = "Requirement libraries containing the referenced requirement IDs",
+        ),
+        "implements": attr.string_list_dict(
+            default = {},
+            doc = "Dict mapping source files to versioned requirement refs they implement",
         ),
         "out": attr.output(
             mandatory = True,
         ),
-        "srcs": attr.label_list(
-            allow_files = True,
-            mandatory = True,
-            doc = "Source files to link to requirements",
+        "verifies": attr.string_list_dict(
+            default = {},
+            doc = "Dict mapping test files to versioned requirement refs they verify",
         ),
         "_script": attr.label(
             default = Label("//fire/starlark:extract_source_traceability_script"),
@@ -64,35 +85,48 @@ _extract_source_traceability = rule(
             cfg = "exec",
         ),
     },
-    doc = "Produces a JSON mapping from source files to requirement IDs declared via deps",
+    doc = "Validates and produces a JSON mapping from source files to specific requirement IDs",
 )
 
-def source_traceability(name, srcs, deps = [], tags = [], visibility = None):
-    """Declare traceability from source files to requirements.
+def source_traceability(name, deps, implements = {}, verifies = {}, tags = [], visibility = None):
+    """Declare traceability from source files to specific requirements.
 
-    Links source files to requirement libraries purely via Bazel
-    dependency declarations. Produces a <name>.trace.json mapping
-    each source file to the requirement IDs found in deps.
+    Maps source files to the specific requirement IDs they implement or
+    verify, with version tracking. Produces a <name>.trace.json and
+    validates that all referenced requirement IDs exist in deps.
 
     Args:
         name: Name of the target
-        srcs: List of source files that implement or test the requirements
-        deps: List of requirement libraries these sources trace to
+        deps: List of requirement libraries containing the referenced requirements
+        implements: Dict mapping source files to lists of "REQ_ID?version=N" strings
+        verifies: Dict mapping test files to lists of "REQ_ID?version=N" strings
         tags: Tags for this target
         visibility: Visibility of the target
 
     Example:
         source_traceability(
             name = "brake_controller_trace",
-            srcs = ["brake_controller.cc", "brake_controller_test.cc"],
-            deps = ["//vehicle/requirements:braking_requirements"],
+            implements = {
+                "brake_controller.cc": [
+                    "REQ_BC_CALCULATE_FORCE?version=1",
+                    "REQ_BC_EMERGENCY_BRAKE?version=1",
+                ],
+            },
+            verifies = {
+                "brake_controller_test.cc": [
+                    "REQ_BC_CALCULATE_FORCE?version=1",
+                    "REQ_BC_EMERGENCY_BRAKE?version=1",
+                ],
+            },
+            deps = [":brake_controller_requirements"],
         )
     """
 
     _extract_source_traceability(
         name = name,
-        srcs = srcs,
         deps = deps,
+        implements = implements,
+        verifies = verifies,
         out = name + ".trace.json",
         tags = tags,
         visibility = visibility,

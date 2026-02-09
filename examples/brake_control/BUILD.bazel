@@ -24,19 +24,27 @@ cc_test(
     deps = [":brake_controller"],
 )
 
-# Trace implementation sources to their requirements
+# Trace implementation and test sources to specific requirements
 source_traceability(
-    name = "brake_controller_impl_trace",
-    srcs = [
-        "brake_controller.cc",
-        "brake_controller.h",
-    ],
+    name = "brake_controller_trace",
+    verifies = {
+        "brake_controller_test.cc": [
+            "REQ_BC_CALCULATE_FORCE?version=1",
+            "REQ_BC_EMERGENCY_BRAKE?version=1",
+            "REQ_BC_INPUT_VALIDATION?version=1",
+            "REQ_BC_FORCE_LIMITS?version=1",
+        ],
+    },
     deps = [":brake_controller_requirements"],
-)
-
-# Trace test sources to their requirements
-source_traceability(
-    name = "brake_controller_test_trace",
-    srcs = ["brake_controller_test.cc"],
-    deps = [":brake_controller_requirements"],
+    implements = {
+        "brake_controller.cc": [
+            "REQ_BC_CALCULATE_FORCE?version=1",
+            "REQ_BC_EMERGENCY_BRAKE?version=1",
+            "REQ_BC_INPUT_VALIDATION?version=1",
+            "REQ_BC_FORCE_LIMITS?version=1",
+        ],
+        "brake_controller.h": [
+            "REQ_BC_CALCULATE_FORCE?version=1",
+        ],
+    },
 )
