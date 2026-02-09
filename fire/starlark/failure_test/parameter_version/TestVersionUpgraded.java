@@ -7,8 +7,8 @@ import static fire.starlark.failure_test.parameter_version.TestParamsJavaSrc.*;
  */
 public class TestVersionUpgraded {
     public static void main(String[] args) {
-        // TestValueV1 has @Deprecated annotation
-        double value = TestValueV1;
+        // TestValueMpsV1 has @Deprecated annotation
+        double value = TestValueMpsV1;
         System.out.println("Value: " + value);
     }
 }

@@ -81,6 +81,18 @@ braking_distance_table_v1:
 - YAML string (e.g., `"text"`) → `string`
 - Tables require explicit `type: table` and typed columns
 
+**Unit Suffixes**: Parameters and table columns with units automatically generate names with normalized unit suffixes:
+
+- `unit: m/s` → suffix `_MPS` (meters per second)
+- `unit: m/s^2` → suffix `_MPS2` (meters per second squared)
+- `unit: Hz` → suffix `_HZ`
+- `unit: m` → suffix `_M` (meters)
+- `unit: dimensionless` or no unit → no suffix added
+
+Unit normalization: "/" becomes "p" (for "per"), "^" is removed but exponents kept, special characters stripped.
+
+This applies to both parameter constant names and table column field names, ensuring units are always visible in the code.
+
 **Versioning**: Parameter keys use a `_vN` suffix to encode the version (e.g., `maximum_vehicle_velocity_v1`).
 When a parameter is updated, add a new key with the next version while keeping the old one
 (e.g., `maximum_vehicle_velocity_v1` + `maximum_vehicle_velocity_v2`). Versions must be
@@ -113,7 +125,7 @@ vehicle_params/
 ```text
 vehicle_params/
   WheelCountV1.java
-  MaximumVehicleVelocityV1.java
+  MaximumVehicleVelocityMpsV1.java  # Unit suffix in PascalCase
 ```
 
 Each file exposes a simple constant (no accessor functions, no version dispatch).
@@ -169,15 +181,15 @@ All imports/includes are **repository-relative** (e.g., `vehicle/dynamics/vehicl
 #include "vehicle/dynamics/vehicle_params/braking_distance_table_v1.h"
 
 int main() {
-    double max_vel = MAXIMUM_VEHICLE_VELOCITY;
-    int wheels = WHEEL_COUNT;
+    double max_vel = MAXIMUM_VEHICLE_VELOCITY_MPS;  // Unit suffix appended
+    int wheels = WHEEL_COUNT;  // No unit, no suffix
 
-    // Access table data
+    // Access table data (column fields include unit suffixes)
     auto table = braking_distance_table();
     for (size_t i = 0; i < BRAKING_DISTANCE_TABLE_SIZE; ++i) {
-        double velocity = table[i].velocity;
-        double friction = table[i].friction_coefficient;
-        double distance = table[i].braking_distance;
+        double velocity = table[i].velocity_mps;  // Unit suffix on column
+        double friction = table[i].friction_coefficient;  // Dimensionless, no suffix
+        double distance = table[i].braking_distance_m;  // Unit suffix on column
     }
 
     return 0;
@@ -187,16 +199,16 @@ int main() {
 **Python usage**
 
 ```python
-from vehicle.dynamics.vehicle_params.maximum_vehicle_velocity_v1 import MAXIMUM_VEHICLE_VELOCITY
+from vehicle.dynamics.vehicle_params.maximum_vehicle_velocity_v1 import MAXIMUM_VEHICLE_VELOCITY_MPS
 from vehicle.dynamics.vehicle_params.wheel_count_v1 import WHEEL_COUNT
 from vehicle.dynamics.vehicle_params.braking_distance_table_v1 import BRAKING_DISTANCE_TABLE
 
 def test_parameters():
-    assert MAXIMUM_VEHICLE_VELOCITY == 55.0
-    assert WHEEL_COUNT == 4
+    assert MAXIMUM_VEHICLE_VELOCITY_MPS == 55.0  # Unit suffix appended
+    assert WHEEL_COUNT == 4  # No unit, no suffix
 
     for row in BRAKING_DISTANCE_TABLE:
-        print(f"v={row.velocity}, d={row.braking_distance}")
+        print(f"v={row.velocity_mps}, d={row.braking_distance_m}")  # Unit suffixes on fields
 ```
 
 **Go usage**
@@ -209,12 +221,12 @@ import (
 )
 
 func TestParameters(t *testing.T) {
-    if velocity.MaximumVehicleVelocity != 55.0 {
+    if velocity.MaximumVehicleVelocityMpsV1 != 55.0 {  // Unit suffix in PascalCase
         t.Error("Unexpected velocity")
     }
 
-    for _, row := range braking.BrakingDistanceTable {
-        // Access row.Velocity, row.FrictionCoefficient, row.BrakingDistance
+    for _, row := range braking.BrakingDistanceTableV1 {
+        // Access row.VelocityMps, row.FrictionCoefficient, row.BrakingDistanceM (unit suffixes in PascalCase)
     }
 }
 ```
@@ -226,11 +238,11 @@ use vehicle_params_rs::*;
 
 #[test]
 fn test_parameters() {
-    assert_eq!(MAXIMUM_VEHICLE_VELOCITY_V1, 55.0);
+    assert_eq!(MAXIMUM_VEHICLE_VELOCITY_MPS_V1, 55.0);  // Unit suffix before version
     assert_eq!(BRAKING_DISTANCE_TABLE_V1_SIZE, 6);
 
     for row in &BRAKING_DISTANCE_TABLE_V1 {
-        println!("v={}, d={}", row.velocity, row.braking_distance);
+        println!("v={}, d={}", row.velocity_mps, row.braking_distance_m);  // Unit suffixes on fields
     }
 }
 ```
@@ -244,12 +256,12 @@ public class DynamicsTest {
     @Test
     public void testParameters() {
         // Simple parameters accessed directly
-        assertEquals(55.0, MaximumVehicleVelocityV1, 0.001);
-        assertEquals(4, WheelCountV1);
+        assertEquals(55.0, MaximumVehicleVelocityMpsV1, 0.001);  // Unit suffix in PascalCase
+        assertEquals(4, WheelCountV1);  // No unit, no suffix
 
         // Tables accessed through nested classes
         for (var row : BrakingDistanceTableV1.TABLE) {
-            // Access row.velocity(), row.frictionCoefficient(), row.brakingDistance()
+            // Access row.velocityMps(), row.frictionCoefficient(), row.brakingDistanceM() (unit suffixes in camelCase)
         }
     }
 }

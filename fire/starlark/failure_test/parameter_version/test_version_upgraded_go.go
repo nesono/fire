@@ -8,5 +8,5 @@ import (
 
 func main() {
 	// v1 still works but go vet should flag the deprecated comment
-	println("Value:", tp.TestValueV1)
+	println("Value:", tp.TestValueMpsV1)
 }

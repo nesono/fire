@@ -1,5 +1,6 @@
 max_speed_v1:
   value: 30.0
+  unit: m/s
   description: Maximum allowed speed in m/s
 
 min_braking_distance_v1:
@@ -8,4 +9,5 @@ min_braking_distance_v1:
 
 update_rate_v1:
   value: 100
+  unit: Hz
   description: System update rate in Hz

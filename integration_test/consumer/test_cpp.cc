@@ -5,21 +5,21 @@
 
 int main() {
     // Test that generated constants are accessible
-    std::cout << "Max Speed: " << MAX_SPEED << " m/s" << std::endl;
+    std::cout << "Max Speed: " << MAX_SPEED_MPS << " m/s" << std::endl;
     std::cout << "Min Braking Distance: " << MIN_BRAKING_DISTANCE << " m" << std::endl;
-    std::cout << "Update Rate: " << UPDATE_RATE << " Hz" << std::endl;
+    std::cout << "Update Rate: " << UPDATE_RATE_HZ << " Hz" << std::endl;
 
     // Basic validation
-    if (MAX_SPEED != 30.0) {
-        std::cerr << "ERROR: MAX_SPEED has wrong value!" << std::endl;
+    if (MAX_SPEED_MPS != 30.0) {
+        std::cerr << "ERROR: MAX_SPEED_MPS has wrong value!" << std::endl;
         return 1;
     }
     if (MIN_BRAKING_DISTANCE != 50.0) {
         std::cerr << "ERROR: MIN_BRAKING_DISTANCE has wrong value!" << std::endl;
         return 1;
     }
-    if (UPDATE_RATE != 100) {
-        std::cerr << "ERROR: UPDATE_RATE has wrong value!" << std::endl;
+    if (UPDATE_RATE_HZ != 100) {
+        std::cerr << "ERROR: UPDATE_RATE_HZ has wrong value!" << std::endl;
         return 1;
     }
 

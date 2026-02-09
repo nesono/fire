@@ -14,7 +14,11 @@ public final class {{ class_name }} {
     }
 
 {% for item in items %}
+{% if item.unit_suffix %}
+{% set param_name = (item.base_name + "_" + item.unit_suffix) | pascal_case + "V" + item.version | string %}
+{% else %}
 {% set param_name = item.base_name | pascal_case + "V" + item.version | string %}
+{% endif %}
 {% if item.type == "table" %}
     // {{ item.description | default("") }}
     public static final class {{ param_name }} {
@@ -22,7 +26,12 @@ public final class {{ class_name }} {
 
         public record {{ item.base_name | pascal_case }}Row(
 {%- for col in item.columns %}
-            {{ col.type | java_type }} {{ col.name | camel_case }}{{ "," if not loop.last else "" }}
+{% if col.unit_suffix %}
+{% set field_name = (col.name + "_" + col.unit_suffix) | camel_case %}
+{% else %}
+{% set field_name = col.name | camel_case %}
+{% endif %}
+            {{ col.type | java_type }} {{ field_name }}{{ "," if not loop.last else "" }}
 {%- endfor %}
         ) {}
 

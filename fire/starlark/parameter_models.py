@@ -144,10 +144,7 @@ Parameter = Union[
 
 
 class ParameterFile(RootModel[Dict[str, Parameter]]):
-    """Root model for parameter YAML files.
-
-    Parameters are defined at the root level without a 'parameters' wrapper.
-    """
+    """Root model for parameter YAML files."""
 
     root: Dict[str, Parameter] = Field(min_length=1)
 
