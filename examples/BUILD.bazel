@@ -190,6 +190,7 @@ rust_test(
 requirement_library(
     name = "vehicle_requirements",
     srcs = glob(["requirements/*.md"]),
+    visibility = ["//examples:__subpackages__"],
     deps = [":vehicle_params"],
 )
 
@@ -197,9 +198,11 @@ requirement_library(
     name = "component_requirements",
     srcs = glob([
         "brake_actuator/doc/*.swreq.md",
-        "brake_control/doc/*.swreq.md",
         "vehicle_status/doc/*.swreq.md",
-    ]),
+    ]) + [
+        "//examples/brake_control:doc/brake_controller.swreq.md",
+    ],
+    visibility = ["//examples:__subpackages__"],
     deps = [
         ":vehicle_params",
         ":vehicle_requirements",
