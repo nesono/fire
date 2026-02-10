@@ -5,24 +5,34 @@ by other repositories. The repository uses Python and Starlark rules for the
 business logic. Whatever is possible to execute in Starlark, we implement in
 Starlark and the rest is using Python.
 
-## Coding
+## Git Usage
 
 Never commit directly to the `main` branch, always ensure there is a branch
 ready to create a (new) PR from.
+
+## Coding
 
 Always write in TDD style. Write a small test first, make it fail, make it
 succeed, refactor. Please make sure to always go through these steps, don't
 skip the making the test fail step, to ensure that the tests are actually run.
 
-Always prefer small changes to big changes. Don't create comments unless they
-provide semantics that are not obvious from the code.
+Always prefer small PRs to big PRs. Optimally not consisting of more than 10-50
+lines of code with significant complexity.
 
-Try to keep functions small (up to a dozen lines) and make proper use of
+Don't create comments unless they provide semantics that are not obvious from
+the code. If you add comments, make sure they add information that is not
+already obvious from the code, but rather explain the 'why' rather than the
+'how'.
+
+Try to keep functions small (up to 12 lines of code) and make proper use of
 private functions if they are not needed outside of the module, the benefit is,
 that they won't need documentation.
 
 Use type hints in Python, and make sure that the code always supports all
-supported Python version (as given in `.github/workflows/ci.yaml`)
+supported Python version (as given in `.github/workflows/ci.yaml`). Use type
+hints when they cannot be easily deduced (easily deduced is for instance, when
+the objects are defined and assigned with a literal. Use the Final keyword when
+it makes sense (e.g. for global const objects).
 
 Always use imports relative to the repository root, for instance for importing
 from a file residing at `fire/starlark/validate_parameters.py`, the import
@@ -33,9 +43,6 @@ import fire.starlark.validate_parameters
 ```
 
 Write Pythonic code.
-Use type hints when they cannot be easily deduced (easily deduced is for
-instance, when the objects are defined and assigned with a literal.
-Use the Final keyword when it makes sense (e.g. for global const objects).
 
 ## Pre-Commit
 
@@ -87,7 +94,7 @@ Please use the following format as a blueprint for PR descriptions:
 
 ### Summary
 
-Short summary of what changed with this PR. Focus on the what, not the why.
+Short summary of what changed with this PR. Focus on the 'what', not the 'why'.
 
 ### Implementation Summary
 
