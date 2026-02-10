@@ -21,7 +21,7 @@ struct BrakeCommand {
 
 /// Calculate the brake force for the given vehicle state.
 BrakeCommand calculate_brake_force(const VehicleState& state,
-                                   double target_deceleration);
+                                   double target_deceleration_mps2);
 
 /// Validate that all input values are within their allowed ranges.
 bool validate_inputs(const VehicleState& state);

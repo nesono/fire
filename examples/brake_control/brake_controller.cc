@@ -5,7 +5,7 @@
 namespace brake_control {
 
 BrakeCommand calculate_brake_force(const VehicleState& state,
-                                   double target_deceleration) {
+                                   double target_deceleration_mps2) {
     BrakeCommand cmd;
     cmd.emergency_mode = !validate_inputs(state);
 
@@ -14,7 +14,7 @@ BrakeCommand calculate_brake_force(const VehicleState& state,
         return cmd;
     }
 
-    double error = target_deceleration - state.acceleration_mps2;
+    double error = target_deceleration_mps2 - state.acceleration_mps2;
     double raw_force = error * 10.0;  // simplified P-controller
     cmd.force_percent = clamp_force(raw_force);
     return cmd;
