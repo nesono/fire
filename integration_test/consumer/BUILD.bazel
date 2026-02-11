@@ -1,5 +1,6 @@
 """Code consumers that use generated headers/modules."""
 
+load("@fire//fire/starlark:traceability.bzl", "source_traceability")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 
@@ -23,4 +24,21 @@ rust_test(
     srcs = ["test_rust.rs"],
     crate_root = "test_rust.rs",
     deps = ["//:test_params_rs"],
+)
+
+# Source traceability - declarative link from source files to requirements
+source_traceability(
+    name = "controller_trace",
+    verifies = {
+        "test_cpp.cc": [
+            "REQ-INT-001?version=1",
+            "REQ-INT-002?version=1",
+        ],
+    },
+    deps = ["//requirements:integration_requirements"],
+    implements = {
+        "test_cpp.cc": [
+            "REQ-INT-001?version=1",
+        ],
+    },
 )

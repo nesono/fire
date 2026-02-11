@@ -1,0 +1,50 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//fire/starlark:requirements.bzl", "requirement_library")
+load("//fire/starlark:traceability.bzl", "source_traceability")
+
+exports_files(glob(["doc/*.swreq.md"]))
+
+# Validate brake controller software requirements
+requirement_library(
+    name = "brake_controller_requirements",
+    srcs = glob(["doc/*.swreq.md"]),
+    visibility = ["//examples:__pkg__"],
+    deps = ["//examples:vehicle_requirements"],
+)
+
+cc_library(
+    name = "brake_controller",
+    srcs = ["brake_controller.cc"],
+    hdrs = ["brake_controller.h"],
+)
+
+cc_test(
+    name = "brake_controller_test",
+    srcs = ["brake_controller_test.cc"],
+    deps = [":brake_controller"],
+)
+
+# Trace implementation and test sources to specific requirements
+source_traceability(
+    name = "brake_controller_trace",
+    verifies = {
+        "brake_controller_test.cc": [
+            "REQ_BC_CALCULATE_FORCE?version=1",
+            "REQ_BC_EMERGENCY_BRAKE?version=1",
+            "REQ_BC_INPUT_VALIDATION?version=1",
+            "REQ_BC_FORCE_LIMITS?version=1",
+        ],
+    },
+    deps = [":brake_controller_requirements"],
+    implements = {
+        "brake_controller.cc": [
+            "REQ_BC_CALCULATE_FORCE?version=1",
+            "REQ_BC_EMERGENCY_BRAKE?version=1",
+            "REQ_BC_INPUT_VALIDATION?version=1",
+            "REQ_BC_FORCE_LIMITS?version=1",
+        ],
+        "brake_controller.h": [
+            "REQ_BC_CALCULATE_FORCE?version=1",
+        ],
+    },
+)

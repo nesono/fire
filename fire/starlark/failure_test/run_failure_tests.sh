@@ -136,6 +136,76 @@ for target in $FAILURE_TARGETS; do
             fi
         fi
 
+    elif has_tag "$target" "missing_version"; then
+        # Missing version suffix tests should fail at build time
+        set +e
+        output=$(bazel build "$target" 2>&1)
+        build_exit_code=$?
+        set -e
+
+        if [ $build_exit_code -ne 0 ]; then
+            # Check for expected error pattern
+            if echo "$output" | grep -qE "is missing \?version= suffix"; then
+                echo "✅ PASS: Build failed with missing version suffix error"
+                SUCCESSES=$((SUCCESSES + 1))
+            else
+                echo "✅ PASS: Build failed (missing version)"
+                SUCCESSES=$((SUCCESSES + 1))
+            fi
+        else
+            echo "❌ FAIL: Build should have failed with missing version error"
+            echo "Exit code: $build_exit_code"
+            FAILURES=$((FAILURES + 1))
+        fi
+
+    elif has_tag "$target" "outdated_version"; then
+        # Outdated version tests should succeed but emit warning
+        set +e
+        output=$(bazel build --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
+        build_exit_code=$?
+        set -e
+
+        if [ $build_exit_code -ne 0 ]; then
+            echo "❌ FAIL: Build should not fail for outdated version test"
+            echo "Exit code: $build_exit_code"
+            echo "Output excerpt:"
+            echo "$output" | head -20
+            FAILURES=$((FAILURES + 1))
+        else
+            # Check for outdated version warning
+            if echo "$output" | grep -qE "WARNING.*OUTDATED|but requirement is at version"; then
+                echo "✅ PASS: Build produced outdated version warning"
+                SUCCESSES=$((SUCCESSES + 1))
+            else
+                echo "❌ FAIL: Should have produced outdated version warning"
+                echo "Output excerpt:"
+                echo "$output" | head -20
+                FAILURES=$((FAILURES + 1))
+            fi
+        fi
+
+    elif has_tag "$target" "future_version"; then
+        # Future version tests should fail at build time
+        set +e
+        output=$(bazel build "$target" 2>&1)
+        build_exit_code=$?
+        set -e
+
+        if [ $build_exit_code -ne 0 ]; then
+            # Check for expected error pattern
+            if echo "$output" | grep -qE "but requirement is only at version"; then
+                echo "✅ PASS: Build failed with future version error"
+                SUCCESSES=$((SUCCESSES + 1))
+            else
+                echo "✅ PASS: Build failed (future version)"
+                SUCCESSES=$((SUCCESSES + 1))
+            fi
+        else
+            echo "❌ FAIL: Build should have failed with future version error"
+            echo "Exit code: $build_exit_code"
+            FAILURES=$((FAILURES + 1))
+        fi
+
     else
         # Legacy tests - check for dependency errors or VERSION MISMATCH
         # Force full rebuild to see warnings

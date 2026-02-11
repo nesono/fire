@@ -4,6 +4,7 @@ exports_files([
     "parameters.bzl",
     "requirements.bzl",
     "reports.bzl",
+    "traceability.bzl",
     "generate_report.py",
     "generate_code.py",
     "validate_cross_references.py",
@@ -227,6 +228,38 @@ py_test(
     srcs = ["markdown_common_test.py"],
     deps = [
         ":markdown_common",
+        "@pip//pytest",
+    ],
+)
+
+# Source traceability extraction
+py_library(
+    name = "extract_source_traceability_lib",
+    srcs = ["extract_source_traceability.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":file_io_common",
+        ":validate_cross_references_lib",
+    ],
+)
+
+py_binary(
+    name = "extract_source_traceability_script",
+    srcs = ["extract_source_traceability.py"],
+    main = "extract_source_traceability.py",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":file_io_common",
+        ":validate_cross_references_lib",
+    ],
+)
+
+py_test(
+    name = "extract_source_traceability_test",
+    size = "small",
+    srcs = ["extract_source_traceability_test.py"],
+    deps = [
+        ":extract_source_traceability_lib",
         "@pip//pytest",
     ],
 )
