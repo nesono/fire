@@ -114,5 +114,63 @@ class TestExtractRequirementReferences:
         assert refs == [("REQ-001", "path/to/design.md")]
 
 
+class TestExtractLinkDefinitions:
+    """Tests for extract_link_definitions function."""
+
+    def test_single_numbered_definition(self):
+        text = "[1]: http://example.com"
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {"1": "http://example.com"}
+
+    def test_single_named_definition(self):
+        text = "[ref]: /path/to/file.md"
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {"ref": "/path/to/file.md"}
+
+    def test_multiple_definitions(self):
+        text = "[1]: http://example.com\n[2]: /path/file.md"
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {"1": "http://example.com", "2": "/path/file.md"}
+
+    def test_empty_text(self):
+        text = ""
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {}
+
+    def test_no_definitions(self):
+        text = "Just some text with [inline](link.md) but no definitions"
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {}
+
+    def test_definition_with_extra_whitespace(self):
+        text = "[1]:   http://example.com   "
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {"1": "http://example.com"}
+
+    def test_duplicate_labels_last_wins(self):
+        text = "[1]: first.md\n[1]: second.md"
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {"1": "second.md"}
+
+    def test_complex_url_with_query_and_anchor(self):
+        text = "[ref]: /path/file.md?version=2#section"
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {"ref": "/path/file.md?version=2#section"}
+
+    def test_definition_must_be_at_line_start(self):
+        text = "    [1]: http://example.com"
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {}
+
+    def test_mixed_content(self):
+        text = """Some text here
+[1]: http://example.com
+More text
+[ref]: /path/file.md
+Even more text"""
+        defs = markdown_common.extract_link_definitions(text)
+        assert defs == {"1": "http://example.com", "ref": "/path/file.md"}
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

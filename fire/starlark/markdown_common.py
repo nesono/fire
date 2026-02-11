@@ -63,3 +63,29 @@ def extract_requirement_references(text: str) -> list[tuple[str, str]]:
         [('REQ-001', 'design.md')]
     """
     return re.findall(REQUIREMENT_REFERENCE_PATTERN, text)
+
+
+def extract_link_definitions(text: str) -> dict[str, str]:
+    """Extract reference-style link definitions from markdown text.
+
+    Reference-style link definitions have the format:
+        [label]: url
+
+    Args:
+        text: Markdown text containing link definitions
+
+    Returns:
+        Dictionary mapping reference labels to URLs
+
+    Example:
+        >>> text = "[1]: http://example.com\\n[ref]: /path/file.md"
+        >>> extract_link_definitions(text)
+        {'1': 'http://example.com', 'ref': '/path/file.md'}
+    """
+    pattern = r"^\[([^\]]+)\]:\s*(.+)$"
+    definitions = {}
+    for match in re.finditer(pattern, text, re.MULTILINE):
+        label = match.group(1)
+        url = match.group(2).strip()
+        definitions[label] = url
+    return definitions
