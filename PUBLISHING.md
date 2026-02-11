@@ -1,6 +1,6 @@
 # Publishing a New Release
 
-1. Change the version field in MODULE.bazel
+1. Change the version field in MODULE.bazel, README.md, and integration_test/MODULE.bazel.template
 2. Create a new GitHub release
 3. Download the source file
 4. Upload again with `gh release upload v0.2.1 ~/Downloads/fire-0.2.1.tar.gz`
