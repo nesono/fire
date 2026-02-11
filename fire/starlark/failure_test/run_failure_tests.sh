@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run all targets tagged with 'failure_test'
 #
-# This script queries for all targets with the 'failure_test' tag
+# This script parses BUILD files to find targets with the 'failure_test' tag
 # and verifies they fail or produce warnings as expected.
 
 set -euo pipefail
@@ -14,20 +14,26 @@ echo ""
 FAILURES=0
 SUCCESSES=0
 
-# Query all targets with the 'failure_test' tag, excluding _validation targets
-# (validation targets are internal implementation details)
-FAILURE_TARGETS=$(bazel query 'attr(tags, "failure_test", //...) except attr(name, ".*_validation$", //...)' 2>/dev/null)
+# Parse BUILD files to extract targets and their tags (no Bazel query needed!)
+# Output format: target|tag1 tag2 tag3
+echo "Parsing BUILD files..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARSED_TARGETS=$(python3 "$SCRIPT_DIR/parse_build_tags.py")
 
-if [ -z "$FAILURE_TARGETS" ]; then
+if [ -z "$PARSED_TARGETS" ]; then
     echo "No targets with 'failure_test' tag found"
     exit 1
 fi
 
-# Function to check if target has a specific tag
+# Extract list of failure test targets
+FAILURE_TARGETS=$(echo "$PARSED_TARGETS" | cut -d'|' -f1)
+
+# Fast tag lookup using parsed BUILD file data (bash 3.2 compatible)
 has_tag() {
     local target=$1
     local tag=$2
-    bazel query "attr(tags, '$tag', $target)" 2>/dev/null | grep -q "$target"
+    local tags=$(echo "$PARSED_TARGETS" | grep "^${target}|" | cut -d'|' -f2)
+    [[ " $tags " == *" $tag "* ]]
 }
 
 # Run each failure test
