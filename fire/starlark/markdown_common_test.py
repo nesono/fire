@@ -225,5 +225,56 @@ class TestExtractReferenceStyleLinks:
         assert not any(link_text == "Inline" for link_text, _ in links)
 
 
+class TestResolveReferenceLinks:
+    """Tests for resolve_reference_links function."""
+
+    def test_resolve_explicit_reference(self):
+        text = "[See this][1]\n[1]: http://example.com"
+        result = markdown_common.resolve_reference_links(text)
+        assert "[See this](http://example.com)" in result
+
+    def test_resolve_implicit_reference(self):
+        text = "[REQ-001][]\n[REQ-001]: /path/req.md"
+        result = markdown_common.resolve_reference_links(text)
+        assert "[REQ-001](/path/req.md)" in result
+
+    def test_resolve_shortcut_reference(self):
+        text = "[REQ-001]\n[REQ-001]: /path/req.md"
+        result = markdown_common.resolve_reference_links(text)
+        assert "[REQ-001](/path/req.md)" in result
+
+    def test_resolve_multiple_references(self):
+        text = "[First][1] and [Second][2]\n[1]: url1.md\n[2]: url2.md"
+        result = markdown_common.resolve_reference_links(text)
+        assert "[First](url1.md)" in result
+        assert "[Second](url2.md)" in result
+
+    def test_preserves_inline_links(self):
+        text = "[Inline](url.md) and [Ref][1]\n[1]: ref.md"
+        result = markdown_common.resolve_reference_links(text)
+        assert "[Inline](url.md)" in result
+        assert "[Ref](ref.md)" in result
+
+    def test_preserves_link_definitions(self):
+        text = "[Ref][1]\n[1]: http://example.com"
+        result = markdown_common.resolve_reference_links(text)
+        assert "[1]: http://example.com" in result
+
+    def test_undefined_reference_raises_error(self):
+        text = "[Text][missing]"
+        with pytest.raises(ValueError, match="Undefined reference: \\[missing\\]"):
+            markdown_common.resolve_reference_links(text)
+
+    def test_no_references_returns_unchanged(self):
+        text = "Just plain text with [inline](url.md) links"
+        result = markdown_common.resolve_reference_links(text)
+        assert result == text
+
+    def test_complex_url_with_query_and_anchor(self):
+        text = "[Link][ref]\n[ref]: /path/file.md?version=2#section"
+        result = markdown_common.resolve_reference_links(text)
+        assert "[Link](/path/file.md?version=2#section)" in result
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

@@ -124,3 +124,56 @@ def extract_reference_style_links(text: str) -> list[tuple[str, str]]:
         links.append((match.group(1), match.group(1)))
 
     return links
+
+
+def resolve_reference_links(text: str) -> str:
+    """Resolve reference-style links to inline-style links.
+
+    Finds reference-style link definitions and replaces all reference-style
+    links with their corresponding inline links.
+
+    Args:
+        text: Markdown text with reference-style links and definitions
+
+    Returns:
+        Text with reference-style links converted to inline links
+
+    Raises:
+        ValueError: If a reference label is used but not defined
+
+    Example:
+        >>> text = "[See this][1]\\n[1]: http://example.com"
+        >>> resolve_reference_links(text)
+        '[See this](http://example.com)\\n[1]: http://example.com'
+    """
+    definitions = extract_link_definitions(text)
+
+    # Process explicit references: [text][ref]
+    def replace_explicit(match):
+        link_text = match.group(1)
+        ref_label = match.group(2)
+        if ref_label not in definitions:
+            raise ValueError(f"Undefined reference: [{ref_label}]")
+        return f"[{link_text}]({definitions[ref_label]})"
+
+    text = re.sub(r"\[([^\]]+)\]\[([^\]]+)\]", replace_explicit, text)
+
+    # Process implicit references: [text][]
+    def replace_implicit(match):
+        link_text = match.group(1)
+        if link_text not in definitions:
+            raise ValueError(f"Undefined reference: [{link_text}]")
+        return f"[{link_text}]({definitions[link_text]})"
+
+    text = re.sub(r"\[([^\]]+)\]\[\]", replace_implicit, text)
+
+    # Process shortcut references: [text] (not followed by (, [, or :)
+    def replace_shortcut(match):
+        link_text = match.group(1)
+        if link_text not in definitions:
+            raise ValueError(f"Undefined reference: [{link_text}]")
+        return f"[{link_text}]({definitions[link_text]})"
+
+    text = re.sub(r"\[([^\]]+)\](?!\(|\[|:)", replace_shortcut, text)
+
+    return text
