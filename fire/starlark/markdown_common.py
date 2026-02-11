@@ -89,3 +89,38 @@ def extract_link_definitions(text: str) -> dict[str, str]:
         url = match.group(2).strip()
         definitions[label] = url
     return definitions
+
+
+def extract_reference_style_links(text: str) -> list[tuple[str, str]]:
+    """Extract reference-style links from markdown text.
+
+    Supports three formats:
+        [text][ref]   - Explicit reference
+        [text][]      - Implicit reference (text is the label)
+        [text]        - Shortcut reference (text is the label)
+
+    Args:
+        text: Markdown text containing reference-style links
+
+    Returns:
+        List of (link_text, reference_label) tuples
+
+    Example:
+        >>> extract_reference_style_links("[See this][1] and [REQ-001]")
+        [('See this', '1'), ('REQ-001', 'REQ-001')]
+    """
+    links = []
+
+    # Explicit reference: [text][ref]
+    for match in re.finditer(r"\[([^\]]+)\]\[([^\]]+)\]", text):
+        links.append((match.group(1), match.group(2)))
+
+    # Implicit reference: [text][]
+    for match in re.finditer(r"\[([^\]]+)\]\[\]", text):
+        links.append((match.group(1), match.group(1)))
+
+    # Shortcut reference: [text] (not followed by (, [, or :)
+    for match in re.finditer(r"\[([^\]]+)\](?!\(|\[|:)", text):
+        links.append((match.group(1), match.group(1)))
+
+    return links
