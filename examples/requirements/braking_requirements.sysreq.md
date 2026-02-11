@@ -7,8 +7,8 @@ SIL: ASIL-C | Sec: true | Version: 4
 **Emergency Braking Distance**
 
 The vehicle SHALL be capable of performing emergency braking from any velocity up to
-maximum design velocity (see [REQ-VEL-001](/examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001)),
-achieving deceleration according to [@braking_distance_table](/examples/vehicle_params.yaml?version=1#braking_distance_table) parameters.
+maximum design velocity (see [REQ-VEL-001][1]),
+achieving deceleration according to [@braking_distance_table][2] parameters.
 
 ### Rationale
 
@@ -18,11 +18,11 @@ Emergency braking performance is critical for collision avoidance and overall ve
 - Maximum allowable deceleration (passenger comfort and safety)
 - System response time and actuator dynamics
 
-Compliance with [UN ECE R13-H](https://unece.org/transport/documents/2021/03/standards/un-regulation-no-13-h-braking-heavy-vehicles) ensures international safety standards.
+Compliance with [UN ECE R13-H][] ensures international safety standards.
 
 ### Acceptance Criteria
 
-For each velocity and friction coefficient pair in [@braking_distance_table](/examples/vehicle_params.yaml?version=1#braking_distance_table):
+For each velocity and friction coefficient pair in [@braking_distance_table]:
 
 1. Vehicle SHALL achieve full stop within specified distance ±5%
 2. Deceleration SHALL be smooth and controlled (no wheel lock)
@@ -56,5 +56,12 @@ Expected test coverage:
 ### Changelog
 
 - **Version 1**: Initial emergency braking requirement, derived from REQ-VEL-001 v2
+
+### Reference-Style Link Definitions
+
+[1]: /examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001
+[2]: /examples/vehicle_params.yaml?version=1#braking_distance_table
+[@braking_distance_table]: /examples/vehicle_params.yaml?version=1#braking_distance_table
+[UN ECE R13-H]: https://unece.org/transport/documents/2021/03/standards/un-regulation-no-13-h-braking-heavy-vehicles
 
 ---

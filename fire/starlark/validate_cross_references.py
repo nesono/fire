@@ -173,6 +173,14 @@ def parse_inline_metadata_for_requirement(content, req_id):
 
 def extract_markdown_references(body):
     """Extract parameter and requirement references from Markdown body."""
+    # Resolve reference-style links to inline links first
+    try:
+        body = markdown_common.resolve_reference_links(body)
+    except ValueError:
+        # If there are undefined references, just continue with original text
+        # The undefined references won't match our patterns anyway
+        pass
+
     param_refs = []
     req_refs = []
 
