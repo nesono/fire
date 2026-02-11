@@ -379,7 +379,7 @@ Note that a requirement file can contain multiple of such requirements.
 - H2 headers (`##`) for requirement IDs
 - Text line with 3 fields: `SIL`, `Sec`, `Version`
 - Bold text (`**Title**`) for human readable requirement title (recommended)
-- Markdown links for all references (parameters, standards)
+- Markdown links for all references (parameters, standards), including reference-style syntax
 
 **Text Fields:**
 
