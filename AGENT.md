@@ -21,7 +21,10 @@ succeed, refactor. Please make sure to always go through these steps, don't
 skip the making the test fail step, to ensure that the tests are actually run.
 
 Always prefer small PRs to big PRs. Optimally not consisting of more than 10-50
-lines of code with significant complexity.
+lines of code with significant complexity. Optimize the PRs to be easy to
+review, make them byte sized and keep the PR description concise. If the
+feature is big, it's good practice to add small parts of code with their tests
+that are not activated, yet.
 
 Don't create comments unless they provide semantics that are not obvious from
 the code. If you add comments, make sure they add information that is not
