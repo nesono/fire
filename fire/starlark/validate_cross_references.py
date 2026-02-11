@@ -19,8 +19,11 @@ import sys
 
 from typing import Final
 
+from pydantic import ValidationError
+
 from fire.starlark import file_io_common, markdown_common, path_common
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
+from fire.starlark.requirement_models import RequirementMetadata
 
 _BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
 
@@ -146,9 +149,6 @@ def parse_inline_metadata_for_requirement(content, req_id):
     Format: Key1: value1 | Key2: value2 | Key3: [link](url)
     Returns tuple of (RequirementMetadata | None, ValidationError | None).
     """
-    from fire.starlark.requirement_models import RequirementMetadata
-    from pydantic import ValidationError
-
     # Find the requirement heading
     lines = content.split("\n")
     heading_index = _find_requirement_heading_index(lines, req_id)
