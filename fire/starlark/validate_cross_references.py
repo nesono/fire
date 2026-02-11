@@ -42,6 +42,103 @@ def validate_no_bare_todos(content: str, file_path: str) -> list[str]:
     return errors
 
 
+def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None:
+    """Find the line index of the requirement heading.
+
+    Returns the index of the line starting with '## REQ_ID', or None if not found.
+    """
+    for i, line in enumerate(lines):
+        if line.startswith(f"## {req_id}"):
+            return i
+    return None
+
+
+def _extract_next_metadata_line(lines: list[str], start_index: int) -> str | None:
+    """Extract the first non-empty line after start_index that looks like metadata.
+
+    Metadata lines either:
+    - Contain pipe separators (multi-field format)
+    - Start with a known field name followed by colon (single-field format)
+
+    Returns the metadata line string, or None if no valid metadata line found.
+    """
+    known_fields = ["sil", "sec", "version", "parent"]
+
+    for j in range(start_index + 1, len(lines)):
+        next_line = lines[j].strip()
+        if not next_line:
+            continue
+
+        # Multi-field format: contains pipe separator
+        if "|" in next_line:
+            return next_line
+
+        # Single-field format: Key: value where key is a known field
+        if ":" in next_line and not next_line.startswith("#"):
+            parts = next_line.split(":", 1)
+            key = parts[0].strip().lower()
+            if len(parts) == 2 and key in known_fields:
+                return next_line
+
+        # Not a metadata line - stop searching
+        break
+
+    return None
+
+
+def _parse_field_value(value: str) -> int | bool | str:
+    """Parse a single metadata field value to its appropriate type.
+
+    Handles:
+    - Markdown links (returned as-is)
+    - Integers (converted to int)
+    - Booleans (true/false converted to bool)
+    - Strings (returned as-is)
+    """
+    # Markdown links stay as strings
+    if value.startswith("[") and "](" in value:
+        # Validate it matches the expected link pattern
+        match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, value)
+        if match:
+            return value
+
+    # Parse integers
+    if value.isdigit():
+        return int(value)
+
+    # Parse booleans
+    if value.lower() == "true":
+        return True
+    if value.lower() == "false":
+        return False
+
+    # Default: return as string
+    return value
+
+
+def _parse_metadata_fields(metadata_line: str, req_id: str) -> dict:
+    """Parse pipe-separated metadata fields into a frontmatter dictionary.
+
+    Splits the line by '|' and parses each 'key: value' pair.
+    Keys are normalized to lowercase. Values are typed using _parse_field_value.
+    """
+    frontmatter = {"id": req_id}
+
+    for field in metadata_line.split("|"):
+        field = field.strip()
+        if not field or ":" not in field:
+            continue
+
+        # Split by first ':' to get key and value
+        parts = field.split(":", 1)
+        key = parts[0].strip().lower()
+        value = parts[1].strip() if len(parts) > 1 else ""
+
+        frontmatter[key] = _parse_field_value(value)
+
+    return frontmatter
+
+
 def parse_inline_metadata_for_requirement(content, req_id):
     """Parse inline metadata for a specific requirement ID.
 
@@ -52,70 +149,19 @@ def parse_inline_metadata_for_requirement(content, req_id):
     from fire.starlark.requirement_models import RequirementMetadata
     from pydantic import ValidationError
 
+    # Find the requirement heading
     lines = content.split("\n")
-    metadata_line = None
+    heading_index = _find_requirement_heading_index(lines, req_id)
+    if heading_index is None:
+        return None, None
 
-    for i, line in enumerate(lines):
-        if line.startswith(f"## {req_id}"):
-            # The next non-empty line should be the metadata line
-            for j in range(i + 1, len(lines)):
-                next_line = lines[j].strip()
-                if next_line:
-                    # Check if this is a metadata line (contains | or single Key: value)
-                    if "|" in next_line:
-                        metadata_line = next_line
-                        break
-                    elif ":" in next_line and not next_line.startswith("#"):
-                        # Simple heuristic: metadata lines have key: value format
-                        # and the key is a known metadata field (SIL, Sec, Version, Parent)
-                        parts = next_line.split(":", 1)
-                        key = parts[0].strip().lower()
-                        known_fields = ["sil", "sec", "version", "parent"]
-                        if len(parts) == 2 and key in known_fields:
-                            metadata_line = next_line
-                            break
-                    # If it's not metadata, break (don't keep searching)
-                    break
-            break
-
+    # Extract the metadata line following the heading
+    metadata_line = _extract_next_metadata_line(lines, heading_index)
     if not metadata_line:
         return None, None
 
-    # Parse pipe-separated fields: Key1: value1 | Key2: value2 | Parent: [REQ-ID](path)
-    frontmatter = {"id": req_id}
-
-    # Split by | to get individual fields
-    fields = metadata_line.split("|")
-
-    for field in fields:
-        field = field.strip()
-        if not field or ":" not in field:
-            continue
-
-        # Split by first : to get key and value
-        parts = field.split(":", 1)
-        key = parts[0].strip().lower()  # Normalize key to lowercase
-        value = parts[1].strip() if len(parts) > 1 else ""
-
-        # Check if value contains a markdown link [text](url)
-        if value.startswith("[") and "](" in value:
-            # This is a parent reference - extract just the requirement ID
-            # Format: [REQ-ID](/path/to/file.md?version=N#REQ-ID)
-            match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, value)
-            if match:
-                frontmatter[key] = value  # Keep full markdown link for parent
-                continue
-
-        # Try to parse as int
-        if value.isdigit():
-            frontmatter[key] = int(value)
-        # Parse booleans
-        elif value.lower() == "true":
-            frontmatter[key] = True
-        elif value.lower() == "false":
-            frontmatter[key] = False
-        else:
-            frontmatter[key] = value
+    # Parse the metadata fields into a dictionary
+    frontmatter = _parse_metadata_fields(metadata_line, req_id)
 
     # Validate with Pydantic
     try:
