@@ -1,0 +1,79 @@
+"""Tests for source-to-requirement traceability validation.
+
+These tests verify that version validation works correctly for
+source traceability comments:
+- Missing version suffix: build error
+- Outdated version (v1 when v2 exists): warning but builds
+- Future version (v3 when only v2 exists): build error
+
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:traceability.bzl", "source_traceability")
+
+exports_files(["test_requirements.sysreq.md"])
+
+# =============================================================================
+# Test Requirements
+# REQ_TEST_FEATURE is at version 2
+# =============================================================================
+
+# =============================================================================
+# Missing Version Tests - Should ERROR
+# Source references requirement without ?version= suffix
+# =============================================================================
+
+source_traceability(
+    name = "test_missing_version",
+    tags = [
+        "failure_test",
+        "manual",
+        "missing_version",
+    ],
+    deps = ["test_requirements.sysreq.md"],
+    implements = {
+        "test_missing_version.cc": [
+            "REQ_TEST_FEATURE",  # Missing ?version= suffix
+        ],
+    },
+)
+
+# =============================================================================
+# Outdated Version Tests - Should WARN
+# Source references version 1 when requirement is at version 2
+# =============================================================================
+
+source_traceability(
+    name = "test_outdated_version",
+    tags = [
+        "failure_test",
+        "manual",
+        "outdated_version",
+    ],
+    deps = ["test_requirements.sysreq.md"],
+    implements = {
+        "test_outdated_version.cc": [
+            "REQ_TEST_FEATURE?version=1",  # Outdated: requirement is at v2
+        ],
+    },
+)
+
+# =============================================================================
+# Future Version Tests - Should ERROR
+# Source references version 3 when requirement is only at version 2
+# =============================================================================
+
+source_traceability(
+    name = "test_future_version",
+    tags = [
+        "failure_test",
+        "future_version",
+        "manual",
+    ],
+    deps = ["test_requirements.sysreq.md"],
+    implements = {
+        "test_future_version.cc": [
+            "REQ_TEST_FEATURE?version=3",  # Future: requirement is only at v2
+        ],
+    },
+)
