@@ -172,5 +172,58 @@ Even more text"""
         assert defs == {"1": "http://example.com", "ref": "/path/file.md"}
 
 
+class TestExtractReferenceStyleLinks:
+    """Tests for extract_reference_style_links function."""
+
+    def test_explicit_reference(self):
+        text = "See [this link][1] for details"
+        links = markdown_common.extract_reference_style_links(text)
+        assert ("this link", "1") in links
+
+    def test_implicit_reference(self):
+        text = "See [REQ-001][] for details"
+        links = markdown_common.extract_reference_style_links(text)
+        assert ("REQ-001", "REQ-001") in links
+
+    def test_shortcut_reference(self):
+        text = "See [REQ-001] for details"
+        links = markdown_common.extract_reference_style_links(text)
+        assert ("REQ-001", "REQ-001") in links
+
+    def test_multiple_mixed_references(self):
+        text = "[First][1] and [Second][] and [Third]"
+        links = markdown_common.extract_reference_style_links(text)
+        assert ("First", "1") in links
+        assert ("Second", "Second") in links
+        assert ("Third", "Third") in links
+
+    def test_no_reference_style_links(self):
+        text = "Just [inline](url.md) links here"
+        links = markdown_common.extract_reference_style_links(text)
+        assert links == []
+
+    def test_does_not_match_inline_links(self):
+        text = "[Text](http://example.com)"
+        links = markdown_common.extract_reference_style_links(text)
+        assert links == []
+
+    def test_does_not_match_link_definitions(self):
+        text = "[1]: http://example.com"
+        links = markdown_common.extract_reference_style_links(text)
+        assert links == []
+
+    def test_parameter_reference_format(self):
+        text = "See [@velocity][1] parameter"
+        links = markdown_common.extract_reference_style_links(text)
+        assert ("@velocity", "1") in links
+
+    def test_mixed_with_inline_links(self):
+        text = "[Ref][1] and [Inline](url.md) and [Short]"
+        links = markdown_common.extract_reference_style_links(text)
+        assert ("Ref", "1") in links
+        assert ("Short", "Short") in links
+        assert not any(link_text == "Inline" for link_text, _ in links)
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
