@@ -12,6 +12,10 @@ ready to create a (new) PR from.
 
 ## Coding
 
+Import statements should be at the top of the file by default and only be added
+within functions if they are particularly heavy and/or there is a strong case
+to use lazy loading.
+
 Always write in TDD style. Write a small test first, make it fail, make it
 succeed, refactor. Please make sure to always go through these steps, don't
 skip the making the test fail step, to ensure that the tests are actually run.
