@@ -14,11 +14,38 @@ echo ""
 FAILURES=0
 SUCCESSES=0
 
-# Parse BUILD files to extract targets and their tags (no Bazel query needed!)
+# Query Bazel once for all targets with build output format (easy to parse!)
 # Output format: target|tag1 tag2 tag3
-echo "Parsing BUILD files..."
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PARSED_TARGETS=$(python3 "$SCRIPT_DIR/parse_build_tags.py")
+echo "Querying Bazel for failure test targets..."
+PARSED_TARGETS=$(bazel query --output=build '//fire/starlark/failure_test/...' 2>/dev/null | awk '
+  /^[ \t]*[A-Za-z_][A-Za-z0-9_]*\([ \t]*$/ { in_rule=1; name=""; tags=""; next }
+
+  in_rule && /^[ \t]*\)[ \t]*$/ {
+    if (name != "") {
+      if (tags == "") tags="[]"
+      print name "|" tags
+    }
+    in_rule=0
+    next
+  }
+
+  in_rule && /^[ \t]*name[ \t]*=/ {
+    s=$0
+    sub(/.*name[ \t]*=[ \t]*"/, "", s)
+    sub(/".*/, "", s)
+    name=s
+    next
+  }
+
+  in_rule && /^[ \t]*tags[ \t]*=/ {
+    s=$0
+    sub(/.*tags[ \t]*=[ \t]*/, "", s)
+    sub(/,[ \t]*$/, "", s)
+    gsub(/[ \t]+/, "", s)
+    tags=s
+    next
+  }
+' | grep "failure_test")
 
 if [ -z "$PARSED_TARGETS" ]; then
     echo "No targets with 'failure_test' tag found"
