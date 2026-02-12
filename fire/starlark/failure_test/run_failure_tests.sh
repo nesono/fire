@@ -15,15 +15,14 @@ FAILURES=0
 SUCCESSES=0
 
 # Query Bazel once for all targets with build output format (easy to parse!)
-# Output format: target|tag1 tag2 tag3
+# Output format: //package:target|tag1 tag2 tag3
 echo "Querying Bazel for failure test targets..."
 PARSED_TARGETS=$(bazel query --output=build '//fire/starlark/failure_test/...' 2>/dev/null | awk '
-  /^[ \t]*[A-Za-z_][A-Za-z0-9_]*\([ \t]*$/ { in_rule=1; name=""; tags=""; next }
+  /^[ \t]*[A-Za-z_][A-Za-z0-9_]*\([ \t]*$/ { in_rule=1; name=""; tags=""; pkg=""; next }
 
   in_rule && /^[ \t]*\)[ \t]*$/ {
-    if (name != "") {
-      if (tags == "") tags="[]"
-      print name "|" tags
+    if (name != "" && pkg != "" && tags ~ /failure_test/ && name !~ /_validation$/) {
+      print "//" pkg ":" name "|" tags
     }
     in_rule=0
     next
@@ -37,15 +36,27 @@ PARSED_TARGETS=$(bazel query --output=build '//fire/starlark/failure_test/...' 2
     next
   }
 
+  in_rule && /^[ \t]*generator_location[ \t]*=/ {
+    s=$0
+    sub(/.*generator_location[ \t]*=[ \t]*"/, "", s)
+    sub(/\/BUILD.bazel.*/, "", s)
+    pkg=s
+    next
+  }
+
   in_rule && /^[ \t]*tags[ \t]*=/ {
     s=$0
     sub(/.*tags[ \t]*=[ \t]*/, "", s)
     sub(/,[ \t]*$/, "", s)
-    gsub(/[ \t]+/, "", s)
+    gsub(/[\[\]"]/, "", s)
+    gsub(/,/, " ", s)
+    gsub(/[ \t]+/, " ", s)
+    sub(/^[ \t]+/, "", s)
+    sub(/[ \t]+$/, "", s)
     tags=s
     next
   }
-' | grep "failure_test")
+')
 
 if [ -z "$PARSED_TARGETS" ]; then
     echo "No targets with 'failure_test' tag found"
