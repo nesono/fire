@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run all targets tagged with 'failure_test'
 #
-# This script queries for all targets with the 'failure_test' tag
+# This script parses BUILD files to find targets with the 'failure_test' tag
 # and verifies they fail or produce warnings as expected.
 
 set -euo pipefail
@@ -14,20 +14,64 @@ echo ""
 FAILURES=0
 SUCCESSES=0
 
-# Query all targets with the 'failure_test' tag, excluding _validation targets
-# (validation targets are internal implementation details)
-FAILURE_TARGETS=$(bazel query 'attr(tags, "failure_test", //...) except attr(name, ".*_validation$", //...)' 2>/dev/null)
+# Query Bazel once for all targets with build output format (easy to parse!)
+# Output format: //package:target|tag1 tag2 tag3
+echo "Querying Bazel for failure test targets..."
+PARSED_TARGETS=$(bazel query --output=build '//fire/starlark/failure_test/...' 2>/dev/null | awk '
+  /^[ \t]*[A-Za-z_][A-Za-z0-9_]*\([ \t]*$/ { in_rule=1; name=""; tags=""; pkg=""; next }
 
-if [ -z "$FAILURE_TARGETS" ]; then
+  in_rule && /^[ \t]*\)[ \t]*$/ {
+    if (name != "" && pkg != "" && tags ~ /failure_test/ && name !~ /_validation$/) {
+      print "//" pkg ":" name "|" tags
+    }
+    in_rule=0
+    next
+  }
+
+  in_rule && /^[ \t]*name[ \t]*=/ {
+    s=$0
+    sub(/.*name[ \t]*=[ \t]*"/, "", s)
+    sub(/".*/, "", s)
+    name=s
+    next
+  }
+
+  in_rule && /^[ \t]*generator_location[ \t]*=/ {
+    s=$0
+    sub(/.*generator_location[ \t]*=[ \t]*"/, "", s)
+    sub(/\/BUILD.bazel.*/, "", s)
+    pkg=s
+    next
+  }
+
+  in_rule && /^[ \t]*tags[ \t]*=/ {
+    s=$0
+    sub(/.*tags[ \t]*=[ \t]*/, "", s)
+    sub(/,[ \t]*$/, "", s)
+    gsub(/[\[\]"]/, "", s)
+    gsub(/,/, " ", s)
+    gsub(/[ \t]+/, " ", s)
+    sub(/^[ \t]+/, "", s)
+    sub(/[ \t]+$/, "", s)
+    tags=s
+    next
+  }
+')
+
+if [ -z "$PARSED_TARGETS" ]; then
     echo "No targets with 'failure_test' tag found"
     exit 1
 fi
 
-# Function to check if target has a specific tag
+# Extract list of failure test targets
+FAILURE_TARGETS=$(echo "$PARSED_TARGETS" | cut -d'|' -f1)
+
+# Fast tag lookup using parsed BUILD file data (bash 3.2 compatible)
 has_tag() {
     local target=$1
     local tag=$2
-    bazel query "attr(tags, '$tag', $target)" 2>/dev/null | grep -q "$target"
+    local tags=$(echo "$PARSED_TARGETS" | grep "^${target}|" | cut -d'|' -f2)
+    [[ " $tags " == *" $tag "* ]]
 }
 
 # Run each failure test
