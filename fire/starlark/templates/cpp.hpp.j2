@@ -1,5 +1,4 @@
-#ifndef {{ guard_name }}
-#define {{ guard_name }}
+#pragma once
 
 #include <array>     // for std::array
 #include <cstddef>  // for size_t
@@ -59,6 +58,4 @@ constexpr {{ cpp_type }} {{ const_name }} = {% if item.type == "string" %}"{{ it
 {% endif %}
 {% if namespace %}
 }  // namespace {{ namespace }}
-
 {% endif %}
-#endif  // {{ guard_name }}
