@@ -14,19 +14,8 @@ def generate_cpp_files(
     """
 
     def context_builder(item: dict) -> dict:
-        """Build context with include guard for C++ header."""
-        # Create include guard from package path + filename
-        if package_path:
-            repo_path = (
-                package_path + "/" + item["base_name"] + "_v" + str(item["version"])
-            )
-        else:
-            repo_path = item["base_name"] + "_v" + str(item["version"])
-        guard_name = (
-            repo_path.upper().replace("/", "_").replace(".", "_").replace("-", "_")
-            + "_H"
-        )
-        return {"namespace": cpp_namespace or "", "guard_name": guard_name}
+        """Build context for C++ header."""
+        return {"namespace": cpp_namespace or ""}
 
     return generate_files_per_item(
         items,
