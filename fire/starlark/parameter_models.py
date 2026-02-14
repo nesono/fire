@@ -20,6 +20,34 @@ from pydantic import (
 _VERSION_SUFFIX_RE = re.compile(r"^([a-z][a-z0-9_]*)_v([1-9][0-9]*)$")
 
 
+def infer_type_from_value(value: Any) -> str:
+    """Infer type from a single value.
+
+    Args:
+        value: A Python value from YAML parsing
+
+    Returns:
+        Inferred type string: 'i64', 'f64', 'bool', or 'string'
+
+    Raises:
+        ValueError: If type cannot be inferred or value is None
+    """
+    if value is None:
+        raise ValueError("Cannot infer type from None")
+
+    # Check bool BEFORE int (bool is subclass of int in Python)
+    if isinstance(value, bool):
+        return "bool"
+    elif isinstance(value, int):
+        return "i64"
+    elif isinstance(value, float):
+        return "f64"
+    elif isinstance(value, str):
+        return "string"
+    else:
+        raise ValueError(f"Cannot infer type from {type(value).__name__}")
+
+
 def infer_parameter_type(data: Dict[str, Any]) -> str:
     """Infer parameter type from the value field.
 
@@ -39,22 +67,7 @@ def infer_parameter_type(data: Dict[str, Any]) -> str:
     if "value" not in data:
         raise ValueError("Parameter must have 'value' field")
 
-    value = data["value"]
-
-    if value is None:
-        raise ValueError("Cannot infer type from NoneType")
-
-    # Check bool BEFORE int (bool is subclass of int in Python)
-    if isinstance(value, bool):
-        return "bool"
-    elif isinstance(value, int):
-        return "i64"
-    elif isinstance(value, float):
-        return "f64"
-    elif isinstance(value, str):
-        return "string"
-    else:
-        raise ValueError(f"Cannot infer type from {type(value).__name__}")
+    return infer_type_from_value(data["value"])
 
 
 class AllParamBase(BaseModel):
@@ -131,6 +144,45 @@ class TableParameter(AllParamBase):
     rows: List[List[Any]] = Field(min_length=1)
 
     model_config = {"extra": "forbid"}
+
+    @model_validator(mode="before")
+    @classmethod
+    def inject_column_types(cls, data: Any) -> Any:
+        """Infer column types from first row values if not explicitly provided.
+
+        For each column without an explicit 'type' field, infer the type from
+        the corresponding value in the first row.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        rows = data.get("rows", [])
+        columns = data.get("columns", [])
+
+        if not rows or not columns:
+            return data
+
+        first_row = rows[0]
+
+        if len(first_row) != len(columns):
+            raise ValueError(
+                f"First row has {len(first_row)} values but "
+                f"{len(columns)} columns are defined"
+            )
+
+        # Inject type for each column based on first row value
+        for i, col in enumerate(columns):
+            if isinstance(col, dict) and "type" not in col:
+                try:
+                    col["type"] = infer_type_from_value(first_row[i])
+                except ValueError as e:
+                    col_name = col.get("name", f"column {i}")
+                    raise ValueError(
+                        f"Column '{col_name}': Cannot infer type from "
+                        f"first row value: {e}"
+                    ) from e
+
+        return data
 
 
 # Union of all parameter types (type field injected by ParameterFile validator)

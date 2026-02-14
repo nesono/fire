@@ -138,14 +138,14 @@ def test_infer_string_from_string():
 
 
 def test_valid_table_parameter():
-    """Test validation passes for valid table parameter."""
+    """Test validation passes for valid table parameter with type inference."""
     data = {
         "test_table_v1": {
             "type": "table",
             "description": "A table parameter",
             "columns": [
-                {"name": "col_a", "type": "i64", "unit": "1"},
-                {"name": "col_b", "type": "f64", "unit": "m"},
+                {"name": "col_a", "unit": "1"},
+                {"name": "col_b", "unit": "m"},
             ],
             "rows": [
                 [1, 2.5],
@@ -474,7 +474,7 @@ def test_table_missing_rows():
         "test_table_v1": {
             "type": "table",
             "description": "Missing rows",
-            "columns": [{"name": "col_a", "type": "i64"}],
+            "columns": [{"name": "col_a", "unit": "1"}],
         }
     }
     yaml_path = _create_temp_yaml(data)
@@ -512,7 +512,7 @@ def test_table_empty_rows():
         "test_table_v1": {
             "type": "table",
             "description": "Empty rows",
-            "columns": [{"name": "col_a", "type": "i64"}],
+            "columns": [{"name": "col_a", "unit": "1"}],
             "rows": [],
         }
     }
@@ -536,7 +536,7 @@ def test_table_with_value_field():
             "type": "table",
             "description": "Table with value field",
             "value": "should not be here",
-            "columns": [{"name": "col_a", "type": "i64"}],
+            "columns": [{"name": "col_a", "unit": "1"}],
             "rows": [[1]],
         }
     }
@@ -551,7 +551,7 @@ def test_column_missing_name():
         "test_table_v1": {
             "type": "table",
             "description": "Column missing name",
-            "columns": [{"type": "i64"}],
+            "columns": [{"unit": "1"}],
             "rows": [[1]],
         }
     }
@@ -561,20 +561,19 @@ def test_column_missing_name():
     _assert_words_in_string_list(errors, ["name"])
 
 
-def test_column_missing_type():
-    """Test validation fails when column is missing 'type' field."""
+def test_column_type_inference():
+    """Test validation passes when column type is inferred from row values."""
     data = {
         "test_table_v1": {
             "type": "table",
-            "description": "Column missing type",
-            "columns": [{"name": "col_a"}],
-            "rows": [[1]],
+            "description": "Column with type inference",
+            "columns": [{"name": "col_a", "unit": "1"}],
+            "rows": [[1], [2], [3]],
         }
     }
     yaml_path = _create_temp_yaml(data)
     data, errors = validate_parameters(yaml_path)
-    assert errors
-    _assert_words_in_string_list(errors, ["type"])
+    assert not errors, f"Validation failed: {errors}"
 
 
 @pytest.mark.parametrize(
@@ -593,7 +592,7 @@ def test_column_invalid_name_pattern(invalid_name):
         "test_table_v1": {
             "type": "table",
             "description": "Invalid column name",
-            "columns": [{"name": invalid_name, "type": "i64"}],
+            "columns": [{"name": invalid_name, "unit": "1"}],
             "rows": [[1]],
         }
     }
@@ -604,13 +603,13 @@ def test_column_invalid_name_pattern(invalid_name):
 
 
 def test_column_invalid_type_enum():
-    """Test validation fails for invalid column type."""
+    """Test validation fails for invalid explicit column type."""
     data = {
         "test_table_v1": {
             "type": "table",
             "description": "Invalid column type",
             "columns": [
-                {"name": "col_a", "type": "table"}
+                {"name": "col_a", "type": "table", "unit": "1"}
             ],  # table type not allowed in columns
             "rows": [[1]],
         }
