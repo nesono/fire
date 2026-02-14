@@ -155,6 +155,28 @@ def test_valid_table_parameter():
     assert not errors, f"Validation failed: {errors}"
 
 
+def test_inconsistent_types_table_rejected():
+    """Test validation rejects for inconsistent content types in table."""
+    data = {
+        "test_table_v1": {
+            "type": "table",
+            "description": "A table parameter",
+            "columns": [
+                {"name": "col_a", "unit": "1"},
+                {"name": "col_b", "unit": "m"},
+            ],
+            "rows": [
+                [1, 2.5],
+                [2.5, 3],  # float instead of integer
+            ],
+        }
+    }
+    yaml_path = _create_temp_yaml(data)
+    data, errors = validate_parameters(yaml_path)
+    assert errors
+    _assert_words_in_string_list(errors, ["inferred", "scalar", "inconsistent"])
+
+
 def test_scalar_explicit_type_rejected():
     """Test validation fails when scalar parameter has explicit 'type' field."""
     data = {
