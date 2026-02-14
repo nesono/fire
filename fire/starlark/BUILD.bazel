@@ -263,3 +263,32 @@ py_test(
         "@pip//pytest",
     ],
 )
+
+py_library(
+    name = "generate_code_lib",
+    srcs = [
+        "generate_code.py",
+        "generators/cpp.py",
+        "generators/generator_common.py",
+        "generators/go.py",
+        "generators/java.py",
+        "generators/python.py",
+        "generators/rust.py",
+        "generators/template_loader.py",
+    ],
+    data = glob(["templates/*.j2"]),
+    deps = [
+        "@pip//jinja2",
+        "@pip//pyyaml",
+    ],
+)
+
+py_test(
+    name = "generate_code_test",
+    size = "small",
+    srcs = ["generate_code_test.py"],
+    deps = [
+        ":generate_code_lib",
+        "@pip//pytest",
+    ],
+)

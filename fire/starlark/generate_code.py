@@ -36,10 +36,10 @@ def normalize_unit_suffix(unit: str) -> str:
     """Convert unit string to valid identifier suffix.
 
     Args:
-        unit: Unit string (e.g., "m/s", "m/s^2", "m^3")
+        unit: Unit string (e.g., "m/s", "m/s^2", "m^3", "1")
 
     Returns:
-        Normalized suffix (e.g., "mps", "mps2", "m3")
+        Normalized suffix (e.g., "mps", "mps2", "m3", "")
 
     Examples:
         "m/s"    -> "mps"    (meters per second)
@@ -48,9 +48,10 @@ def normalize_unit_suffix(unit: str) -> str:
         "m^3"    -> "m3"     (cubic meters)
         "kg/m^3" -> "kgpm3"  (kilograms per cubic meter)
         "m"      -> "m"      (meters)
+        "1"      -> ""       (dimensionless quantity)
         "dimensionless" -> ""
     """
-    if not unit or unit.lower() == "dimensionless":
+    if not unit or unit == "1" or unit.lower() == "dimensionless":
         return ""
 
     suffix = unit.lower()
