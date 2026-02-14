@@ -53,7 +53,7 @@ const {{ param_name_pascal }}{{ var_suffix }}Size = {{ item.rows | length }}
 {% else %}
 {% set go_type = item.type | go_type %}
 
-// {{ param_name_pascal }}{{ var_suffix }} is the {{ item.description | default(item.base_name) }}.
+// {{ param_name_pascal }}{{ var_suffix }} is the {{ item.description | default(item.base_name) }} - Unit: {{ item.unit }}.
 {% if not item.is_latest %}
 // Deprecated: Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.
 {% endif %}

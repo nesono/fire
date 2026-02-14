@@ -46,7 +46,7 @@ pub const {{ const_name }}_SIZE: usize = {{ size }};
 pub const _DEPRECATED_SENTINEL: () = ();
 
 {% endif %}
-/// {{ item.description | default("") }}
+/// {{ item.description | default("") }} - Unit: {{ item.unit }}
 {% if item.type == "string" %}
 pub const {{ const_name }}: &str = "{{ item.value }}";
 {% else %}

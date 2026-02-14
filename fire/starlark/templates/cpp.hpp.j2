@@ -21,7 +21,7 @@ struct {{ struct_name }} {
 {% else %}
 {% set field_name = col.name %}
 {% endif %}
-    {{ col.type | cpp_type }} {{ field_name }};{% if col.unit %}  ///< Unit: {{ col.unit }}{% endif %}
+    {{ col.type | cpp_type }} {{ field_name }};  ///< Unit: {{ col.unit }}
 
 {% endfor %}
 };
@@ -50,9 +50,7 @@ constexpr const std::array<{{ struct_name }}, {{ size }}>& {{ item.base_name }}(
 {% else %}
 {% set const_name = item.base_name | upper %}
 {% endif %}
-{% set description = item.description | default("") %}
-{% if item.unit %}{% set description = description + " - Unit: " + item.unit %}{% endif %}
-/// {{ description }}
+/// {{ item.description | default("") }} - Unit: {{ item.unit }}
 constexpr {{ cpp_type }} {{ const_name }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
 
 {% endif %}
