@@ -13,7 +13,6 @@ from pydantic import (
     BaseModel,
     Field,
     RootModel,
-    field_validator,
     model_validator,
 )
 
@@ -49,10 +48,10 @@ def infer_type_from_value(value: Any) -> str:
 
 
 def infer_parameter_type(data: Dict[str, Any]) -> str:
-    """Infer parameter type from the value field.
+    """Infer parameter type for a parameter.
 
     Args:
-        data: Parameter dictionary with at least a 'value' field
+        data: Parameter dictionary
 
     Returns:
         Inferred type string: 'i64', 'f64', 'bool', 'string', or 'table'
@@ -134,14 +133,6 @@ class BoolParameter(UnitParamBase):
     value: bool = Field(strict=True)
 
     model_config = {"extra": "forbid"}
-
-    @field_validator("value", mode="before")
-    @classmethod
-    def validate_bool_strict(cls, v):
-        """Strictly validate boolean values - no string coercion."""
-        if not isinstance(v, bool):
-            raise ValueError("value is not a valid boolean")
-        return v
 
 
 class TableParameter(AllParamBase):
