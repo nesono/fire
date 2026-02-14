@@ -5,6 +5,7 @@ max_speed_v1:
 
 min_braking_distance_v1:
   value: 50.0
+  unit: m
   description: Minimum braking distance in meters
 
 update_rate_v1:

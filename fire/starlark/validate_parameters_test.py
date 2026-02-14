@@ -36,6 +36,7 @@ def test_valid_simple_parameters_with_inference():
     data = {
         "test_i64_v1": {
             "value": 42,
+            "unit": "1",
             "description": "A 64-bit integer",
         },
         "test_f64_v1": {
@@ -45,10 +46,12 @@ def test_valid_simple_parameters_with_inference():
         },
         "test_string_v1": {
             "value": "hello",
+            "unit": "1",
             "description": "A string value",
         },
         "test_bool_v1": {
             "value": True,
+            "unit": "1",
             "description": "A boolean value",
         },
     }
@@ -63,11 +66,13 @@ def test_valid_parameters_with_explicit_type():
         "test_i64_v1": {
             "type": "i64",
             "value": 42,
+            "unit": "1",
             "description": "Explicit i64",
         },
         "test_f64_v1": {
             "type": "f64",
             "value": 3.14,
+            "unit": "1",
             "description": "Explicit f64",
         },
     }
@@ -81,6 +86,7 @@ def test_infer_i64_from_int():
     data = {
         "count_v1": {
             "value": 42,
+            "unit": "1",
             "description": "Integer value",
         }
     }
@@ -94,6 +100,7 @@ def test_infer_f64_from_float():
     data = {
         "speed_v1": {
             "value": 42.0,
+            "unit": "1",
             "description": "Float value",
         }
     }
@@ -107,6 +114,7 @@ def test_infer_bool_from_bool():
     data = {
         "enabled_v1": {
             "value": True,
+            "unit": "1",
             "description": "Boolean value",
         }
     }
@@ -120,6 +128,7 @@ def test_infer_string_from_string():
     data = {
         "name_v1": {
             "value": "test",
+            "unit": "1",
             "description": "String value",
         }
     }
@@ -135,7 +144,7 @@ def test_valid_table_parameter():
             "type": "table",
             "description": "A table parameter",
             "columns": [
-                {"name": "col_a", "type": "i64"},
+                {"name": "col_a", "type": "i64", "unit": "1"},
                 {"name": "col_b", "type": "f64", "unit": "m"},
             ],
             "rows": [
@@ -154,6 +163,7 @@ def test_valid_single_version_param():
     data = {
         "wheel_count_v1": {
             "value": 4,
+            "unit": "1",
             "description": "Number of wheels",
         }
     }
@@ -205,6 +215,7 @@ def test_reject_key_without_version_suffix():
     data = {
         "wheel_count": {
             "value": 4,
+            "unit": "1",
             "description": "Missing version suffix",
         }
     }
@@ -219,10 +230,12 @@ def test_reject_non_consecutive_versions():
     data = {
         "velocity_v1": {
             "value": 50.0,
+            "unit": "1",
             "description": "Version 1",
         },
         "velocity_v3": {
             "value": 60.0,
+            "unit": "1",
             "description": "Version 3 - gap!",
         },
     }
@@ -237,14 +250,17 @@ def test_reject_more_than_two_versions():
     data = {
         "velocity_v1": {
             "value": 50.0,
+            "unit": "1",
             "description": "Version 1",
         },
         "velocity_v2": {
             "value": 50.0,
+            "unit": "1",
             "description": "Version 2",
         },
         "velocity_v3": {
             "value": 60.0,
+            "unit": "1",
             "description": "Version 3",
         },
     }
@@ -259,6 +275,7 @@ def test_reject_versions_not_starting_from_1():
     data = {
         "velocity_v2": {
             "value": 55.0,
+            "unit": "1",
             "description": "Starting from v2",
         }
     }
@@ -272,6 +289,7 @@ def test_reject_version_zero():
     data = {
         "velocity_v0": {
             "value": 50.0,
+            "unit": "1",
             "description": "Version 0 not allowed",
         }
     }
@@ -309,6 +327,7 @@ def test_missing_value_field():
     """Test validation fails when 'value' field is missing."""
     data = {
         "test_param_v1": {
+            "unit": "1",
             "description": "Missing value",
         }
     }
@@ -323,6 +342,7 @@ def test_missing_description_field():
     data = {
         "test_param_v1": {
             "value": 42,
+            "unit": "1",
         }
     }
     yaml_path = _create_temp_yaml(data)
@@ -336,6 +356,7 @@ def test_empty_description():
     data = {
         "test_param_v1": {
             "value": 42,
+            "unit": "1",
             "description": "",
         }
     }
@@ -353,6 +374,7 @@ def test_wrong_value_type_for_i64_do_not_allow_coercing():
         "test_param_v1": {
             "type": "i64",
             "value": "42",
+            "unit": "1",
             "description": "Wrong value type",
         }
     }
@@ -368,6 +390,7 @@ def test_invalid_type_enum():
         "test_param_v1": {
             "type": "double",  # Invalid, should be f64
             "value": 3.14,
+            "unit": "1",
             "description": "Invalid type",
         }
     }
@@ -388,6 +411,7 @@ def test_no_coercing_for_f64():
         "test_param_v1": {
             "type": "f64",
             "value": "3.14",
+            "unit": "1",
             "description": "Wrong value type",
         }
     }
@@ -403,6 +427,7 @@ def test_wrong_value_type_for_string():
         "test_param_v1": {
             "type": "string",
             "value": 123,
+            "unit": "1",
             "description": "Wrong value type",
         }
     }
@@ -418,6 +443,7 @@ def test_wrong_value_type_for_bool():
         "test_param_v1": {
             "type": "bool",
             "value": "true",  # String instead of boolean
+            "unit": "1",
             "description": "Wrong value type",
         }
     }
@@ -600,6 +626,7 @@ def test_additional_properties_not_allowed():
     data = {
         "test_param_v1": {
             "value": 42,
+            "unit": "1",
             "description": "Test",
             "extra_field": "not allowed",
         }
@@ -615,10 +642,12 @@ def test_additional_top_level_properties_not_allowed():
     data = {
         "test_param_v1": {
             "value": 42,
+            "unit": "1",
             "description": "Test",
         },
         "extra_param_without_version": {
             "value": 99,
+            "unit": "1",
             "description": "Missing version suffix",
         },
     }
@@ -634,6 +663,7 @@ def test_integers_accepted_for_floats():
         "test_f64_v1": {
             "type": "f64",
             "value": 100,
+            "unit": "1",
             "description": "Integer for f64",
         },
     }
@@ -648,6 +678,7 @@ def test_obsolete_type_i32_rejected():
         "test_param_v1": {
             "type": "i32",
             "value": 42,
+            "unit": "1",
             "description": "Obsolete i32 type",
         }
     }
@@ -663,6 +694,7 @@ def test_obsolete_type_u32_rejected():
         "test_param_v1": {
             "type": "u32",
             "value": 42,
+            "unit": "1",
             "description": "Obsolete u32 type",
         }
     }
@@ -678,6 +710,7 @@ def test_obsolete_type_u64_rejected():
         "test_param_v1": {
             "type": "u64",
             "value": 42,
+            "unit": "1",
             "description": "Obsolete u64 type",
         }
     }
@@ -693,6 +726,7 @@ def test_obsolete_type_f32_rejected():
         "test_param_v1": {
             "type": "f32",
             "value": 3.14,
+            "unit": "1",
             "description": "Obsolete f32 type",
         }
     }

@@ -1,11 +1,14 @@
 test_value_v1:
   value: 40.0
+  unit: "1"
   description: Test parameter at version 1
 
 test_value_v2:
   value: 42.0
+  unit: "1"
   description: Test parameter at version 2
 
 test_value_v3:
   value: 4242.0
+  unit: "1"
   description: Test parameter at version 2

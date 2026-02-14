@@ -1,3 +1,4 @@
 test_param_v1:
   value: 42.0
+  unit: "1"
   description: Test parameter

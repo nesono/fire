@@ -66,7 +66,7 @@ class AllParamBase(BaseModel):
 class UnitParamBase(AllParamBase):
     """Versioned parameter with description and unit."""
 
-    unit: str | None = None
+    unit: str = Field(min_length=1)
 
 
 class Column(BaseModel):
@@ -74,7 +74,7 @@ class Column(BaseModel):
 
     name: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
     type: Literal["i64", "f64", "string", "bool"]
-    unit: str | None = None
+    unit: str = Field(min_length=1)
 
     model_config = {"extra": "forbid"}
 
