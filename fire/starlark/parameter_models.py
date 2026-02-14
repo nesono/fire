@@ -61,8 +61,16 @@ def infer_parameter_type(data: Dict[str, Any]) -> str:
         ValueError: If type cannot be inferred or value is None
     """
     # Table type must be explicit (has columns/rows)
+    if "type" in data and data["type"] == "table":
+        return "table"
+
+    # Reject explicit type for scalar parameters
     if "type" in data:
-        return data["type"]
+        raise ValueError(
+            "Explicit 'type' field not allowed for scalar parameters. "
+            "Types are automatically inferred from values "
+            "(int→i64, float→f64, bool→bool, string→string)."
+        )
 
     if "value" not in data:
         raise ValueError("Parameter must have 'value' field")
@@ -214,15 +222,15 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
     def inject_inferred_types(cls, data: Any) -> Any:
         """Inject inferred types into parameter definitions before validation.
 
-        For scalar parameters without an explicit 'type' field, infer the type
-        from the Python type of the 'value' field (which comes from YAML parsing).
+        Types are always inferred from values. Explicit 'type' fields for
+        scalar parameters are rejected.
         """
         if not isinstance(data, dict):
             return data
 
-        # Inject type field for each parameter if not present
+        # Infer and inject type for each parameter
         for param_name, param_data in data.items():
-            if isinstance(param_data, dict) and "type" not in param_data:
+            if isinstance(param_data, dict):
                 try:
                     param_data["type"] = infer_parameter_type(param_data)
                 except ValueError as e:

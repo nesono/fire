@@ -60,25 +60,22 @@ def test_valid_simple_parameters_with_inference():
     assert not errors, f"Validation failed: {errors}"
 
 
-def test_valid_parameters_with_explicit_type():
-    """Test validation passes when type is explicitly provided."""
+def test_explicit_type_rejected_for_scalars():
+    """Test validation fails when type is explicitly provided for scalar parameters."""
     data = {
         "test_i64_v1": {
-            "type": "i64",
+            "type": "i64",  # Not allowed - type inferred from value
             "value": 42,
             "unit": "1",
             "description": "Explicit i64",
         },
-        "test_f64_v1": {
-            "type": "f64",
-            "value": 3.14,
-            "unit": "1",
-            "description": "Explicit f64",
-        },
     }
     yaml_path = _create_temp_yaml(data)
     data, errors = validate_parameters(yaml_path)
-    assert not errors, f"Validation failed: {errors}"
+    assert errors
+    _assert_words_in_string_list(
+        errors, ["Explicit 'type' field not allowed", "inferred"]
+    )
 
 
 def test_infer_i64_from_int():
@@ -156,6 +153,24 @@ def test_valid_table_parameter():
     yaml_path = _create_temp_yaml(data)
     data, errors = validate_parameters(yaml_path)
     assert not errors, f"Validation failed: {errors}"
+
+
+def test_scalar_explicit_type_rejected():
+    """Test validation fails when scalar parameter has explicit 'type' field."""
+    data = {
+        "wheel_count_v1": {
+            "type": "i64",  # Explicit type not allowed for scalar parameters
+            "value": 4,
+            "unit": "1",
+            "description": "Test parameter",
+        }
+    }
+    yaml_path = _create_temp_yaml(data)
+    data, errors = validate_parameters(yaml_path)
+    assert errors
+    _assert_words_in_string_list(
+        errors, ["Explicit 'type' field not allowed", "inferred", "scalar"]
+    )
 
 
 def test_valid_single_version_param():
@@ -382,27 +397,6 @@ def test_wrong_value_type_for_i64_do_not_allow_coercing():
     data, errors = validate_parameters(yaml_path)
     assert errors
     _assert_words_in_string_list(errors, ["integer", "type"])
-
-
-def test_invalid_type_enum():
-    """Test validation fails for invalid type enum value."""
-    data = {
-        "test_param_v1": {
-            "type": "double",  # Invalid, should be f64
-            "value": 3.14,
-            "unit": "1",
-            "description": "Invalid type",
-        }
-    }
-    yaml_path = _create_temp_yaml(data)
-    data, errors = validate_parameters(yaml_path)
-    assert errors
-    assert any(
-        "enum" in str(e).lower()
-        or "not one of" in str(e).lower()
-        or "not a valid" in str(e).lower()
-        for e in errors
-    )
 
 
 def test_no_coercing_for_f64():
@@ -656,85 +650,6 @@ def test_additional_top_level_properties_not_allowed():
     data, errors = validate_parameters(yaml_path)
     assert errors
     _assert_words_in_string_list(errors, ["must match pattern", "_v"])
-
-
-def test_integers_accepted_for_floats():
-    """Test that integers are accepted for float types."""
-    data = {
-        "test_f64_v1": {
-            "type": "f64",
-            "value": 100,
-            "unit": "1",
-            "description": "Integer for f64",
-        },
-    }
-    yaml_path = _create_temp_yaml(data)
-    data, errors = validate_parameters(yaml_path)
-    assert not errors, f"Validation failed: {errors}"
-
-
-def test_obsolete_type_i32_rejected():
-    """Test that obsolete type i32 is rejected."""
-    data = {
-        "test_param_v1": {
-            "type": "i32",
-            "value": 42,
-            "unit": "1",
-            "description": "Obsolete i32 type",
-        }
-    }
-    yaml_path = _create_temp_yaml(data)
-    data, errors = validate_parameters(yaml_path)
-    assert errors
-    _assert_words_in_string_list(errors, ["enum", "not one of", "not a valid"])
-
-
-def test_obsolete_type_u32_rejected():
-    """Test that obsolete type u32 is rejected."""
-    data = {
-        "test_param_v1": {
-            "type": "u32",
-            "value": 42,
-            "unit": "1",
-            "description": "Obsolete u32 type",
-        }
-    }
-    yaml_path = _create_temp_yaml(data)
-    data, errors = validate_parameters(yaml_path)
-    assert errors
-    _assert_words_in_string_list(errors, ["enum", "not one of", "not a valid"])
-
-
-def test_obsolete_type_u64_rejected():
-    """Test that obsolete type u64 is rejected."""
-    data = {
-        "test_param_v1": {
-            "type": "u64",
-            "value": 42,
-            "unit": "1",
-            "description": "Obsolete u64 type",
-        }
-    }
-    yaml_path = _create_temp_yaml(data)
-    data, errors = validate_parameters(yaml_path)
-    assert errors
-    _assert_words_in_string_list(errors, ["enum", "not one of", "not a valid"])
-
-
-def test_obsolete_type_f32_rejected():
-    """Test that obsolete type f32 is rejected."""
-    data = {
-        "test_param_v1": {
-            "type": "f32",
-            "value": 3.14,
-            "unit": "1",
-            "description": "Obsolete f32 type",
-        }
-    }
-    yaml_path = _create_temp_yaml(data)
-    data, errors = validate_parameters(yaml_path)
-    assert errors
-    _assert_words_in_string_list(errors, ["enum", "not one of", "not a valid"])
 
 
 if __name__ == "__main__":
