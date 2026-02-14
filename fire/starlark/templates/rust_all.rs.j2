@@ -14,6 +14,7 @@ pub struct {{ struct_name }} {
 {% else %}
 {% set field_name = col.name %}
 {% endif %}
+    /// Unit: {{ col.unit }}
     pub {{ field_name }}: {{ col.type | rust_type }},
 {% endfor %}
 }
@@ -49,7 +50,7 @@ pub const {{ const_name }}_V{{ item.version }}_SIZE: usize = {{ size }};
 {% if not item.is_latest %}
 #[deprecated(note = "Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.")]
 {% endif %}
-/// {{ item.description | default("") }}
+/// {{ item.description | default("") }} - Unit: {{ item.unit }}
 {% if item.type == "string" %}
 pub const {{ const_name }}_V{{ item.version }}: &str = "{{ item.value }}";
 {% else %}

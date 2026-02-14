@@ -59,7 +59,7 @@ public final class {{ class_name }} {
     }
 {% else %}
     /**
-     * {{ item.description | default("") }}
+     * {{ item.description | default("") }} - Unit: {{ item.unit }}
      */
 {% if not item.is_latest %}
     @Deprecated

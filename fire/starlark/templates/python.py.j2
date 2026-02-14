@@ -17,13 +17,14 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class {{ item.base_name | pascal_case }}Row:
+    """{{ item.description | default("") }}"""
 {% for col in item.columns %}
 {% if col.unit_suffix %}
 {% set field_name = col.name + "_" + col.unit_suffix %}
 {% else %}
 {% set field_name = col.name %}
 {% endif %}
-    {{ field_name }}: {{ col.type | python_type }}
+    {{ field_name }}: {{ col.type | python_type }}  # Unit: {{ col.unit }}
 {% endfor %}
 
 {% if item.unit_suffix %}
@@ -46,6 +47,7 @@ class {{ item.base_name | pascal_case }}Row:
 {% set const_name = item.base_name | upper %}
 {% endif %}
 
+# {{ item.description | default("") }} - Unit: {{ item.unit }}
 {{ const_name }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{{ item.value }}{% else %}{{ item.value }}{% endif %}
 
 {% endif %}
