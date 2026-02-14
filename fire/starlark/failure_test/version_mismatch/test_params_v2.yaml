@@ -1,7 +1,9 @@
 test_param_v1:
   value: 40.0
+  unit: "1"
   description: Test parameter at version 1
 
 test_param_v2:
   value: 42.0
+  unit: "1"
   description: Test parameter at version 2

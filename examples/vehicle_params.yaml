@@ -10,14 +10,17 @@ maximum_vehicle_velocity_v3:
 
 wheel_count_v1:
   value: 4
+  unit: "1"
   description: Number of wheels on the vehicle
 
 vehicle_name_v1:
   value: TestVehicle
+  unit: "1"
   description: Vehicle identifier for testing
 
 debug_mode_v1:
   value: false
+  unit: "1"
   description: Enable debug output
 
 braking_distance_table_v1:
@@ -29,7 +32,7 @@ braking_distance_table_v1:
       unit: m/s
     - name: friction_coefficient
       type: f64
-      unit: dimensionless
+      unit: "1"
     - name: braking_distance
       type: f64
       unit: m
