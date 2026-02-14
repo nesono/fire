@@ -231,6 +231,20 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
         # Infer and inject type for each parameter
         for param_name, param_data in data.items():
             if isinstance(param_data, dict):
+                # For tables, check columns early to give clear error before union discrimination
+                if param_data.get("type") == "table" or (
+                    "columns" in param_data and "rows" in param_data
+                ):
+                    columns = param_data.get("columns", [])
+                    for i, col in enumerate(columns):
+                        if isinstance(col, dict) and "type" in col:
+                            col_name = col.get("name", f"column {i}")
+                            raise ValueError(
+                                f"Parameter '{param_name}': Column '{col_name}': "
+                                f"Explicit 'type' field not allowed. "
+                                f"Types are inferred from row values."
+                            )
+
                 try:
                     param_data["type"] = infer_parameter_type(param_data)
                 except ValueError as e:
