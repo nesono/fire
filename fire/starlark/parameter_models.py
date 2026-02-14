@@ -169,26 +169,11 @@ class TableParameter(AllParamBase):
                 f"{len(columns)} columns are defined"
             )
 
-        # Reject explicit type fields and inject inferred types
+        # Inject inferred types from first row
+        # (Validation already done in ParameterFile.inject_inferred_types)
         for i, col in enumerate(columns):
             if isinstance(col, dict):
-                col_name = col.get("name", f"column {i}")
-
-                # Reject explicit type field
-                if "type" in col:
-                    raise ValueError(
-                        f"Column '{col_name}': Explicit 'type' field not allowed. "
-                        f"Types are inferred from row values."
-                    )
-
-                # Infer and inject type from first row value
-                try:
-                    col["type"] = infer_type_from_value(first_row[i])
-                except ValueError as e:
-                    raise ValueError(
-                        f"Column '{col_name}': Cannot infer type from "
-                        f"first row value: {e}"
-                    ) from e
+                col["type"] = infer_type_from_value(first_row[i])
 
         return data
 
@@ -227,6 +212,9 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
                     "columns" in param_data and "rows" in param_data
                 ):
                     columns = param_data.get("columns", [])
+                    rows = param_data.get("rows", [])
+
+                    # Check for explicit type fields in columns
                     for i, col in enumerate(columns):
                         if isinstance(col, dict) and "type" in col:
                             col_name = col.get("name", f"column {i}")
@@ -235,6 +223,61 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
                                 f"Explicit 'type' field not allowed. "
                                 f"Types are inferred from row values."
                             )
+
+                    # Check type consistency across rows
+                    if rows and columns:
+                        first_row = rows[0]
+                        if len(first_row) != len(columns):
+                            raise ValueError(
+                                f"Parameter '{param_name}': First row has {len(first_row)} values "
+                                f"but {len(columns)} columns are defined"
+                            )
+
+                        # Infer types from first row
+                        inferred_types = []
+                        for i, value in enumerate(first_row):
+                            try:
+                                inferred_types.append(infer_type_from_value(value))
+                            except ValueError as e:
+                                col_name = (
+                                    columns[i].get("name", f"column {i}")
+                                    if i < len(columns) and isinstance(columns[i], dict)
+                                    else f"column {i}"
+                                )
+                                raise ValueError(
+                                    f"Parameter '{param_name}': Row 0, column '{col_name}': {e}"
+                                ) from e
+
+                        # Validate all rows for type consistency
+                        for row_idx, row in enumerate(rows):
+                            if len(row) != len(columns):
+                                raise ValueError(
+                                    f"Parameter '{param_name}': Row {row_idx} has {len(row)} values "
+                                    f"but {len(columns)} columns are defined"
+                                )
+
+                            for col_idx, value in enumerate(row):
+                                col_name = (
+                                    columns[col_idx].get("name", f"column {col_idx}")
+                                    if col_idx < len(columns)
+                                    and isinstance(columns[col_idx], dict)
+                                    else f"column {col_idx}"
+                                )
+                                expected_type = inferred_types[col_idx]
+
+                                try:
+                                    actual_type = infer_type_from_value(value)
+                                except ValueError as e:
+                                    raise ValueError(
+                                        f"Parameter '{param_name}': Row {row_idx}, column '{col_name}': {e}"
+                                    ) from e
+
+                                if actual_type != expected_type:
+                                    raise ValueError(
+                                        f"Parameter '{param_name}': Row {row_idx}, column '{col_name}': "
+                                        f"Inconsistent type. Expected {expected_type} (inferred from first row), "
+                                        f"but got {actual_type}."
+                                    )
 
                 try:
                     param_data["type"] = infer_parameter_type(param_data)
