@@ -148,10 +148,10 @@ class TableParameter(AllParamBase):
     @model_validator(mode="before")
     @classmethod
     def inject_column_types(cls, data: Any) -> Any:
-        """Infer column types from first row values if not explicitly provided.
+        """Infer column types from first row values.
 
-        For each column without an explicit 'type' field, infer the type from
-        the corresponding value in the first row.
+        Explicit 'type' fields in columns are not allowed - types are always
+        inferred from the first row's values.
         """
         if not isinstance(data, dict):
             return data
@@ -170,13 +170,22 @@ class TableParameter(AllParamBase):
                 f"{len(columns)} columns are defined"
             )
 
-        # Inject type for each column based on first row value
+        # Reject explicit type fields and inject inferred types
         for i, col in enumerate(columns):
-            if isinstance(col, dict) and "type" not in col:
+            if isinstance(col, dict):
+                col_name = col.get("name", f"column {i}")
+
+                # Reject explicit type field
+                if "type" in col:
+                    raise ValueError(
+                        f"Column '{col_name}': Explicit 'type' field not allowed. "
+                        f"Types are inferred from row values."
+                    )
+
+                # Infer and inject type from first row value
                 try:
                     col["type"] = infer_type_from_value(first_row[i])
                 except ValueError as e:
-                    col_name = col.get("name", f"column {i}")
                     raise ValueError(
                         f"Column '{col_name}': Cannot infer type from "
                         f"first row value: {e}"

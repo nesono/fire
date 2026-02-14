@@ -602,22 +602,24 @@ def test_column_invalid_name_pattern(invalid_name):
     _assert_words_in_string_list(errors, ["does not match"])
 
 
-def test_column_invalid_type_enum():
-    """Test validation fails for invalid explicit column type."""
+def test_column_explicit_type_rejected():
+    """Test validation fails when column has explicit 'type' field."""
     data = {
         "test_table_v1": {
             "type": "table",
-            "description": "Invalid column type",
+            "description": "Explicit type not allowed",
             "columns": [
-                {"name": "col_a", "type": "table", "unit": "1"}
-            ],  # table type not allowed in columns
-            "rows": [[1]],
+                {"name": "col_a", "type": "f64", "unit": "1"}
+            ],  # Explicit type field not allowed
+            "rows": [[1.0]],
         }
     }
     yaml_path = _create_temp_yaml(data)
     data, errors = validate_parameters(yaml_path)
     assert errors
-    _assert_words_in_string_list(errors, ["enum", "not one of"])
+    _assert_words_in_string_list(
+        errors, ["Explicit 'type' field not allowed", "inferred"]
+    )
 
 
 def test_additional_properties_not_allowed():
