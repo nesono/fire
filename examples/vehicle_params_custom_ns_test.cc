@@ -31,18 +31,17 @@ int main() {
             << std::endl;
 
   // Test table parameter with std::array
-  const auto& table = braking_distance_table();
-  assert(table.size() == 6);
-  std::cout << "✓ braking_distance_table().size() = " << table.size()
+  assert(BRAKING_DISTANCE_TABLE.size() == 6);
+  std::cout << "✓ BRAKING_DISTANCE_TABLE.size() = " << BRAKING_DISTANCE_TABLE.size()
             << std::endl;
 
   // Test first row of table
-  assert(table[0].velocity_mps == 10.0);
-  assert(table[0].friction_coefficient == 0.7);
-  assert(table[0].braking_distance_m == 7.1);
-  std::cout << "✓ braking_distance_table()[0] = {" << table[0].velocity_mps << ", "
-            << table[0].friction_coefficient << ", "
-            << table[0].braking_distance_m << "}" << std::endl;
+  assert(BRAKING_DISTANCE_TABLE[0].velocity_mps == 10.0);
+  assert(BRAKING_DISTANCE_TABLE[0].friction_coefficient == 0.7);
+  assert(BRAKING_DISTANCE_TABLE[0].braking_distance_m == 7.1);
+  std::cout << "✓ BRAKING_DISTANCE_TABLE[0] = {" << BRAKING_DISTANCE_TABLE[0].velocity_mps << ", "
+            << BRAKING_DISTANCE_TABLE[0].friction_coefficient << ", "
+            << BRAKING_DISTANCE_TABLE[0].braking_distance_m << "}" << std::endl;
 
   std::cout << "\nAll custom namespace tests passed!" << std::endl;
   return 0;

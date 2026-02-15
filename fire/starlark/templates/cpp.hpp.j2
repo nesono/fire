@@ -39,10 +39,6 @@ constexpr std::array<{{ struct_name }}, {{ size }}> {{ const_name }} = {{ "{" }}
 {% endfor %}
 }};
 
-constexpr const std::array<{{ struct_name }}, {{ size }}>& {{ item.base_name }}() {
-    return {{ const_name }};
-}
-
 {% else %}
 {% set cpp_type = item.type | cpp_type %}
 {% if item.unit_suffix %}
