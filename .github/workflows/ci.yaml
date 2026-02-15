@@ -35,39 +35,54 @@ jobs:
         run: pre-commit run --all-files --show-diff-on-failure
 
   test:
-    name: Bazel Tests
+    name: Bazel Tests (Bazel ${{ matrix.bazel-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
+        bazel-version: ["7.x", "8.x", "9.x"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run Bazel tests
+        env:
+          USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
         run: bazel test //... --test_output=errors
 
       - name: Build all targets
+        env:
+          USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
         run: bazel build //...
 
   typecheck:
-    name: Type Checking
+    name: Type Checking (Bazel ${{ matrix.bazel-version }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        bazel-version: ["7.x", "8.x", "9.x"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run type checking with ty
+        env:
+          USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
         run: bazel build --config=typecheck //...
 
   failure-tests:
-    name: Run Failure Tests
+    name: Run Failure Tests (Bazel ${{ matrix.bazel-version }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        bazel-version: ["7.x", "8.x", "9.x"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run failure tests
+        env:
+          USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
         run: |
           ./fire/starlark/failure_test/run_failure_tests.sh
 
