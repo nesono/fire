@@ -18,7 +18,7 @@ load("//fire/starlark:parameters.bzl", "parameter_library")
 # Generate parameter library from test YAML
 parameter_library(
     name = "test_params",
-    srcs = "test_params.yaml",
+    src = "test_params.yaml",
 )
 
 # Generate C++ code (directory of per-param-version .h files)
