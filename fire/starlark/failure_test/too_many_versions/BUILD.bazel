@@ -7,7 +7,7 @@ load("//fire/starlark:parameters.bzl", "parameter_library")
 
 parameter_library(
     name = "too_many_versions",
-    srcs = "test_params.yaml",
+    src = "test_params.yaml",
     tags = [
         "failure_test",
         "manual",
