@@ -155,7 +155,8 @@ Parameter = Union[
 ]
 
 
-def reject_explicit_type_fieds_in_columns(param_name: str, columns: List[Any]):
+def _reject_explicit_type_fieds_in_columns(param_name: str, columns: List[Any]):
+    """Asserting no explicit types are set in table columns."""
     for i, col in enumerate(columns):
         if isinstance(col, dict) and "type" in col:
             col_name = col.get("name", f"column {i}")
@@ -164,6 +165,29 @@ def reject_explicit_type_fieds_in_columns(param_name: str, columns: List[Any]):
                 f"Explicit 'type' field not allowed. "
                 f"Types are inferred from row values."
             )
+
+
+def _reject_inconsistent_types_in_table(
+    param_name: str, rows: List[Any], columns: List[Any]
+):
+    """Assert all values in the table are of a consistent type per column."""
+    # Infer types from first row and inject into columns
+    first_row_types = [infer_type_from_value(val) for val in rows[0]]
+    for i, col in enumerate(columns):
+        if isinstance(col, dict):
+            col["type"] = first_row_types[i]
+
+    # Check remaining rows match first row types
+    for row_idx, row in enumerate(rows[1:], start=1):
+        for col_idx, value in enumerate(row):
+            actual_type = infer_type_from_value(value)
+            if actual_type != first_row_types[col_idx]:
+                col_name = columns[col_idx].get("name", f"column {col_idx}")
+                raise ValueError(
+                    f"Parameter '{param_name}': Row {row_idx}, column '{col_name}': "
+                    f"Inconsistent type. Expected {first_row_types[col_idx]} "
+                    f"(inferred from first row), but got {actual_type}."
+                )
 
 
 class ParameterFile(RootModel[Dict[str, Parameter]]):
@@ -194,30 +218,11 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
                 rows = param_data.get("rows", [])
 
                 # Reject explicit type fields in columns
-                reject_explicit_type_fieds_in_columns(param_name, columns)
+                _reject_explicit_type_fieds_in_columns(param_name, columns)
 
                 # Infer and inject column types, then validate row consistency
                 if rows and columns:
-                    # Infer types from first row and inject into columns
-                    first_row_types = [infer_type_from_value(val) for val in rows[0]]
-                    for i, col in enumerate(columns):
-                        if isinstance(col, dict):
-                            col["type"] = first_row_types[i]
-
-                    # Check remaining rows match first row types
-                    for row_idx, row in enumerate(rows[1:], start=1):
-                        for col_idx, value in enumerate(row):
-                            actual_type = infer_type_from_value(value)
-                            if actual_type != first_row_types[col_idx]:
-                                col_name = columns[col_idx].get(
-                                    "name", f"column {col_idx}"
-                                )
-                                raise ValueError(
-                                    f"Parameter '{param_name}': Row {row_idx}, column '{col_name}': "
-                                    f"Inconsistent type. Expected {first_row_types[col_idx]} "
-                                    f"(inferred from first row), but got {actual_type}."
-                                )
-
+                    _reject_inconsistent_types_in_table(param_name, rows, columns)
             try:
                 param_data["type"] = infer_parameter_type(param_data)
             except ValueError as e:
