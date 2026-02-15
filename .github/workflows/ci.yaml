@@ -56,33 +56,23 @@ jobs:
         run: bazel build //...
 
   typecheck:
-    name: Type Checking (Bazel ${{ matrix.bazel-version }})
+    name: Type Checking
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        bazel-version: ["7.x", "8.x", "9.x"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run type checking with ty
-        env:
-          USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
         run: bazel build --config=typecheck //...
 
   failure-tests:
-    name: Run Failure Tests (Bazel ${{ matrix.bazel-version }})
+    name: Run Failure Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        bazel-version: ["7.x", "8.x", "9.x"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run failure tests
-        env:
-          USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
         run: |
           ./fire/starlark/failure_test/run_failure_tests.sh
 
