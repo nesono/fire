@@ -28,13 +28,10 @@ braking_distance_table_v1:
   description: Braking distances under various conditions
   columns:
     - name: velocity
-      type: f64
       unit: m/s
     - name: friction_coefficient
-      type: f64
       unit: "1"
     - name: braking_distance
-      type: f64
       unit: m
   rows:
     - [10.0, 0.7, 7.1]

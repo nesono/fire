@@ -13,36 +13,26 @@ from pydantic import (
     BaseModel,
     Field,
     RootModel,
-    field_validator,
     model_validator,
 )
 
 _VERSION_SUFFIX_RE = re.compile(r"^([a-z][a-z0-9_]*)_v([1-9][0-9]*)$")
 
 
-def infer_parameter_type(data: Dict[str, Any]) -> str:
-    """Infer parameter type from the value field.
+def infer_type_from_value(value: Any) -> str:
+    """Infer type from a single value.
 
     Args:
-        data: Parameter dictionary with at least a 'value' field
+        value: A Python value from YAML parsing
 
     Returns:
-        Inferred type string: 'i64', 'f64', 'bool', 'string', or 'table'
+        Inferred type string: 'i64', 'f64', 'bool', or 'string'
 
     Raises:
         ValueError: If type cannot be inferred or value is None
     """
-    # Table type must be explicit (has columns/rows)
-    if "type" in data:
-        return data["type"]
-
-    if "value" not in data:
-        raise ValueError("Parameter must have 'value' field")
-
-    value = data["value"]
-
     if value is None:
-        raise ValueError("Cannot infer type from NoneType")
+        raise ValueError("Cannot infer type from None")
 
     # Check bool BEFORE int (bool is subclass of int in Python)
     if isinstance(value, bool):
@@ -55,6 +45,36 @@ def infer_parameter_type(data: Dict[str, Any]) -> str:
         return "string"
     else:
         raise ValueError(f"Cannot infer type from {type(value).__name__}")
+
+
+def infer_parameter_type(data: Dict[str, Any]) -> str:
+    """Infer parameter type for a parameter.
+
+    Args:
+        data: Parameter dictionary
+
+    Returns:
+        Inferred type string: 'i64', 'f64', 'bool', 'string', or 'table'
+
+    Raises:
+        ValueError: If type cannot be inferred or value is None
+    """
+    # Table type must be explicit (has columns/rows)
+    if "type" in data and data["type"] == "table":
+        return "table"
+
+    # Reject explicit type for scalar parameters
+    if "type" in data:
+        raise ValueError(
+            "Explicit 'type' field not allowed for scalar parameters. "
+            "Types are automatically inferred from values "
+            "(int→i64, float→f64, bool→bool, string→string)."
+        )
+
+    if "value" not in data:
+        raise ValueError("Parameter must have 'value' field")
+
+    return infer_type_from_value(data["value"])
 
 
 class AllParamBase(BaseModel):
@@ -114,14 +134,6 @@ class BoolParameter(UnitParamBase):
 
     model_config = {"extra": "forbid"}
 
-    @field_validator("value", mode="before")
-    @classmethod
-    def validate_bool_strict(cls, v):
-        """Strictly validate boolean values - no string coercion."""
-        if not isinstance(v, bool):
-            raise ValueError("value is not a valid boolean")
-        return v
-
 
 class TableParameter(AllParamBase):
     """Table parameter with columns and rows."""
@@ -143,6 +155,41 @@ Parameter = Union[
 ]
 
 
+def _reject_explicit_type_fieds_in_columns(param_name: str, columns: List[Any]):
+    """Asserting no explicit types are set in table columns."""
+    for i, col in enumerate(columns):
+        if isinstance(col, dict) and "type" in col:
+            col_name = col.get("name", f"column {i}")
+            raise ValueError(
+                f"Parameter '{param_name}': Column '{col_name}': "
+                f"Explicit 'type' field not allowed. "
+                f"Types are inferred from row values."
+            )
+
+
+def _reject_inconsistent_types_in_table(
+    param_name: str, rows: List[Any], columns: List[Any]
+):
+    """Assert all values in the table are of a consistent type per column."""
+    # Infer types from first row and inject into columns
+    first_row_types = [infer_type_from_value(val) for val in rows[0]]
+    for i, col in enumerate(columns):
+        if isinstance(col, dict):
+            col["type"] = first_row_types[i]
+
+    # Check remaining rows match first row types
+    for row_idx, row in enumerate(rows[1:], start=1):
+        for col_idx, value in enumerate(row):
+            actual_type = infer_type_from_value(value)
+            if actual_type != first_row_types[col_idx]:
+                col_name = columns[col_idx].get("name", f"column {col_idx}")
+                raise ValueError(
+                    f"Parameter '{param_name}': Row {row_idx}, column '{col_name}': "
+                    f"Inconsistent type. Expected {first_row_types[col_idx]} "
+                    f"(inferred from first row), but got {actual_type}."
+                )
+
+
 class ParameterFile(RootModel[Dict[str, Parameter]]):
     """Root model for parameter YAML files."""
 
@@ -153,20 +200,34 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
     def inject_inferred_types(cls, data: Any) -> Any:
         """Inject inferred types into parameter definitions before validation.
 
-        For scalar parameters without an explicit 'type' field, infer the type
-        from the Python type of the 'value' field (which comes from YAML parsing).
+        Types are always inferred from values. Explicit 'type' fields for
+        scalar parameters are rejected.
         """
         if not isinstance(data, dict):
             return data
 
-        # Inject type field for each parameter if not present
+        # Infer and inject type for each parameter
         for param_name, param_data in data.items():
-            if isinstance(param_data, dict) and "type" not in param_data:
-                try:
-                    param_data["type"] = infer_parameter_type(param_data)
-                except ValueError as e:
-                    # Re-raise with parameter name context
-                    raise ValueError(f"Parameter '{param_name}': {e}") from e
+            if not isinstance(param_data, dict):
+                return data
+
+            # For tables, validate early to give clear errors before union discrimination
+            # Otherwise, this causes very cluttered error messages
+            if param_data.get("type") == "table":
+                columns = param_data.get("columns", [])
+                rows = param_data.get("rows", [])
+
+                # Reject explicit type fields in columns
+                _reject_explicit_type_fieds_in_columns(param_name, columns)
+
+                # Infer and inject column types, then validate row consistency
+                if rows and columns:
+                    _reject_inconsistent_types_in_table(param_name, rows, columns)
+            try:
+                param_data["type"] = infer_parameter_type(param_data)
+            except ValueError as e:
+                # Re-raise with parameter name context
+                raise ValueError(f"Parameter '{param_name}': {e}") from e
 
         return data
 
