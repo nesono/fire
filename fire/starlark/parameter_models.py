@@ -144,39 +144,6 @@ class TableParameter(AllParamBase):
 
     model_config = {"extra": "forbid"}
 
-    @model_validator(mode="before")
-    @classmethod
-    def inject_column_types(cls, data: Any) -> Any:
-        """Infer column types from first row values.
-
-        Explicit 'type' fields in columns are not allowed - types are always
-        inferred from the first row's values.
-        """
-        if not isinstance(data, dict):
-            return data
-
-        rows = data.get("rows", [])
-        columns = data.get("columns", [])
-
-        if not rows or not columns:
-            return data
-
-        first_row = rows[0]
-
-        if len(first_row) != len(columns):
-            raise ValueError(
-                f"First row has {len(first_row)} values but "
-                f"{len(columns)} columns are defined"
-            )
-
-        # Inject inferred types from first row
-        # (Validation already done in ParameterFile.inject_inferred_types)
-        for i, col in enumerate(columns):
-            if isinstance(col, dict):
-                col["type"] = infer_type_from_value(first_row[i])
-
-        return data
-
 
 # Union of all parameter types (type field injected by ParameterFile validator)
 Parameter = Union[
@@ -224,12 +191,15 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
                                 f"Types are inferred from row values."
                             )
 
-                    # Validate row type consistency
+                    # Infer and inject column types, then validate row consistency
                     if rows and columns:
-                        # Infer types once from first row
+                        # Infer types from first row and inject into columns
                         first_row_types = [
                             infer_type_from_value(val) for val in rows[0]
                         ]
+                        for i, col in enumerate(columns):
+                            if isinstance(col, dict):
+                                col["type"] = first_row_types[i]
 
                         # Check remaining rows match first row types
                         for row_idx, row in enumerate(rows[1:], start=1):
