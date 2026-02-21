@@ -16,6 +16,7 @@ _VALID_EXEMPTION_KINDS: Final = {"impl", "verif", "version", "todo"}
 
 
 def load_yaml_file(path: str) -> object:
+    """Load YAML from disk and normalize empty files to an empty list."""
     with open(path, "r") as handle:
         data = yaml.safe_load(handle)
     return data if data is not None else []
@@ -30,6 +31,7 @@ def _ensure_list_of_dicts(data: object, source: str) -> list[dict]:
 
 
 def parse_trace_entries(data: object, source: str) -> list[dict]:
+    """Validate trace entries and ensure each points to a requirement or parameter."""
     entries = _ensure_list_of_dicts(data, source)
     for entry in entries:
         trace_type = entry.get("type")
@@ -41,6 +43,7 @@ def parse_trace_entries(data: object, source: str) -> list[dict]:
 
 
 def parse_exemptions(data: object, source: str) -> list[dict]:
+    """Validate exemptions and require justification for every excluded requirement."""
     entries = _ensure_list_of_dicts(data, source)
     for entry in entries:
         if entry.get("kind") not in _VALID_EXEMPTION_KINDS:
@@ -53,10 +56,12 @@ def parse_exemptions(data: object, source: str) -> list[dict]:
 
 
 def extract_todos(content: str) -> list[str]:
+    """Return all TODO ticket markers embedded in the given text."""
     return TODO_PATTERN.findall(content)
 
 
 def parse_requirement_sections(content: str) -> list[dict]:
+    """Split a requirements file into sections with parsed inline metadata."""
     sections: list[dict] = []
     lines = content.split("\n")
     indices: list[tuple[int, str]] = []
@@ -102,6 +107,7 @@ def parse_requirement_sections(content: str) -> list[dict]:
 
 
 def collect_requirement_references(section: dict) -> list[tuple[str, int | None]]:
+    """Collect requirement references and their tracked versions from a section."""
     refs: list[tuple[str, int | None]] = []
     for req_id, path in markdown_common.extract_requirement_references(section["body"]):
         _, version = path_common.extract_version_from_url(path)
@@ -118,6 +124,7 @@ def collect_requirement_references(section: dict) -> list[tuple[str, int | None]
 
 
 def collect_param_references(section: dict) -> list[tuple[str, int | None]]:
+    """Collect parameter references and their tracked versions from a section."""
     refs: list[tuple[str, int | None]] = []
     for param_name, path in markdown_common.extract_param_references(section["body"]):
         _, version = path_common.extract_version_from_url(path)
@@ -126,6 +133,7 @@ def collect_param_references(section: dict) -> list[tuple[str, int | None]]:
 
 
 def build_param_version_map(data: object, source: str) -> dict[str, int]:
+    """Extract latest parameter versions from a parameter YAML mapping."""
     if data is None:
         return {}
     if not isinstance(data, dict):
@@ -142,6 +150,7 @@ def build_param_version_map(data: object, source: str) -> dict[str, int]:
 
 
 def build_requirement_version_map(sections: list[dict]) -> dict[str, int]:
+    """Build a requirement id to version map from parsed sections."""
     versions: dict[str, int] = {}
     for section in sections:
         version = section["metadata"].get("version")
@@ -151,6 +160,7 @@ def build_requirement_version_map(sections: list[dict]) -> dict[str, int]:
 
 
 def merge_param_versions(maps: list[dict[str, int]]) -> dict[str, int]:
+    """Merge parameter version maps by taking the highest version per name."""
     merged: dict[str, int] = {}
     for version_map in maps:
         for name, version in version_map.items():
@@ -163,6 +173,7 @@ def merge_param_versions(maps: list[dict[str, int]]) -> dict[str, int]:
 def find_stale_requirement_references(
     sections: list[dict], requirement_versions: dict[str, int]
 ) -> list[tuple[str, str, int, int]]:
+    """Find requirement references that track an outdated version."""
     stale: list[tuple[str, str, int, int]] = []
     for section in sections:
         refs = collect_requirement_references(section)
@@ -180,6 +191,7 @@ def find_stale_requirement_references(
 def find_stale_param_references(
     sections: list[dict], param_versions: dict[str, int]
 ) -> list[tuple[str, str, int, int]]:
+    """Find parameter references that track an outdated version."""
     stale: list[tuple[str, str, int, int]] = []
     for section in sections:
         refs = collect_param_references(section)
@@ -200,6 +212,7 @@ def _load_yaml_list(path: str) -> list[dict]:
 
 
 def load_trace_entries(paths: list[str]) -> list[dict]:
+    """Load and validate trace entries from multiple YAML files."""
     entries: list[dict] = []
     for path in paths:
         data = load_yaml_file(path)
@@ -208,6 +221,7 @@ def load_trace_entries(paths: list[str]) -> list[dict]:
 
 
 def load_exemptions(path: str | None) -> list[dict]:
+    """Load exemptions if provided, otherwise return an empty list."""
     if path is None:
         return []
     data = load_yaml_file(path)
@@ -215,6 +229,7 @@ def load_exemptions(path: str | None) -> list[dict]:
 
 
 def build_trace_index(entries: list[dict]) -> dict[str, dict[str, list[dict]]]:
+    """Index trace entries by type and requirement/parameter for quick lookup."""
     index: dict[str, dict[str, list[dict]]] = {"impl": {}, "verif": {}}
     for entry in entries:
         trace_type = entry["type"]
@@ -230,6 +245,7 @@ def find_stale_trace_versions(
     requirement_versions: dict[str, int],
     param_versions: dict[str, int],
 ) -> list[tuple[str, str, int, int]]:
+    """Find traces that reference a version older than the current source."""
     stale: list[tuple[str, str, int, int]] = []
     for entry in entries:
         version = entry.get("version")
@@ -278,6 +294,7 @@ def build_mermaid_graph(
     impl_index: dict[str, list[dict]],
     verif_index: dict[str, list[dict]],
 ) -> list[str]:
+    """Render a Mermaid graph of requirement, parameter, impl, and verif links."""
     lines = ["```mermaid", "graph LR"]
     for section in sections:
         req_id = section["id"]
@@ -309,6 +326,7 @@ def generate_release_report(
     exemptions_path: str | None,
     product_name: str,
 ) -> str:
+    """Build the full release readiness report from requirements and traces."""
     sections: list[dict] = []
     todos: list[tuple[str, str]] = []
     bare_todos: list[str] = []
@@ -459,6 +477,7 @@ def generate_release_report(
 
 
 def main() -> int:
+    """CLI entrypoint for Bazel to write the report to the output file."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Generate release readiness report")
