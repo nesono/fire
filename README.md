@@ -543,6 +543,20 @@ generate_report(
     critical_type = "safety",  # Optional: highlight critical requirements
     out = "COMPLIANCE_ISO26262.md",
 )
+
+# Generate release readiness report
+load("//fire/starlark:reports.bzl", "release_report")
+
+release_report(
+    name = "release_report",
+    requirements = glob(["requirements/*.md"]),
+    params = glob(["params/*.yaml"]),
+    impl_traces = [":impl_trace"],
+    verif_traces = [":verif_trace"],
+    exemptions = ":release_exemptions",
+    product = "Brake Controller",
+    out = "RELEASE_REPORT.md",
+)
 ```
 
 Build reports:
@@ -567,6 +581,7 @@ bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:ch
   - Attributes: `standard` (required, e.g., "ISO 26262", "IEC 61508"), `critical_type` (optional, e.g., "safety", "security")
   - Shows breakdown by requirement type, status distribution, and compliance gaps
   - Highlights critical requirement type if specified
+- `release_report` (rule): Release readiness report that aggregates version consistency, TODOs, implementation, verification, traceability graph, and exemptions
 
 ## Contributing
 

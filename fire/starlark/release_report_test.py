@@ -113,5 +113,58 @@ See [REQ-BASE-001](/base.md?version=1#REQ-BASE-001).
     assert stale == [("REQ-ALPHA-001", "REQ-BASE-001", 1, 2)]
 
 
+def test_generate_release_report_basic(tmp_path):
+    req_content = """
+## REQ-BASE-001
+SIL: ASIL-B | Sec: false | Version: 2
+
+## REQ-ALPHA-001
+SIL: ASIL-B | Sec: false | Version: 1 | Parent: [REQ-BASE-001](/base.md?version=1#REQ-BASE-001)
+
+Uses param [@max_speed](/params.yaml?version=1#max_speed).
+"""
+    param_content = """
+max_speed_v1:
+  value: 1
+  unit: m/s
+  description: max
+"""
+    impl_trace = """
+- type: impl
+  requirement: REQ-ALPHA-001
+  source: src/impl.py
+  version: 1
+"""
+    verif_trace = """
+- type: verif
+  requirement: REQ-ALPHA-001
+  source: tests/test_impl.py
+  version: 1
+"""
+    req_path = tmp_path / "req.md"
+    param_path = tmp_path / "params.yaml"
+    impl_path = tmp_path / "impl.yaml"
+    verif_path = tmp_path / "verif.yaml"
+    req_path.write_text(req_content)
+    param_path.write_text(param_content)
+    impl_path.write_text(impl_trace)
+    verif_path.write_text(verif_trace)
+
+    report = release_report.generate_release_report(
+        requirement_paths=[str(req_path)],
+        parameter_paths=[str(param_path)],
+        impl_trace_paths=[str(impl_path)],
+        verif_trace_paths=[str(verif_path)],
+        exemptions_path=None,
+        product_name="Demo",
+    )
+
+    assert "# Release Readiness Report: Demo" in report
+    assert "## Version Consistency" in report
+    assert "## TODO Inventory" in report
+    assert "## Implementation & Verification Coverage" in report
+    assert "```mermaid" in report
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

@@ -38,6 +38,44 @@ def _generate_report_impl(ctx):
 
     return [DefaultInfo(files = depset([ctx.outputs.out]))]
 
+def _release_report_impl(ctx):
+    """Implementation of the release_report rule."""
+
+    script = ctx.executable._script
+    args = ctx.actions.args()
+    args.add("--out")
+    args.add(ctx.outputs.out.path)
+    args.add("--product")
+    args.add(ctx.attr.product)
+
+    args.add_all(ctx.files.requirements, before_each = "--requirements")
+    args.add_all(ctx.files.params, before_each = "--params")
+    args.add_all(ctx.files.impl_traces, before_each = "--impl-traces")
+    args.add_all(ctx.files.verif_traces, before_each = "--verif-traces")
+
+    if ctx.file.exemptions:
+        args.add("--exemptions")
+        args.add(ctx.file.exemptions.path)
+
+    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
+
+    ctx.actions.run(
+        inputs = ctx.files.requirements +
+                 ctx.files.params +
+                 ctx.files.impl_traces +
+                 ctx.files.verif_traces +
+                 ([ctx.file.exemptions] if ctx.file.exemptions else []) +
+                 [script] +
+                 script_runfiles,
+        outputs = [ctx.outputs.out],
+        executable = script,
+        arguments = [args],
+        mnemonic = "ReleaseReport",
+        progress_message = "Generating release report for %s" % ctx.label.name,
+    )
+
+    return [DefaultInfo(files = depset([ctx.outputs.out]))]
+
 generate_report = rule(
     implementation = _generate_report_impl,
     attrs = {
@@ -89,6 +127,60 @@ generate_report = rule(
             report_type = "compliance",
             standard = "ISO 26262",
             out = "COMPLIANCE.md",
+        )
+    """,
+)
+
+release_report = rule(
+    implementation = _release_report_impl,
+    attrs = {
+        "exemptions": attr.label(
+            allow_single_file = [".yaml", ".yml"],
+            doc = "Optional exemptions YAML file",
+        ),
+        "impl_traces": attr.label_list(
+            allow_files = [".yaml", ".yml"],
+            doc = "Implementation trace YAML files",
+        ),
+        "out": attr.output(
+            mandatory = True,
+            doc = "Output markdown file",
+        ),
+        "params": attr.label_list(
+            allow_files = [".yaml", ".yml"],
+            doc = "Parameter YAML files to include in the report",
+        ),
+        "product": attr.string(
+            default = "Product",
+            doc = "Product name shown in the report",
+        ),
+        "requirements": attr.label_list(
+            allow_files = [".md"],
+            mandatory = True,
+            doc = "Requirement markdown files to include in the report",
+        ),
+        "verif_traces": attr.label_list(
+            allow_files = [".yaml", ".yml"],
+            doc = "Verification trace YAML files",
+        ),
+        "_script": attr.label(
+            default = Label("//fire/starlark:release_report_script"),
+            executable = True,
+            cfg = "exec",
+        ),
+    },
+    doc = """Generates a release readiness report in markdown format.
+
+    Example:
+        release_report(
+            name = "release_report",
+            requirements = glob(["requirements/*.md"]),
+            params = glob(["params/*.yaml"]),
+            impl_traces = [":impl_trace"],
+            verif_traces = [":verif_trace"],
+            exemptions = ":release_exemptions",
+            product = "Brake Controller",
+            out = "RELEASE_REPORT.md",
         )
     """,
 )

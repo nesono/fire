@@ -135,6 +135,20 @@ py_binary(
     deps = [":report_common"],
 )
 
+py_binary(
+    name = "release_report_script",
+    srcs = ["release_report.py"],
+    main = "release_report.py",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":markdown_common",
+        ":path_common",
+        ":patterns",
+        ":validate_cross_references_lib",
+        "@pip//pyyaml",
+    ],
+)
+
 py_test(
     name = "validate_parameters_test",
     srcs = [
