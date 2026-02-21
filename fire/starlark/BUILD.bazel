@@ -154,6 +154,16 @@ py_library(
     ],
 )
 
+# Draft helpers for release report format
+py_library(
+    name = "release_report",
+    srcs = ["release_report.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@pip//pyyaml",
+    ],
+)
+
 # Python library for cross-reference validation
 py_library(
     name = "validate_cross_references_lib",
@@ -176,6 +186,16 @@ py_test(
     deps = [
         ":requirement_models",
         "@pip//pydantic",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "release_report_test",
+    size = "small",
+    srcs = ["release_report_test.py"],
+    deps = [
+        ":release_report",
         "@pip//pytest",
     ],
 )
