@@ -48,10 +48,17 @@ def _release_report_impl(ctx):
     args.add("--product")
     args.add(ctx.attr.product)
 
-    args.add_all(ctx.files.requirements, before_each = "--requirements")
-    args.add_all(ctx.files.params, before_each = "--params")
-    args.add_all(ctx.files.impl_traces, before_each = "--impl-traces")
-    args.add_all(ctx.files.verif_traces, before_each = "--verif-traces")
+    requirement_files = [f for f in ctx.files.requirements if f.path.endswith(".md")]
+    param_files = [
+        f
+        for f in ctx.files.params
+        if f.path.endswith(".yaml") or f.path.endswith(".yml")
+    ]
+    trace_files = [f for f in ctx.files.source_traces if f.path.endswith(".json")]
+
+    args.add_all(requirement_files, before_each = "--requirements")
+    args.add_all(param_files, before_each = "--params")
+    args.add_all(trace_files, before_each = "--source-traces")
 
     if ctx.file.exemptions:
         args.add("--exemptions")
@@ -60,10 +67,9 @@ def _release_report_impl(ctx):
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
 
     ctx.actions.run(
-        inputs = ctx.files.requirements +
-                 ctx.files.params +
-                 ctx.files.impl_traces +
-                 ctx.files.verif_traces +
+        inputs = requirement_files +
+                 param_files +
+                 trace_files +
                  ([ctx.file.exemptions] if ctx.file.exemptions else []) +
                  [script] +
                  script_runfiles,
@@ -138,10 +144,6 @@ release_report = rule(
             allow_single_file = [".yaml", ".yml"],
             doc = "Optional exemptions YAML file",
         ),
-        "impl_traces": attr.label_list(
-            allow_files = [".yaml", ".yml"],
-            doc = "Implementation trace YAML files",
-        ),
         "out": attr.output(
             mandatory = True,
             doc = "Output markdown file",
@@ -159,9 +161,9 @@ release_report = rule(
             mandatory = True,
             doc = "Requirement markdown files to include in the report",
         ),
-        "verif_traces": attr.label_list(
-            allow_files = [".yaml", ".yml"],
-            doc = "Verification trace YAML files",
+        "source_traces": attr.label_list(
+            allow_files = [".json"],
+            doc = "Source traceability JSON files",
         ),
         "_script": attr.label(
             default = Label("//fire/starlark:release_report_script"),
@@ -176,8 +178,7 @@ release_report = rule(
             name = "release_report",
             requirements = glob(["requirements/*.md"]),
             params = glob(["params/*.yaml"]),
-            impl_traces = [":impl_trace"],
-            verif_traces = [":verif_trace"],
+            source_traces = [":brake_controller_trace"],
             exemptions = ":release_exemptions",
             product = "Brake Controller",
             out = "RELEASE_REPORT.md",

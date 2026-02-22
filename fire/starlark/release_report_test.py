@@ -6,23 +6,31 @@ import pytest
 from fire.starlark import release_report
 
 
-def test_parse_trace_entries_valid():
-    data = [
-        {"type": "impl", "requirement": "REQ-1", "version": 2},
-        {"type": "verif", "param": "max_speed", "source": "tests/test_speed.py"},
+def test_parse_source_traceability_data():
+    data = {
+        "implements": {
+            "src/brake.cc": [{"req_id": "REQ-1", "version": 2}],
+        },
+        "verifies": {
+            "tests/brake_test.cc": [{"req_id": "REQ-1", "version": 2}],
+        },
+    }
+    entries = release_report.parse_source_traceability_data(data, "trace.json")
+
+    assert entries == [
+        {
+            "type": "impl",
+            "requirement": "REQ-1",
+            "source": "src/brake.cc",
+            "version": 2,
+        },
+        {
+            "type": "verif",
+            "requirement": "REQ-1",
+            "source": "tests/brake_test.cc",
+            "version": 2,
+        },
     ]
-    entries = release_report.parse_trace_entries(data, "trace.yaml")
-
-    assert entries[0]["type"] == "impl"
-    assert entries[0]["requirement"] == "REQ-1"
-    assert entries[1]["type"] == "verif"
-    assert entries[1]["param"] == "max_speed"
-
-
-def test_parse_trace_entries_rejects_unknown_type():
-    data = [{"type": "build", "requirement": "REQ-1"}]
-    with pytest.raises(ValueError, match="Unknown trace type"):
-        release_report.parse_trace_entries(data, "trace.yaml")
 
 
 def test_parse_exemptions_valid():
@@ -129,32 +137,31 @@ max_speed_v1:
   unit: m/s
   description: max
 """
-    impl_trace = """
-- type: impl
-  requirement: REQ-ALPHA-001
-  source: src/impl.py
-  version: 1
-"""
-    verif_trace = """
-- type: verif
-  requirement: REQ-ALPHA-001
-  source: tests/test_impl.py
-  version: 1
+    trace_json = """
+{
+  "implements": {
+    "src/impl.py": [
+      {"req_id": "REQ-ALPHA-001", "version": 1}
+    ]
+  },
+  "verifies": {
+    "tests/test_impl.py": [
+      {"req_id": "REQ-ALPHA-001", "version": 1}
+    ]
+  }
+}
 """
     req_path = tmp_path / "req.md"
     param_path = tmp_path / "params.yaml"
-    impl_path = tmp_path / "impl.yaml"
-    verif_path = tmp_path / "verif.yaml"
+    trace_path = tmp_path / "trace.json"
     req_path.write_text(req_content)
     param_path.write_text(param_content)
-    impl_path.write_text(impl_trace)
-    verif_path.write_text(verif_trace)
+    trace_path.write_text(trace_json)
 
     report = release_report.generate_release_report(
         requirement_paths=[str(req_path)],
         parameter_paths=[str(param_path)],
-        impl_trace_paths=[str(impl_path)],
-        verif_trace_paths=[str(verif_path)],
+        source_trace_paths=[str(trace_path)],
         exemptions_path=None,
         product_name="Demo",
     )

@@ -22,6 +22,14 @@ def load_yaml_file(path: str) -> object:
     return data if data is not None else []
 
 
+def load_json_file(path: str) -> object:
+    """Load JSON from disk."""
+    import json
+
+    with open(path, "r") as handle:
+        return json.load(handle)
+
+
 def _ensure_list_of_dicts(data: object, source: str) -> list[dict]:
     if data is None:
         return []
@@ -30,15 +38,37 @@ def _ensure_list_of_dicts(data: object, source: str) -> list[dict]:
     return data
 
 
-def parse_trace_entries(data: object, source: str) -> list[dict]:
-    """Validate trace entries and ensure each points to a requirement or parameter."""
-    entries = _ensure_list_of_dicts(data, source)
-    for entry in entries:
-        trace_type = entry.get("type")
-        if trace_type not in _VALID_TRACE_TYPES:
-            raise ValueError(f"{source}: Unknown trace type '{trace_type}'")
-        if not entry.get("requirement") and not entry.get("param"):
-            raise ValueError(f"{source}: Trace entry missing requirement or param")
+def parse_source_traceability_data(data: object, source: str) -> list[dict]:
+    """Normalize source_traceability JSON into release report trace entries."""
+    if not isinstance(data, dict):
+        raise ValueError(f"{source}: expected JSON object")
+
+    entries: list[dict] = []
+    for trace_type, key in [("impl", "implements"), ("verif", "verifies")]:
+        mapping = data.get(key, {})
+        if not isinstance(mapping, dict):
+            raise ValueError(f"{source}: expected '{key}' mapping")
+        for source_file, refs in mapping.items():
+            if not isinstance(refs, list):
+                raise ValueError(f"{source}: '{key}' values must be lists")
+            for ref in refs:
+                if not isinstance(ref, dict):
+                    raise ValueError(f"{source}: '{key}' entries must be objects")
+                req_id = ref.get("req_id")
+                version = ref.get("version")
+                if not isinstance(req_id, str):
+                    raise ValueError(f"{source}: missing req_id in '{key}' entry")
+                if not isinstance(version, int):
+                    raise ValueError(f"{source}: missing version in '{key}' entry")
+                entries.append(
+                    {
+                        "type": trace_type,
+                        "requirement": req_id,
+                        "source": source_file,
+                        "version": version,
+                    }
+                )
+
     return entries
 
 
@@ -212,11 +242,11 @@ def _load_yaml_list(path: str) -> list[dict]:
 
 
 def load_trace_entries(paths: list[str]) -> list[dict]:
-    """Load and validate trace entries from multiple YAML files."""
+    """Load and validate source_traceability JSON files."""
     entries: list[dict] = []
     for path in paths:
-        data = load_yaml_file(path)
-        entries.extend(parse_trace_entries(data, path))
+        data = load_json_file(path)
+        entries.extend(parse_source_traceability_data(data, path))
     return entries
 
 
@@ -321,8 +351,7 @@ def build_mermaid_graph(
 def generate_release_report(
     requirement_paths: list[str],
     parameter_paths: list[str],
-    impl_trace_paths: list[str],
-    verif_trace_paths: list[str],
+    source_trace_paths: list[str],
     exemptions_path: str | None,
     product_name: str,
 ) -> str:
@@ -331,6 +360,8 @@ def generate_release_report(
     todos: list[tuple[str, str]] = []
     bare_todos: list[str] = []
     for path in requirement_paths:
+        if not path.endswith(".md"):
+            continue
         content = open(path, "r").read()
         sections.extend(parse_requirement_sections(content))
         for todo in extract_todos(content):
@@ -343,6 +374,8 @@ def generate_release_report(
 
     param_maps = []
     for path in parameter_paths:
+        if not (path.endswith(".yaml") or path.endswith(".yml")):
+            continue
         data = load_yaml_file(path)
         param_maps.append(build_param_version_map(data, path))
         content = open(path, "r").read()
@@ -357,9 +390,7 @@ def generate_release_report(
     stale_req_refs = find_stale_requirement_references(sections, requirement_versions)
     stale_param_refs = find_stale_param_references(sections, param_versions)
 
-    impl_entries = load_trace_entries(impl_trace_paths)
-    verif_entries = load_trace_entries(verif_trace_paths)
-    all_trace_entries = impl_entries + verif_entries
+    all_trace_entries = load_trace_entries(source_trace_paths)
     trace_index = build_trace_index(all_trace_entries)
 
     stale_trace_versions = find_stale_trace_versions(
@@ -483,8 +514,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Generate release readiness report")
     parser.add_argument("--requirements", action="append", required=True)
     parser.add_argument("--params", action="append", default=[])
-    parser.add_argument("--impl-traces", action="append", default=[])
-    parser.add_argument("--verif-traces", action="append", default=[])
+    parser.add_argument("--source-traces", action="append", default=[])
     parser.add_argument("--exemptions")
     parser.add_argument("--product", default="Product")
     parser.add_argument("--out", required=True)
@@ -494,8 +524,7 @@ def main() -> int:
     report = generate_release_report(
         requirement_paths=args.requirements,
         parameter_paths=args.params,
-        impl_trace_paths=args.impl_traces,
-        verif_trace_paths=args.verif_traces,
+        source_trace_paths=args.source_traces,
         exemptions_path=args.exemptions,
         product_name=args.product,
     )

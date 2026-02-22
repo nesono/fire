@@ -549,10 +549,9 @@ load("//fire/starlark:reports.bzl", "release_report")
 
 release_report(
     name = "release_report",
-    requirements = glob(["requirements/*.md"]),
-    params = glob(["params/*.yaml"]),
-    impl_traces = [":impl_trace"],
-    verif_traces = [":verif_trace"],
+    requirements = [":component_requirements"],
+    params = [":vehicle_params"],
+    source_traces = [":brake_controller_trace"],
     exemptions = ":release_exemptions",
     product = "Brake Controller",
     out = "RELEASE_REPORT.md",

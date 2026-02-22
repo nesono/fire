@@ -6,36 +6,36 @@ Report inputs
 
 - Requirements markdown files with inline metadata
 - Parameter files (yaml)
-- Implementation trace files (yaml)
-- Verification trace files (yaml)
+- Source traceability files (json)
 - Optional exemptions file (yaml)
 
-Trace file format (YAML)
+Trace file format (source_traceability JSON)
 
-```yaml
-- type: impl
-  requirement: REQ-ABC-001
-  source: src/control/brake_controller.py
-  version: 2
-  note: Implemented in braking controller
-- type: verif
-  requirement: REQ-ABC-001
-  source: tests/test_brake_controller.py
-  version: 2
+```json
+{
+  "implements": {
+    "src/control/brake_controller.py": [
+      { "req_id": "REQ-ABC-001", "version": 2 }
+    ]
+  },
+  "verifies": {
+    "tests/test_brake_controller.py": [
+      { "req_id": "REQ-ABC-001", "version": 2 }
+    ]
+  }
+}
 ```
 
 Trace entry fields
 
-- type: impl or verif
-- requirement: Requirement id, required when tracing requirements
-- param: Parameter name, required when tracing parameters
-- source: Path to the implementation or test artifact
-- version: Optional version tracked by the trace
-- note: Optional description
+- implements: Map of source file to requirement list
+- verifies: Map of test file to requirement list
+- req_id: Requirement id
+- version: Requirement version tracked by the trace
 
 Exemptions file format (YAML)
 
-```YAML
+```yaml
 - requirement: REQ-ABC-001
   kind: impl
   justification: Deferred for prototype release
