@@ -90,7 +90,7 @@ def extract_todos(content: str) -> list[str]:
     return TODO_PATTERN.findall(content)
 
 
-def parse_requirement_sections(content: str) -> list[dict]:
+def parse_requirement_sections(content: str, file_path: str) -> list[dict]:
     """Split a requirements file into sections with parsed inline metadata."""
     sections: list[dict] = []
     lines = content.split("\n")
@@ -130,18 +130,21 @@ def parse_requirement_sections(content: str) -> list[dict]:
                 "metadata": metadata,
                 "body": body,
                 "metadata_line": metadata_line,
+                "file_path": file_path,
             }
         )
 
     return sections
 
 
-def collect_requirement_references(section: dict) -> list[tuple[str, int | None]]:
+def collect_requirement_references(
+    section: dict,
+) -> list[tuple[str, int | None, str | None]]:
     """Collect requirement references and their tracked versions from a section."""
-    refs: list[tuple[str, int | None]] = []
+    refs: list[tuple[str, int | None, str | None]] = []
     for req_id, path in markdown_common.extract_requirement_references(section["body"]):
         _, version = path_common.extract_version_from_url(path)
-        refs.append((req_id, version))
+        refs.append((req_id, version, path))
     parent = section["metadata"].get("parent")
     if isinstance(parent, str):
         match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, parent)
@@ -149,16 +152,18 @@ def collect_requirement_references(section: dict) -> list[tuple[str, int | None]
             parent_id = match.group(1)
             parent_path = match.group(2)
             _, version = path_common.extract_version_from_url(parent_path)
-            refs.append((parent_id, version))
+            refs.append((parent_id, version, parent_path))
     return refs
 
 
-def collect_param_references(section: dict) -> list[tuple[str, int | None]]:
+def collect_param_references(
+    section: dict,
+) -> list[tuple[str, int | None, str | None]]:
     """Collect parameter references and their tracked versions from a section."""
-    refs: list[tuple[str, int | None]] = []
+    refs: list[tuple[str, int | None, str | None]] = []
     for param_name, path in markdown_common.extract_param_references(section["body"]):
         _, version = path_common.extract_version_from_url(path)
-        refs.append((param_name, version))
+        refs.append((param_name, version, path))
     return refs
 
 
@@ -207,7 +212,7 @@ def find_stale_requirement_references(
     stale: list[tuple[str, str, int, int]] = []
     for section in sections:
         refs = collect_requirement_references(section)
-        for req_id, version in refs:
+        for req_id, version, _ in refs:
             if version is None:
                 continue
             current = requirement_versions.get(req_id)
@@ -225,7 +230,7 @@ def find_stale_param_references(
     stale: list[tuple[str, str, int, int]] = []
     for section in sections:
         refs = collect_param_references(section)
-        for param_name, version in refs:
+        for param_name, version, _ in refs:
             if version is None:
                 continue
             current = param_versions.get(param_name)
@@ -330,7 +335,7 @@ def build_mermaid_graph(
         req_id = section["id"]
         req_node = f"req_{_sanitize_mermaid_id(req_id)}"
         lines.append(f'    {req_node}["{req_id}"]')
-        for param_name, _ in collect_param_references(section):
+        for param_name, _, _ in collect_param_references(section):
             param_node = f"param_{_sanitize_mermaid_id(param_name)}"
             lines.append(f'    {param_node}["param:{param_name}"]')
             lines.append(f"    {req_node} --> {param_node}")
@@ -363,7 +368,7 @@ def generate_release_report(
         if not path.endswith(".md"):
             continue
         content = open(path, "r").read()
-        sections.extend(parse_requirement_sections(content))
+        sections.extend(parse_requirement_sections(content, path))
         for todo in extract_todos(content):
             todos.append((path, todo))
         bare_todos.extend(
@@ -399,22 +404,22 @@ def generate_release_report(
 
     exemptions = load_exemptions(exemptions_path)
 
-    missing_impl: list[str] = []
-    missing_verif: list[str] = []
+    missing_impl: list[dict] = []
+    missing_verif: list[dict] = []
     for section in sections:
         req_id = section["id"]
         if req_id not in trace_index["impl"]:
-            missing_impl.append(req_id)
+            missing_impl.append(section)
         if req_id not in trace_index["verif"]:
-            missing_verif.append(req_id)
+            missing_verif.append(section)
 
     readiness_issues: list[str] = []
-    for req_id in missing_impl:
-        if not _has_exemption(exemptions, req_id, "impl"):
-            readiness_issues.append(f"Missing implementation trace for {req_id}")
-    for req_id in missing_verif:
-        if not _has_exemption(exemptions, req_id, "verif"):
-            readiness_issues.append(f"Missing verification trace for {req_id}")
+    for section in missing_impl:
+        if not _has_exemption(exemptions, section["id"], "impl"):
+            readiness_issues.append(f"Missing implementation trace for {section['id']}")
+    for section in missing_verif:
+        if not _has_exemption(exemptions, section["id"], "verif"):
+            readiness_issues.append(f"Missing verification trace for {section['id']}")
     if stale_req_refs:
         readiness_issues.append("Stale requirement references")
     if stale_param_refs:
@@ -429,26 +434,75 @@ def generate_release_report(
     lines.append("## Release Readiness Summary")
     lines.append("")
     lines.append(f"- Status: **{status}**")
-    if readiness_issues:
-        lines.append("- Issues:")
-        for issue in readiness_issues:
-            lines.append(f"  - {issue}")
+    lines.append(
+        f"- Missing implementation traces: {len(missing_impl)} "
+        f"([Missing Implementation Traces](#missing-implementation-traces))"
+    )
+    lines.append(
+        f"- Missing verification traces: {len(missing_verif)} "
+        f"([Missing Verification Traces](#missing-verification-traces))"
+    )
+    stale_total = (
+        len(stale_req_refs) + len(stale_param_refs) + len(stale_trace_versions)
+    )
+    lines.append(
+        f"- Stale references: {stale_total} "
+        f"([Version Consistency](#version-consistency))"
+    )
     lines.append("")
 
     lines.append("## Version Consistency")
     lines.append("")
+    total_versioned_refs = (
+        sum(
+            1
+            for section in sections
+            for _, version, _ in collect_requirement_references(section)
+            if version is not None
+        )
+        + sum(
+            1
+            for section in sections
+            for _, version, _ in collect_param_references(section)
+            if version is not None
+        )
+        + sum(1 for entry in all_trace_entries if isinstance(entry.get("version"), int))
+    )
+    consistent_refs = total_versioned_refs - stale_total
+    lines.append(
+        f"- Identified {consistent_refs} versioned references to be consistent."
+    )
+    lines.append("")
     if stale_req_refs:
         lines.append("### Stale Requirement References")
         for req_id, parent_id, tracked, current in stale_req_refs:
+            section = next(s for s in sections if s["id"] == req_id)
+            source_link = f"{section['file_path']}#{req_id}"
+            dest_link = None
+            for ref_id, version, path in collect_requirement_references(section):
+                if ref_id == parent_id and version == tracked and path:
+                    dest_link = path
+                    break
             lines.append(
-                f"- **{req_id}** tracks **{parent_id}** v{tracked}, current v{current}"
+                f"- **{req_id}** tracks **{parent_id}** v{tracked}, current v{current} "
+                f"(source: [{req_id}]({source_link}), dest: "
+                f"[{parent_id}]({dest_link or parent_id}))"
             )
         lines.append("")
     if stale_param_refs:
         lines.append("### Stale Parameter References")
         for req_id, param, tracked, current in stale_param_refs:
+            section = next(s for s in sections if s["id"] == req_id)
+            source_link = f"{section['file_path']}#{req_id}"
+            dest_link = None
+            for param_name, version, path in collect_param_references(section):
+                if param_name == param and version == tracked and path:
+                    dest_link = path
+                    break
             lines.append(
-                f"- **{req_id}** tracks **{param}** v{tracked}, current v{current}"
+                f"- **{req_id}** tracks **{param}** v{tracked}, current v{current} "
+                f"(source: [{req_id}]({source_link}), dest: "
+                f"[{param}]({dest_link or param}))"
             )
         lines.append("")
     if stale_trace_versions:
@@ -480,13 +534,17 @@ def generate_release_report(
     lines.append("")
     if missing_impl:
         lines.append("### Missing Implementation Traces")
-        for req_id in missing_impl:
-            lines.append(f"- {req_id}")
+        for section in missing_impl:
+            req_id = section["id"]
+            source_link = f"{section['file_path']}#{req_id}"
+            lines.append(f"- [{req_id}]({source_link})")
         lines.append("")
     if missing_verif:
         lines.append("### Missing Verification Traces")
-        for req_id in missing_verif:
-            lines.append(f"- {req_id}")
+        for section in missing_verif:
+            req_id = section["id"]
+            source_link = f"{section['file_path']}#{req_id}"
+            lines.append(f"- [{req_id}]({source_link})")
         lines.append("")
     if not missing_impl and not missing_verif:
         lines.append("- All requirements have implementation and verification traces.")

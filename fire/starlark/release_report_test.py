@@ -74,7 +74,7 @@ Requirement text with [REQ-BASE-001](/base.md?version=1#REQ-BASE-001).
 SIL: ASIL-A | Sec: true | Version: 1
 Body without references.
 """
-    sections = release_report.parse_requirement_sections(content)
+    sections = release_report.parse_requirement_sections(content, "reqs.md")
 
     assert [section["id"] for section in sections] == ["REQ-ALPHA-001", "REQ-BETA-002"]
     assert sections[0]["metadata"]["version"] == 2
@@ -88,10 +88,10 @@ SIL: ASIL-B | Sec: false | Version: 2
 
 See [REQ-BASE-001](/base.md?version=1#REQ-BASE-001).
 """
-    sections = release_report.parse_requirement_sections(content)
+    sections = release_report.parse_requirement_sections(content, "reqs.md")
     refs = release_report.collect_requirement_references(sections[0])
 
-    assert refs == [("REQ-BASE-001", 1)]
+    assert refs == [("REQ-BASE-001", 1, "/base.md?version=1#REQ-BASE-001")]
 
 
 def test_build_parameter_version_map():
@@ -111,7 +111,7 @@ SIL: ASIL-B | Sec: false | Version: 2 | Parent: [REQ-BASE-001](/base.md?version=
 
 See [REQ-BASE-001](/base.md?version=1#REQ-BASE-001).
 """
-    sections = release_report.parse_requirement_sections(content)
+    sections = release_report.parse_requirement_sections(content, "reqs.md")
     requirement_versions = {"REQ-BASE-001": 2}
 
     stale = release_report.find_stale_requirement_references(

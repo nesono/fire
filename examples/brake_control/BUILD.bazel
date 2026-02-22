@@ -35,6 +35,7 @@ source_traceability(
             "REQ_BC_FORCE_LIMITS?version=1",
         ],
     },
+    visibility = ["//examples:__pkg__"],
     deps = [":brake_controller_requirements"],
     implements = {
         "brake_controller.cc": [
