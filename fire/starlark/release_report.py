@@ -429,27 +429,44 @@ def generate_release_report(
     if todos or bare_todos:
         readiness_issues.append("Open TODOs")
 
-    status = "PASS" if not readiness_issues else "FAIL"
+    status = "READY FOR RELEASE" if not readiness_issues else "NOT READY FOR RELEASE"
     lines: list[str] = [f"# Release Readiness Report: {product_name}", ""]
     lines.append("## Release Readiness Summary")
     lines.append("")
-    lines.append(f"- Status: **{status}**")
-    lines.append(
-        f"- Missing implementation traces: {len(missing_impl)} "
-        f"([Missing Implementation Traces](#missing-implementation-traces))"
-    )
-    lines.append(
-        f"- Missing verification traces: {len(missing_verif)} "
-        f"([Missing Verification Traces](#missing-verification-traces))"
-    )
+    lines.append(f"**Status: {status}**")
+    lines.append("")
+
     stale_total = (
         len(stale_req_refs) + len(stale_param_refs) + len(stale_trace_versions)
     )
-    lines.append(
-        f"- Stale references: {stale_total} "
-        f"([Version Consistency](#version-consistency))"
-    )
-    lines.append("")
+
+    # Show issues prominently if they exist
+    if readiness_issues:
+        lines.append("### Issues Found")
+        lines.append("")
+        if len(missing_impl) > 0:
+            lines.append(
+                f"- ⚠️  Missing implementation traces: **{len(missing_impl)}** "
+                f"([details](#missing-implementation-traces))"
+            )
+        if len(missing_verif) > 0:
+            lines.append(
+                f"- ⚠️  Missing verification traces: **{len(missing_verif)}** "
+                f"([details](#missing-verification-traces))"
+            )
+        if stale_total > 0:
+            lines.append(
+                f"- ⚠️  Stale references: **{stale_total}** "
+                f"([details](#version-consistency))"
+            )
+        if todos:
+            lines.append(
+                f"- ⚠️  Open TODOs: **{len(todos)}** " f"([details](#todo-inventory))"
+            )
+        lines.append("")
+    else:
+        lines.append("✓ No issues found - all checks passed")
+        lines.append("")
 
     lines.append("## Version Consistency")
     lines.append("")
@@ -469,9 +486,14 @@ def generate_release_report(
         + sum(1 for entry in all_trace_entries if isinstance(entry.get("version"), int))
     )
     consistent_refs = total_versioned_refs - stale_total
-    lines.append(
-        f"- Identified {consistent_refs} versioned references to be consistent."
-    )
+
+    if stale_total > 0:
+        lines.append(
+            f"- ⚠️  **Found {stale_total} stale reference(s) that need updating**"
+        )
+        lines.append(f"- ✓ {consistent_refs} reference(s) are consistent")
+    else:
+        lines.append(f"- ✓ All {consistent_refs} versioned references are consistent")
     lines.append("")
     if stale_req_refs:
         lines.append("### Stale Requirement References")

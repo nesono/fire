@@ -118,7 +118,11 @@ See [REQ-BASE-001](/base.md?version=1#REQ-BASE-001).
         sections, requirement_versions
     )
 
-    assert stale == [("REQ-ALPHA-001", "REQ-BASE-001", 1, 2)]
+    # Both the Parent reference and the body reference are stale (v1 tracked, v2 current)
+    assert stale == [
+        ("REQ-ALPHA-001", "REQ-BASE-001", 1, 2),
+        ("REQ-ALPHA-001", "REQ-BASE-001", 1, 2),
+    ]
 
 
 def test_generate_release_report_basic(tmp_path):
