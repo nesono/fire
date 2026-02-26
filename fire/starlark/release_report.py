@@ -12,7 +12,6 @@ from fire.starlark import markdown_common, path_common, validate_cross_reference
 from fire.starlark.patterns import PARAM_VERSION_SUFFIX_RE, REQ_ID_PATTERN, TODO_PATTERN
 
 _VALID_TRACE_TYPES: Final = {"impl", "verif"}
-_VALID_EXEMPTION_KINDS: Final = {"impl", "verif", "version", "todo"}
 
 
 def load_yaml_file(path: str) -> object:
@@ -69,19 +68,6 @@ def parse_source_traceability_data(data: object, source: str) -> list[dict]:
                     }
                 )
 
-    return entries
-
-
-def parse_exemptions(data: object, source: str) -> list[dict]:
-    """Validate exemptions and require justification for every excluded requirement."""
-    entries = _ensure_list_of_dicts(data, source)
-    for entry in entries:
-        if entry.get("kind") not in _VALID_EXEMPTION_KINDS:
-            raise ValueError(f"{source}: Unknown exemption kind '{entry.get('kind')}'")
-        if not entry.get("requirement"):
-            raise ValueError(f"{source}: Exemption missing requirement")
-        if not entry.get("justification"):
-            raise ValueError(f"{source}: Exemption missing justification")
     return entries
 
 
@@ -255,14 +241,6 @@ def load_trace_entries(paths: list[str]) -> list[dict]:
     return entries
 
 
-def load_exemptions(path: str | None) -> list[dict]:
-    """Load exemptions if provided, otherwise return an empty list."""
-    if path is None:
-        return []
-    data = load_yaml_file(path)
-    return parse_exemptions(data, path)
-
-
 def build_trace_index(entries: list[dict]) -> dict[str, dict[str, list[dict]]]:
     """Index trace entries by type and requirement/parameter for quick lookup."""
     index: dict[str, dict[str, list[dict]]] = {"impl": {}, "verif": {}}
@@ -297,27 +275,6 @@ def find_stale_trace_versions(
             if current is not None and current != version:
                 stale.append((param, "param", version, current))
     return stale
-
-
-def _has_exemption(exemptions: list[dict], req_id: str, kind: str) -> bool:
-    for entry in exemptions:
-        if entry.get("requirement") == req_id and entry.get("kind") == kind:
-            return True
-    return False
-
-
-def _format_exemptions(exemptions: list[dict]) -> list[str]:
-    if not exemptions:
-        return ["- None"]
-    lines = []
-    for entry in exemptions:
-        owner = entry.get("owner", "-")
-        expires = entry.get("expires", "-")
-        lines.append(
-            f"- **{entry['requirement']}** ({entry['kind']}): "
-            f"{entry['justification']} (owner: {owner}, expires: {expires})"
-        )
-    return lines
 
 
 def _sanitize_mermaid_id(value: str) -> str:
@@ -357,7 +314,6 @@ def generate_release_report(
     requirement_paths: list[str],
     parameter_paths: list[str],
     source_trace_paths: list[str],
-    exemptions_path: str | None,
     product_name: str,
 ) -> str:
     """Build the full release readiness report from requirements and traces."""
@@ -402,8 +358,6 @@ def generate_release_report(
         all_trace_entries, requirement_versions, param_versions
     )
 
-    exemptions = load_exemptions(exemptions_path)
-
     missing_impl: list[dict] = []
     missing_verif: list[dict] = []
     for section in sections:
@@ -414,12 +368,10 @@ def generate_release_report(
             missing_verif.append(section)
 
     readiness_issues: list[str] = []
-    for section in missing_impl:
-        if not _has_exemption(exemptions, section["id"], "impl"):
-            readiness_issues.append(f"Missing implementation trace for {section['id']}")
-    for section in missing_verif:
-        if not _has_exemption(exemptions, section["id"], "verif"):
-            readiness_issues.append(f"Missing verification trace for {section['id']}")
+    if missing_impl:
+        readiness_issues.append("Missing implementation traces")
+    if missing_verif:
+        readiness_issues.append("Missing verification traces")
     if stale_req_refs:
         readiness_issues.append("Stale requirement references")
     if stale_param_refs:
@@ -579,11 +531,6 @@ def generate_release_report(
     )
     lines.append("")
 
-    lines.append("## Exemptions")
-    lines.append("")
-    lines.extend(_format_exemptions(exemptions))
-    lines.append("")
-
     return "\n".join(lines)
 
 
@@ -595,7 +542,6 @@ def main() -> int:
     parser.add_argument("--requirements", action="append", required=True)
     parser.add_argument("--params", action="append", default=[])
     parser.add_argument("--source-traces", action="append", default=[])
-    parser.add_argument("--exemptions")
     parser.add_argument("--product", default="Product")
     parser.add_argument("--out", required=True)
 
@@ -605,7 +551,6 @@ def main() -> int:
         requirement_paths=args.requirements,
         parameter_paths=args.params,
         source_trace_paths=args.source_traces,
-        exemptions_path=args.exemptions,
         product_name=args.product,
     )
     with open(args.out, "w") as handle:

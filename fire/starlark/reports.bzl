@@ -60,17 +60,12 @@ def _release_report_impl(ctx):
     args.add_all(param_files, before_each = "--params")
     args.add_all(trace_files, before_each = "--source-traces")
 
-    if ctx.file.exemptions:
-        args.add("--exemptions")
-        args.add(ctx.file.exemptions.path)
-
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
 
     ctx.actions.run(
         inputs = requirement_files +
                  param_files +
                  trace_files +
-                 ([ctx.file.exemptions] if ctx.file.exemptions else []) +
                  [script] +
                  script_runfiles,
         outputs = [ctx.outputs.out],
@@ -140,10 +135,6 @@ generate_report = rule(
 release_report = rule(
     implementation = _release_report_impl,
     attrs = {
-        "exemptions": attr.label(
-            allow_single_file = [".yaml", ".yml"],
-            doc = "Optional exemptions YAML file",
-        ),
         "out": attr.output(
             mandatory = True,
             doc = "Output markdown file",
@@ -179,9 +170,78 @@ release_report = rule(
             requirements = glob(["requirements/*.md"]),
             params = glob(["params/*.yaml"]),
             source_traces = [":brake_controller_trace"],
-            exemptions = ":release_exemptions",
             product = "Brake Controller",
             out = "RELEASE_REPORT.md",
         )
+    """,
+)
+
+def _release_readiness_test_impl(ctx):
+    """Implementation of the release_readiness_test rule."""
+
+    script = ctx.executable._script
+    report = ctx.file.report
+
+    # Create a test script that runs the validation
+    test_script = ctx.actions.declare_file(ctx.label.name + "_test.sh")
+    ctx.actions.write(
+        output = test_script,
+        content = """#!/bin/bash
+set -e
+{script} {report}
+""".format(
+            script = script.short_path,
+            report = report.short_path,
+        ),
+        is_executable = True,
+    )
+
+    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
+
+    runfiles = ctx.runfiles(files = [report, script] + script_runfiles)
+
+    return [DefaultInfo(
+        executable = test_script,
+        runfiles = runfiles,
+    )]
+
+release_readiness_test = rule(
+    implementation = _release_readiness_test_impl,
+    test = True,
+    attrs = {
+        "report": attr.label(
+            allow_single_file = [".md"],
+            mandatory = True,
+            doc = "The release_report target to validate",
+        ),
+        "_script": attr.label(
+            default = Label("//fire/starlark:validate_release_readiness_script"),
+            executable = True,
+            cfg = "exec",
+        ),
+    },
+    doc = """Tests that a release report indicates the product is ready for release.
+
+    This test reads the generated release report and fails if it contains
+    "NOT READY FOR RELEASE", printing the issues that need to be addressed.
+
+    Example:
+        release_report(
+            name = "release_report",
+            requirements = glob(["requirements/*.md"]),
+            params = glob(["params/*.yaml"]),
+            source_traces = [":brake_controller_trace"],
+            product = "Brake Controller",
+            out = "RELEASE_REPORT.md",
+        )
+
+        release_readiness_test(
+            name = "release_readiness",
+            report = ":release_report",
+        )
+
+    Then run:
+        bazel build :release_report  # Generate the report
+        bazel test :release_readiness  # Validate readiness
     """,
 )

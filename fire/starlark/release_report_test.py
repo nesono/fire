@@ -33,27 +33,6 @@ def test_parse_source_traceability_data():
     ]
 
 
-def test_parse_exemptions_valid():
-    data = [
-        {
-            "requirement": "REQ-1",
-            "kind": "impl",
-            "justification": "Deferred for prototype release",
-            "owner": "team-abc",
-        }
-    ]
-    entries = release_report.parse_exemptions(data, "exemptions.yaml")
-
-    assert entries[0]["kind"] == "impl"
-    assert entries[0]["requirement"] == "REQ-1"
-
-
-def test_parse_exemptions_requires_justification():
-    data = [{"requirement": "REQ-1", "kind": "impl"}]
-    with pytest.raises(ValueError, match="justification"):
-        release_report.parse_exemptions(data, "exemptions.yaml")
-
-
 def test_extract_todos():
     content = """
     TODO(ABC-123) needs follow-up
@@ -166,7 +145,6 @@ max_speed_v1:
         requirement_paths=[str(req_path)],
         parameter_paths=[str(param_path)],
         source_trace_paths=[str(trace_path)],
-        exemptions_path=None,
         product_name="Demo",
     )
 

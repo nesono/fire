@@ -149,6 +149,13 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "validate_release_readiness_script",
+    srcs = ["validate_release_readiness.py"],
+    main = "validate_release_readiness.py",
+    visibility = ["//visibility:public"],
+)
+
 py_test(
     name = "validate_parameters_test",
     srcs = [
@@ -227,6 +234,16 @@ py_test(
         ":release_report",
         "@pip//pytest",
     ],
+)
+
+py_test(
+    name = "validate_release_readiness_test",
+    size = "small",
+    srcs = [
+        "validate_release_readiness.py",
+        "validate_release_readiness_test.py",
+    ],
+    deps = ["@pip//pytest"],
 )
 
 py_test(

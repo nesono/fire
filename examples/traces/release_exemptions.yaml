@@ -1,5 +1,0 @@
-- requirement: REQ_BC_OUTPUT_RATE
-  kind: verif
-  justification: Output rate tests scheduled for next release
-  owner: brake-team
-  expires: 2026-06-30

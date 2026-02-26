@@ -545,20 +545,25 @@ generate_report(
 )
 
 # Generate release readiness report
-load("//fire/starlark:reports.bzl", "release_report")
+load("//fire/starlark:reports.bzl", "release_report", "release_readiness_test")
 
 release_report(
     name = "release_report",
     requirements = [":component_requirements"],
     params = [":vehicle_params"],
     source_traces = [":brake_controller_trace"],
-    exemptions = ":release_exemptions",
     product = "Brake Controller",
     out = "RELEASE_REPORT.md",
 )
+
+# Validate release readiness (fails if not ready)
+release_readiness_test(
+    name = "release_readiness",
+    report = ":release_report",
+)
 ```
 
-Build reports:
+Build and validate reports:
 
 ```bash
 # Build specific report
@@ -567,8 +572,14 @@ bazel build //path/to:traceability_matrix
 # View generated report
 cat bazel-bin/path/to/TRACEABILITY_MATRIX.md
 
+# Build release report
+bazel build //path/to:release_report
+
+# Validate release readiness (fails if not ready)
+bazel test //path/to:release_readiness
+
 # Build all reports
-bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:change_impact_report //path/to:compliance_report
+bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:change_impact_report //path/to:compliance_report //path/to:release_report
 ```
 
 **Available Report Types**:
@@ -580,7 +591,8 @@ bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:ch
   - Attributes: `standard` (required, e.g., "ISO 26262", "IEC 61508"), `critical_type` (optional, e.g., "safety", "security")
   - Shows breakdown by requirement type, status distribution, and compliance gaps
   - Highlights critical requirement type if specified
-- `release_report` (rule): Release readiness report that aggregates version consistency, TODOs, implementation, verification, traceability graph, and exemptions
+- `release_report` (rule): Release readiness report that aggregates version consistency, TODOs, implementation, verification, and traceability graph
+- `release_readiness_test` (test): Validates that a release report indicates the product is ready for release. Fails the build if issues are found, making it suitable for CI/CD pipelines
 
 ## Contributing
 
