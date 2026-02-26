@@ -7,8 +7,7 @@ from typing import Literal, Optional, Union, Final
 from pydantic import BaseModel, Field, field_validator
 
 from fire.starlark import markdown_common
-
-_TODO_PATTERN: Final = re.compile(r"^TODO\([A-Z]+-[0-9]+\)$")
+from fire.starlark.patterns import REQ_ID_PATTERN, TODO_PATTERN
 
 _VALID_SIL_VALUES: Final = {
     "ASIL-A",
@@ -48,7 +47,7 @@ SilValue = Literal[
 class RequirementMetadata(BaseModel):
     """Model for requirement inline metadata."""
 
-    id: str = Field(pattern=r"^[A-Z][A-Z0-9_-]+$")
+    id: str = Field(pattern=REQ_ID_PATTERN.pattern)
 
     sil: Union[SilValue, str]
 
@@ -64,7 +63,7 @@ class RequirementMetadata(BaseModel):
     @classmethod
     def validate_sil(cls, v: object) -> object:
         """Accept valid SIL/ASIL/DAL literals or TODO(KEY-1234)."""
-        if isinstance(v, str) and _TODO_PATTERN.match(v):
+        if isinstance(v, str) and TODO_PATTERN.fullmatch(v):
             return v
         if v not in _VALID_SIL_VALUES:
             raise ValueError(
@@ -80,7 +79,7 @@ class RequirementMetadata(BaseModel):
     @classmethod
     def validate_sec(cls, v: object) -> object:
         """Accept strict booleans or TODO(KEY-1234)."""
-        if isinstance(v, str) and _TODO_PATTERN.match(v):
+        if isinstance(v, str) and TODO_PATTERN.fullmatch(v):
             return v
         if not isinstance(v, bool):
             raise ValueError("value is not a valid boolean or TODO(KEY-1234)")
@@ -93,7 +92,7 @@ class RequirementMetadata(BaseModel):
         if v is None:
             return v
 
-        if _TODO_PATTERN.match(v):
+        if TODO_PATTERN.fullmatch(v):
             return v
 
         # Check markdown link format: [TEXT](URL)

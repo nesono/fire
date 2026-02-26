@@ -5,7 +5,6 @@ This module defines the Pydantic models that replace the JSON schema
 for validating parameter YAML files.
 """
 
-import re
 from collections import defaultdict
 from typing import Any, Dict, List, Literal, Union
 
@@ -16,7 +15,7 @@ from pydantic import (
     model_validator,
 )
 
-_VERSION_SUFFIX_RE = re.compile(r"^([a-z][a-z0-9_]*)_v([1-9][0-9]*)$")
+from fire.starlark.patterns import PARAM_VERSION_SUFFIX_RE
 
 
 def infer_type_from_value(value: Any) -> str:
@@ -237,7 +236,7 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
         groups: Dict[str, Dict[int, str]] = defaultdict(dict)
 
         for key in self.root:
-            m = _VERSION_SUFFIX_RE.match(key)
+            m = PARAM_VERSION_SUFFIX_RE.match(key)
             if not m:
                 raise ValueError(
                     f"Parameter key '{key}' must match pattern '<name>_v<N>' "

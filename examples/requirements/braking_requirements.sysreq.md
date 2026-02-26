@@ -2,7 +2,7 @@
 
 ## REQ-BRK-001
 
-SIL: ASIL-C | Sec: true | Version: 4
+SIL: TODO(BRK-789) | Sec: true | Version: 4
 
 **Emergency Braking Distance**
 
@@ -36,6 +36,8 @@ Testing performed on the following aspects:
 - Proving ground testing on various surfaces (dry, wet, low friction)
 - Automated emergency braking (AEB) system integration tests
 - Tire friction coefficient measurement and validation
+
+TODO(BRK-456) Complete ice surface testing for all velocity ranges
 
 ...
 
