@@ -44,6 +44,26 @@ echo "Running all Bazel tests..."
 bazel test //... --test_output=errors
 echo ""
 
+echo "Building release report..."
+bazel build //:integration_release_report
+echo ""
+
+echo "Verifying release report..."
+if [ -f bazel-bin/RELEASE_REPORT.md ]; then
+    echo "✓ Release report generated successfully"
+    echo ""
+    echo "Report summary:"
+    head -20 bazel-bin/RELEASE_REPORT.md
+else
+    echo "✗ Release report not found"
+    exit 1
+fi
+echo ""
+
+echo "Running release readiness test..."
+bazel test //:integration_release_readiness --test_output=all
+echo ""
+
 echo "Integration tests completed successfully!"
 
 exit 0

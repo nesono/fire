@@ -2,6 +2,8 @@
 
 load("@fire//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_rust_parameters")
 load("@fire//fire/starlark:parameters.bzl", "parameter_library")
+load("@fire//fire/starlark:reports.bzl", "release_readiness_test", "release_report")
+load("@fire//fire/starlark:traceability.bzl", "source_traceability")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
@@ -55,4 +57,48 @@ sh_test(
 sh_test(
     name = "test_update_rate",
     srcs = ["test_dummy.sh"],
+)
+
+# Source traceability for integration tests
+source_traceability(
+    name = "integration_trace",
+    verifies = {
+        ":test_braking": ["REQ-INT-002?version=1"],
+        ":test_speed_limit": ["REQ-INT-001?version=1"],
+        ":test_update_rate": [
+            "REQ-INT-003?version=1",
+            "REQ-INT-004?version=1",
+        ],
+    },
+    deps = ["//requirements:integration_requirements"],
+    implements = {
+        "consumer/test.cpp": [
+            "REQ-INT-001?version=1",
+            "REQ-INT-002?version=1",
+            "REQ-INT-003?version=1",
+            "REQ-INT-004?version=1",
+        ],
+        "consumer/test.rs": [
+            "REQ-INT-001?version=1",
+            "REQ-INT-002?version=1",
+            "REQ-INT-003?version=1",
+            "REQ-INT-004?version=1",
+        ],
+    },
+)
+
+# Release readiness report
+release_report(
+    name = "integration_release_report",
+    out = "RELEASE_REPORT.md",
+    params = [":test_params"],
+    product = "Fire Integration Test",
+    requirements = ["//requirements:integration_requirements"],
+    source_traces = [":integration_trace"],
+)
+
+# Validate release readiness
+release_readiness_test(
+    name = "integration_release_readiness",
+    report = ":integration_release_report",
 )
