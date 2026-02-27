@@ -503,50 +503,14 @@ System requirements track their own versions in text line. Software requirements
 
 When a parent requirement version changes (e.g., REQ-VEL-001 v2 -> v3), any child requirement still referencing `?version=2` is flagged as potentially needing review.
 
-### Generating Reports with Bazel
+### Release Readiness Reporting
 
-Fire provides a `generate_report` Bazel rule to create reports at build time:
+Fire provides release readiness reporting to validate that your product is ready for release:
 
 ```python
-load("//fire/starlark:reports.bzl", "generate_report")
-
-# Generate traceability matrix
-generate_report(
-    name = "traceability_matrix",
-    srcs = glob(["requirements/*.md"]),
-    report_type = "traceability",
-    out = "TRACEABILITY_MATRIX.md",
-)
-
-# Generate coverage report
-generate_report(
-    name = "coverage_report",
-    srcs = glob(["requirements/*.md"]),
-    report_type = "coverage",
-    out = "COVERAGE_REPORT.md",
-)
-
-# Generate change impact analysis
-generate_report(
-    name = "change_impact_report",
-    srcs = glob(["requirements/*.md"]),
-    report_type = "change_impact",
-    out = "CHANGE_IMPACT.md",
-)
-
-# Generate compliance report
-generate_report(
-    name = "compliance_report",
-    srcs = glob(["requirements/*.md"]),
-    report_type = "compliance",
-    standard = "ISO 26262",  # or "IEC 61508", etc.
-    critical_type = "safety",  # Optional: highlight critical requirements
-    out = "COMPLIANCE_ISO26262.md",
-)
-
-# Generate release readiness report
 load("//fire/starlark:reports.bzl", "release_report", "release_readiness_test")
 
+# Generate release readiness report
 release_report(
     name = "release_report",
     requirements = [":component_requirements"],
@@ -563,36 +527,33 @@ release_readiness_test(
 )
 ```
 
-Build and validate reports:
+Build and validate:
 
 ```bash
-# Build specific report
-bazel build //path/to:traceability_matrix
-
-# View generated report
-cat bazel-bin/path/to/TRACEABILITY_MATRIX.md
-
 # Build release report
 bazel build //path/to:release_report
 
+# View generated report
+cat bazel-bin/path/to/RELEASE_REPORT.md
+
 # Validate release readiness (fails if not ready)
 bazel test //path/to:release_readiness
-
-# Build all reports
-bazel build //path/to:traceability_matrix //path/to:coverage_report //path/to:change_impact_report //path/to:compliance_report //path/to:release_report
 ```
 
-**Available Report Types**:
+**What the release report checks:**
 
-- `traceability`: Full traceability matrix with Requirements -> Parameters, Requirements -> Requirements (with versions), Requirements -> Standards
-- `coverage`: Metrics showing percentage of requirements with parameter references and standard references
-- `change_impact`: Identifies requirements with stale parent version references
-- `compliance`: Compliance report for a specific standard
-  - Attributes: `standard` (required, e.g., "ISO 26262", "IEC 61508"), `critical_type` (optional, e.g., "safety", "security")
-  - Shows breakdown by requirement type, status distribution, and compliance gaps
-  - Highlights critical requirement type if specified
-- `release_report` (rule): Release readiness report that aggregates version consistency, TODOs, implementation, verification, and traceability graph
-- `release_readiness_test` (test): Validates that a release report indicates the product is ready for release. Fails the build if issues are found, making it suitable for CI/CD pipelines
+- **Version Consistency**: Detects stale references between requirements, parameters, and implementation/verification traces
+- **TODO Inventory**: Finds all TODO markers in requirements and parameters
+- **Implementation Coverage**: Identifies requirements missing implementation traces
+- **Verification Coverage**: Identifies requirements missing verification/test traces
+- **Traceability Graph**: Visualizes requirement dependencies using Mermaid diagrams
+
+**Report status:**
+
+- `READY FOR RELEASE`: All checks passed, no issues found
+- `NOT READY FOR RELEASE`: Issues found that must be addressed before release
+
+The `release_readiness_test` validates the report and fails the build if issues are found, making it suitable for CI/CD pipelines to gate releases.
 
 ## Contributing
 
