@@ -5,7 +5,6 @@ exports_files([
     "requirements.bzl",
     "reports.bzl",
     "traceability.bzl",
-    "generate_report.py",
     "generate_code.py",
     "validate_cross_references.py",
 ])
@@ -70,12 +69,6 @@ py_library(
     srcs = ["markdown_common.py"],
 )
 
-# Common utilities - report generation
-py_library(
-    name = "report_common",
-    srcs = ["report_common.py"],
-)
-
 # Shared regex patterns
 py_library(
     name = "patterns",
@@ -125,14 +118,6 @@ py_binary(
         ":requirement_models",
         "@pip//pydantic",
     ],
-)
-
-py_binary(
-    name = "generate_report_script",
-    srcs = ["generate_report.py"],
-    main = "generate_report.py",
-    visibility = ["//visibility:public"],
-    deps = [":report_common"],
 )
 
 py_binary(

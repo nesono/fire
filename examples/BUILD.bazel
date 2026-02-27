@@ -5,7 +5,7 @@ load("@rules_python//python:defs.bzl", "py_library", "py_test")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 load("//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_go_parameters", "generate_java_parameters", "generate_python_parameters", "generate_rust_parameters")
 load("//fire/starlark:parameters.bzl", "parameter_library")
-load("//fire/starlark:reports.bzl", "generate_report", "release_readiness_test", "release_report")
+load("//fire/starlark:reports.bzl", "release_readiness_test", "release_report")
 load("//fire/starlark:requirements.bzl", "requirement_library")
 
 # Validate and create parameter library from YAML file
@@ -209,37 +209,7 @@ requirement_library(
     ],
 )
 
-# Reports
-generate_report(
-    name = "traceability_matrix",
-    srcs = glob(["requirements/*.md"]),
-    out = "TRACEABILITY_MATRIX.md",
-    report_type = "traceability",
-)
-
-generate_report(
-    name = "coverage_report",
-    srcs = glob(["requirements/*.md"]),
-    out = "COVERAGE_REPORT.md",
-    report_type = "coverage",
-)
-
-generate_report(
-    name = "change_impact_report",
-    srcs = glob(["requirements/*.md"]),
-    out = "CHANGE_IMPACT.md",
-    report_type = "change_impact",
-)
-
-generate_report(
-    name = "compliance_report",
-    srcs = glob(["requirements/*.md"]),
-    out = "COMPLIANCE_ISO26262.md",
-    critical_type = "safety",
-    report_type = "compliance",
-    standard = "ISO 26262",
-)
-
+# Release readiness reporting
 release_report(
     name = "release_report",
     out = "RELEASE_REPORT.md",

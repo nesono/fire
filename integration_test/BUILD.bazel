@@ -2,7 +2,6 @@
 
 load("@fire//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_rust_parameters")
 load("@fire//fire/starlark:parameters.bzl", "parameter_library")
-load("@fire//fire/starlark:reports.bzl", "generate_report")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
@@ -40,30 +39,6 @@ rust_library(
     name = "test_params_rs",
     srcs = [":test_params_rs_src"],
     visibility = ["//visibility:public"],
-)
-
-# Generate compliance report
-generate_report(
-    name = "compliance_report",
-    srcs = ["//requirements:integration_requirements"],
-    out = "compliance_report.md",
-    report_type = "compliance",
-)
-
-# Generate coverage report
-generate_report(
-    name = "coverage_report",
-    srcs = ["//requirements:integration_requirements"],
-    out = "coverage_report.md",
-    report_type = "coverage",
-)
-
-# Generate traceability report
-generate_report(
-    name = "traceability_report",
-    srcs = ["//requirements:integration_requirements"],
-    out = "traceability_report.md",
-    report_type = "traceability",
 )
 
 # Dummy test targets referenced in requirements
