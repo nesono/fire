@@ -93,6 +93,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache Bazel
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/bazel-repo
+            ~/.cache/bazelisk
+          key: bazel-failure-tests-ubuntu-latest-${{ hashFiles('MODULE.bazel.lock') }}
+          restore-keys: |
+            bazel-failure-tests-ubuntu-latest-
+
       - name: Run failure tests
         run: |
           ./fire/starlark/failure_test/run_failure_tests.sh
