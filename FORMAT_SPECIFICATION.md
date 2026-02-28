@@ -683,32 +683,32 @@ When a requirement changes semantically in a way that requires downstream consum
 **Before:**
 
 ```markdown
-## REQ-VEL-001
+## REQ-TRAFFIC-001
 
-SIL: ASIL-C | Sec: true | Version: 1
+SIL: ASIL-B | Sec: false | Version: 1
 
-Maximum velocity shall be 30 m/s.
+At uncontrolled intersections, the vehicle shall yield according to first-come-first-serve rules.
 ```
 
 **After:**
 
 ```markdown
-## REQ-VEL-001
+## REQ-TRAFFIC-001
 
-SIL: ASIL-C | Sec: true | Version: 2
+SIL: ASIL-B | Sec: false | Version: 2
 
-Maximum velocity shall be 35 m/s.
+At uncontrolled intersections, the vehicle shall yield to traffic approaching from the right.
 
 ### Changelog
 
-- **Version 2**: Increased maximum velocity from 30 to 35 m/s
-- **Version 1**: Initial requirement
+- **Version 2**: Changed from first-come-first-serve to right-of-way rule (left yields to right)
+- **Version 1**: Initial requirement with first-come-first-serve rule
 ```
 
 References must update to point to the new version:
 
 ```markdown
-[REQ-VEL-001](/requirements/velocity.sysreq.md?version=2#REQ-VEL-001)
+[REQ-TRAFFIC-001](/requirements/traffic.sysreq.md?version=2#REQ-TRAFFIC-001)
 ```
 
 ### Evolving Parameters
