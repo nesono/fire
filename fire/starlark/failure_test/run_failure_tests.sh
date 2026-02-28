@@ -14,6 +14,9 @@ echo ""
 FAILURES=0
 SUCCESSES=0
 
+# Bazel options for CI with repository cache (separate cache for failure tests)
+BAZEL_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo-failure"
+
 # Query Bazel once for all targets with build output format (easy to parse!)
 # Output format: //package:target|tag1 tag2 tag3
 echo "Querying Bazel for failure test targets..."
@@ -82,7 +85,7 @@ for target in $FAILURE_TARGETS; do
     if has_tag "$target" "version_too_old"; then
         # Version too old tests should fail at compile or runtime
         set +e
-        output=$(bazel build "$target" 2>&1)
+        output=$(bazel build $BAZEL_OPTS "$target" 2>&1)
         build_exit_code=$?
         set -e
 
@@ -98,7 +101,7 @@ for target in $FAILURE_TARGETS; do
         else
             # Build succeeded, try running to check for runtime error
             set +e
-            run_output=$(bazel run "$target" 2>&1)
+            run_output=$(bazel run $BAZEL_OPTS "$target" 2>&1)
             run_exit_code=$?
             set -e
 
@@ -122,7 +125,7 @@ for target in $FAILURE_TARGETS; do
         # Version upgraded tests should succeed but emit warning
         # Force full rebuild to see compile-time warnings
         set +e
-        output=$(bazel build --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
+        output=$(bazel build $BAZEL_OPTS --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
         build_exit_code=$?
         set -e
 
@@ -140,7 +143,7 @@ for target in $FAILURE_TARGETS; do
             else
                 # Run and check for runtime warning
                 set +e
-                run_output=$(bazel run "$target" 2>&1)
+                run_output=$(bazel run $BAZEL_OPTS "$target" 2>&1)
                 run_exit_code=$?
                 set -e
 
@@ -162,7 +165,7 @@ for target in $FAILURE_TARGETS; do
 
     elif has_tag "$target" "too_many_versions"; then
         set +e
-        output=$(bazel build --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
+        output=$(bazel build $BAZEL_OPTS --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
         build_exit_code=$?
         set -e
 
@@ -183,7 +186,7 @@ for target in $FAILURE_TARGETS; do
     elif has_tag "$target" "missing_version"; then
         # Missing version suffix tests should fail at build time
         set +e
-        output=$(bazel build "$target" 2>&1)
+        output=$(bazel build $BAZEL_OPTS "$target" 2>&1)
         build_exit_code=$?
         set -e
 
@@ -205,7 +208,7 @@ for target in $FAILURE_TARGETS; do
     elif has_tag "$target" "outdated_version"; then
         # Outdated version tests should succeed but emit warning
         set +e
-        output=$(bazel build --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
+        output=$(bazel build $BAZEL_OPTS --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
         build_exit_code=$?
         set -e
 
@@ -231,7 +234,7 @@ for target in $FAILURE_TARGETS; do
     elif has_tag "$target" "future_version"; then
         # Future version tests should fail at build time
         set +e
-        output=$(bazel build "$target" 2>&1)
+        output=$(bazel build $BAZEL_OPTS "$target" 2>&1)
         build_exit_code=$?
         set -e
 
@@ -254,7 +257,7 @@ for target in $FAILURE_TARGETS; do
         # Legacy tests - check for dependency errors or VERSION MISMATCH
         # Force full rebuild to see warnings
         set +e
-        output=$(bazel build --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
+        output=$(bazel build $BAZEL_OPTS --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
         build_exit_code=$?
         set -e
 
