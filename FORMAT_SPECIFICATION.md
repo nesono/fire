@@ -585,9 +585,9 @@ Incomplete references can use TODO placeholders:
 **Example:**
 
 ```markdown
-SIL: TODO(BRK-789) | Sec: true | Version: 1
+SIL: TODO(REQ-123) | Sec: TODO(SEC-456) | Version: 1
 
-Parent: TODO(LINK-456)
+SIL: ASIL-D | Sec: true | Version: 1 | Parent: TODO(LINK-456)
 ```
 
 ---
