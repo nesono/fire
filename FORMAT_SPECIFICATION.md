@@ -811,9 +811,3 @@ This specification is enforced by the FIRE validation tools:
 - **Cross-reference validation:** `fire/starlark/validate_cross_references.py`
 
 For questions or clarifications, please refer to the source code or open an issue.
-
----
-
-**Document Version:** main
-**Generated for:** FIRE Requirements Management System
-**License:** See LICENSE file in repository root
