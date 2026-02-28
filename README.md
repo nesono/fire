@@ -16,6 +16,8 @@ It is based on the following basic concepts:
 - Parameters can be **consumed from source code** through code generated libraries
 - Support for **reporting**, e.g. for collaterals for notified bodies
 
+**📖 For detailed file format specifications, see [FORMAT_SPECIFICATION.md](FORMAT_SPECIFICATION.md)**
+
 ## Usage
 
 ### Consume Fire
