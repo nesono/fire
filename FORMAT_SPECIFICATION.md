@@ -490,7 +490,7 @@ braking_distance_table_v1:
     - name: velocity
       unit: m/s
     - name: friction_coeff
-      unit: dimensionless
+      unit: "1"
     - name: braking_distance
       unit: m
   rows:
