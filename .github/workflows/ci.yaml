@@ -45,6 +45,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache Bazel
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/bazel
+            ~/.cache/bazelisk
+          key: bazel-${{ matrix.os }}-${{ matrix.bazel-version }}-${{ hashFiles('MODULE.bazel.lock') }}
+          restore-keys: |
+            bazel-${{ matrix.os }}-${{ matrix.bazel-version }}-
+            bazel-${{ matrix.os }}-
+
       - name: Run Bazel tests
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
@@ -61,6 +72,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Cache Bazel
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/bazel
+            ~/.cache/bazelisk
+          key: bazel-typecheck-ubuntu-latest-${{ hashFiles('MODULE.bazel.lock') }}
+          restore-keys: |
+            bazel-typecheck-ubuntu-latest-
 
       - name: Run type checking with ty
         run: bazel build --config=typecheck //...
@@ -85,6 +106,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Cache Bazel
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/bazel
+            ~/.cache/bazelisk
+          key: bazel-integration-py${{ matrix.python-version }}-${{ hashFiles('integration_test/MODULE.bazel.lock') }}
+          restore-keys: |
+            bazel-integration-py${{ matrix.python-version }}-
+            bazel-integration-
 
       - name: Run integration test
         run: |
