@@ -31,7 +31,7 @@ jobs:
 
       - name: Update FORMAT_SPECIFICATION.md version
         run: |
-          sed -i "s/^**Version:** main$/**Version:** ${{ steps.get_version.outputs.version }}/" FORMAT_SPECIFICATION.md
+          sed -i "s/^\*\*Version:\*\* main$/\*\*Version:\*\* ${{ steps.get_version.outputs.version }}/" FORMAT_SPECIFICATION.md
 
       - name: Upload FORMAT_SPECIFICATION.md to release
         env:
