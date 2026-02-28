@@ -24,7 +24,7 @@ build --tool_java_runtime_version=remotejdk_17
 build:typecheck --aspects //tools/lint:linters.bzl%ty
 build:typecheck --output_groups=+rules_lint_report
 
-# CI configuration - enables caching for GitHub Actions
-# Usage: bazel build --config=ci //...
-build:ci --repository_cache=~/.cache/bazel-repo
-test:ci --repository_cache=~/.cache/bazel-repo
+# CI configuration - placeholder, actual repository_cache path set via --repository_cache flag
+# Usage: bazel build --config=ci --repository_cache=$HOME/.cache/bazel-repo //...
+build:ci --announce_rc
+test:ci --announce_rc

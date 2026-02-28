@@ -3,6 +3,6 @@
 # Use Bzlmod for dependency management
 common --enable_bzlmod
 
-# CI configuration - enables caching for GitHub Actions
-build:ci --repository_cache=~/.cache/bazel-repo
-test:ci --repository_cache=~/.cache/bazel-repo
+# CI configuration - placeholder, actual repository_cache path set via --repository_cache flag
+build:ci --announce_rc
+test:ci --announce_rc
