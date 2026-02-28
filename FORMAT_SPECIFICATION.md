@@ -565,7 +565,7 @@ The vehicle shall not exceed the maximum speed defined in
 
 ### Reference-Style Links
 
-Markdown reference-style links are supported and recommended for readability:
+Markdown reference-style links are supported:
 
 ```markdown
 The vehicle shall brake within [@braking_distance][1] when traveling at [REQ-VEL-001][2].
