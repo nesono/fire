@@ -3,6 +3,12 @@ name: Release
 on:
   release:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to use (e.g., v0.4.0)"
+        required: true
+        type: string
 
 jobs:
   upload-format-spec:
@@ -16,7 +22,12 @@ jobs:
 
       - name: Get release version
         id: get_version
-        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Update FORMAT_SPECIFICATION.md version
         run: |
