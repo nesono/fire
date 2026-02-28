@@ -47,10 +47,16 @@ Each requirement consists of:
 
 ### Metadata Fields
 
-The metadata line must follow this exact format:
+The metadata line format for system requirements:
 
 ```text
 SIL: <sil-value> | Sec: <sec-value> | Version: <version>
+```
+
+Optional parent field for hierarchical system requirements:
+
+```text
+SIL: <sil-value> | Sec: <sec-value> | Version: <version> | Parent: <parent-ref>
 ```
 
 Fields must be separated by `|` (space-pipe-space).
@@ -111,6 +117,28 @@ Version: 42
 Version: "1"    # Quoted
 Version: 1.0    # Decimal
 Version: 0      # Must be ≥ 1
+```
+
+#### `Parent` Field (Optional)
+
+**Type:** Markdown link to parent requirement
+**Required:** No (optional for system requirements, commonly used for software requirements)
+**Format:** `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
+
+The parent field can be used to create hierarchical relationships between requirements. It's optional for system requirements but commonly used in software requirements to trace back to system requirements.
+
+The parent link must:
+
+- Be a Markdown link: `[text](url)`
+- Use a repository-relative path (starting with `/`)
+- Include version query parameter: `?version=N`
+- Include anchor to requirement ID: `#REQ-ID`
+
+**Examples:**
+
+```text
+Parent: [REQ-SYS-001](/requirements/system.sysreq.md?version=1#REQ-SYS-001)
+Parent: TODO(LINK-123)
 ```
 
 ### Requirement ID Format
@@ -202,7 +230,7 @@ Software requirements are stored in Markdown files with the `.swreq.md` extensio
 
 ### File Structure
 
-Software requirement files follow the same structure as system requirements, with one key difference: they include a `Parent` field in the metadata.
+Software requirement files follow the same structure as system requirements. The `Parent` field is typically included to trace software requirements back to their system requirements.
 
 ### Metadata Fields
 
@@ -215,10 +243,10 @@ SIL: <sil-value> | Sec: <sec-value> | Version: <version> | Parent: <parent-ref>
 #### `Parent` Field
 
 **Type:** Markdown link to parent requirement
-**Required:** Yes (for software requirements)
+**Required:** No (but strongly recommended for traceability to system requirements)
 **Format:** `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
 
-The parent link must:
+Software requirements typically include a parent to trace back to system requirements. The parent link must:
 
 - Be a Markdown link: `[text](url)`
 - Use a repository-relative path (starting with `/`)
@@ -576,8 +604,8 @@ Parent: TODO(LINK-456)
 2. **Metadata Line:**
    - Must be the first line after the requirement ID heading
    - Fields separated by `|` (space-pipe-space)
-   - All fields required (SIL, Sec, Version)
-   - Parent field required for `.swreq.md` files
+   - Required fields: SIL, Sec, Version
+   - Optional field: Parent (recommended for software requirements to trace to system requirements)
 
 3. **SIL Values:**
    - Must be one of the predefined values or `TODO(TICKET-ID)`
