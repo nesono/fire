@@ -49,7 +49,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/bazel
+            ~/.cache/bazel-repo
             ~/.cache/bazelisk
           key: bazel-${{ matrix.os }}-${{ matrix.bazel-version }}-${{ hashFiles('MODULE.bazel.lock') }}
           restore-keys: |
@@ -59,12 +59,12 @@ jobs:
       - name: Run Bazel tests
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-        run: bazel test //... --test_output=errors
+        run: bazel test --config=ci //... --test_output=errors
 
       - name: Build all targets
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-        run: bazel build //...
+        run: bazel build --config=ci //...
 
   typecheck:
     name: Type Checking
@@ -77,14 +77,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/bazel
+            ~/.cache/bazel-repo
             ~/.cache/bazelisk
           key: bazel-typecheck-ubuntu-latest-${{ hashFiles('MODULE.bazel.lock') }}
           restore-keys: |
             bazel-typecheck-ubuntu-latest-
 
       - name: Run type checking with ty
-        run: bazel build --config=typecheck //...
+        run: bazel build --config=ci --config=typecheck //...
 
   failure-tests:
     name: Run Failure Tests
@@ -111,7 +111,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/bazel
+            ~/.cache/bazel-repo
             ~/.cache/bazelisk
           key: bazel-integration-py${{ matrix.python-version }}-${{ hashFiles('integration_test/MODULE.bazel.lock') }}
           restore-keys: |
