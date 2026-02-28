@@ -1,0 +1,8 @@
+# Integration test Bazel configuration
+
+# Use Bzlmod for dependency management
+common --enable_bzlmod
+
+# CI configuration - enables caching for GitHub Actions
+build:ci --repository_cache=~/.cache/bazel-repo
+test:ci --repository_cache=~/.cache/bazel-repo
