@@ -25,6 +25,7 @@ build:typecheck --aspects //tools/lint:linters.bzl%ty
 build:typecheck --output_groups=+rules_lint_report
 
 # CI configuration - enables caching for GitHub Actions
-# Usage: bazel build --config=ci //...
-build:ci --repository_cache=~/.cache/bazel-repo
-test:ci --repository_cache=~/.cache/bazel-repo
+# Usage: bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //...
+# Note: repository_cache path must be passed as a flag for proper $HOME expansion
+build:ci --announce_rc
+test:ci --announce_rc

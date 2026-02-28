@@ -59,12 +59,12 @@ jobs:
       - name: Run Bazel tests
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-        run: bazel test --config=ci //... --test_output=errors
+        run: bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors
 
       - name: Build all targets
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-        run: bazel build --config=ci //...
+        run: bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //...
 
   typecheck:
     name: Type Checking
@@ -84,7 +84,7 @@ jobs:
             bazel-typecheck-ubuntu-latest-
 
       - name: Run type checking with ty
-        run: bazel build --config=ci --config=typecheck //...
+        run: bazel build --config=ci --config=typecheck --repository_cache="$HOME/.cache/bazel-repo" //...
 
   failure-tests:
     name: Run Failure Tests

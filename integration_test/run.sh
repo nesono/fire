@@ -41,11 +41,11 @@ sed "s/{{PYTHON_VERSION}}/$PYTHON_VERSION/g" MODULE.bazel.template > MODULE.baze
 echo ""
 
 echo "Running all Bazel tests..."
-bazel test --config=ci //... --test_output=errors
+bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors
 echo ""
 
 echo "Building release report..."
-bazel build --config=ci //:integration_release_report
+bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //:integration_release_report
 echo ""
 
 echo "Verifying release report..."
@@ -61,7 +61,7 @@ fi
 echo ""
 
 echo "Running release readiness test..."
-bazel test --config=ci //:integration_release_readiness --test_output=all
+bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //:integration_release_readiness --test_output=all
 echo ""
 
 echo "Integration tests completed successfully!"
