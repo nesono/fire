@@ -678,7 +678,7 @@ SIL: ASIL-D | Sec: true | Version: 1 | Parent: TODO(LINK-456)
 
 ### Evolving Requirements
 
-When a requirement changes, increment its version and update references:
+When a requirement changes semantically in a way that requires downstream consumers to review their work, increment the version to signal the change:
 
 **Before:**
 
