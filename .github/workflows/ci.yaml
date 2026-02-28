@@ -97,7 +97,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/bazel-repo
+            ~/.cache/bazel-repo-failure
             ~/.cache/bazelisk
           key: bazel-failure-tests-ubuntu-latest-${{ hashFiles('MODULE.bazel.lock') }}
           restore-keys: |
