@@ -1,7 +1,7 @@
 # Publishing a New Release
 
-1. Change the version field in MODULE.bazel, README.md, and integration_test/MODULE.bazel.template
-2. Create a new GitHub release
+1. Change the version field in MODULE.bazel, README.md, integration_test/MODULE.bazel.template, and FORMAT_SPECIFICATION.md
+2. Create a new GitHub release and upload FORMAT_SPECIFICATION.md as a downloadable asset
 3. Download the source file
 4. Upload again with `gh release upload v0.2.1 ~/Downloads/fire-0.2.1.tar.gz`
 5. Go into `bazel-central-registry.git`
