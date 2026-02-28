@@ -713,7 +713,7 @@ References must update to point to the new version:
 
 ### Evolving Parameters
 
-When a parameter value changes, create a new version:
+When a parameter changes in a way that requires downstream consumers to review their work, create a new version to signal the change:
 
 ```yaml
 max_speed_v1:
