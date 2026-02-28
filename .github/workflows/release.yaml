@@ -33,10 +33,20 @@ jobs:
         run: |
           sed -i "s/^\*\*Version:\*\* main$/\*\*Version:\*\* ${{ steps.get_version.outputs.version }}/" FORMAT_SPECIFICATION.md
 
-      - name: Upload FORMAT_SPECIFICATION.md to release
+      - name: Create deterministic source tarball
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          # Strip 'v' prefix if present for the archive name
+          VERSION_NUM=${VERSION#v}
+          git archive --format=tar.gz --prefix=fire-${VERSION_NUM}/ HEAD > fire-${VERSION_NUM}.tar.gz
+
+      - name: Upload release artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          VERSION_NUM=${VERSION#v}
           gh release upload ${{ steps.get_version.outputs.version }} \
             FORMAT_SPECIFICATION.md \
+            fire-${VERSION_NUM}.tar.gz \
             --clobber
