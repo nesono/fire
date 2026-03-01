@@ -95,6 +95,36 @@ repository.
 Please keep the information to the points mentioned, no other information like
 Test Results, "Benefits", etc.
 
+### README principles
+
+The [[README.md]] is the main entry for our documentation. So keep it concise in
+wording and try to be as helpful and precise as possible, to guide proper
+usage.
+
+Provide concise code examples that help the reader understand what a proper
+integration/usage looks like.
+
+The format of the README should be as follows:
+
+- **Overview**: A section in the beginning explaining in three sentences, what
+  FIRE is about
+- **Integration**: A very compact explanation with a snippet from a
+  MODULE.bazel
+- **System Requirements**: Explain what the system requirements are made of,
+  which types of system requirements are there and what rules they have to
+  follow, with small snippets
+- **Software (Component) Requirements**: Explain what the difference between
+  system and software requirements are, and what rules are different from
+  system requirements
+- **Parameters YAML**: Explain what parameter YAML files are used for, what
+  their structure is, and what rules apply to parameter YAML files
+- **Code Generation**: How source code is generated from parameter YAML files,
+  how to introspect the generated code, and how to consume it in libraries -
+  give a common introduction and then specific sections per supported language
+- **Release Readiness Report**: Explain how to use the release readiness report
+  during authoring and how to integrate it into CI for checking the release
+  readiness in a release gate
+
 ## PR Format
 
 Please use the following format as a blueprint for PR descriptions:
