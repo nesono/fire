@@ -2,7 +2,7 @@
 """Pydantic models for requirement metadata validation."""
 
 import re
-from typing import Literal, Optional, Union, Final
+from typing import Literal, Optional, Union, Final, List
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -55,7 +55,7 @@ class RequirementMetadata(BaseModel):
 
     version: int = Field(ge=1, strict=True)
 
-    parent: Optional[str] = None
+    parent: Optional[List[str]] = None
 
     model_config = {"extra": "forbid"}
 
@@ -87,31 +87,36 @@ class RequirementMetadata(BaseModel):
 
     @field_validator("parent")
     @classmethod
-    def validate_parent_format(cls, v: Optional[str]) -> Optional[str]:
-        """Validate parent is a markdown link, TODO(KEY-1234), or None."""
+    def validate_parent_format(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """Validate parent is a list of markdown links, TODO(KEY-1234), or None."""
         if v is None:
             return v
 
-        if TODO_PATTERN.fullmatch(v):
-            return v
+        if not isinstance(v, list):
+            raise ValueError("parent must be a list")
 
-        # Check markdown link format: [TEXT](URL)
-        match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, v)
-        if not match:
-            raise ValueError(
-                "parent must be a markdown link: [REQ-ID](/path.md?version=N#REQ-ID)"
-            )
+        # Validate each parent entry individually
+        for parent_value in v:
+            if not isinstance(parent_value, str):
+                raise ValueError("each parent entry must be a string")
 
-        path = match.group(2)
+            # Allow TODO placeholders
+            if TODO_PATTERN.fullmatch(parent_value):
+                continue
 
-        # Extract base path (before # and ?)
-        base_path = path.split("#")[0] if "#" in path else path
-        base_path = base_path.split("?")[0] if "?" in base_path else base_path
+            # Validate markdown link format
+            match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, parent_value)
+            if not match:
+                raise ValueError(
+                    "parent must be a markdown link: [REQ-ID](/path.md?version=N#REQ-ID)"
+                )
 
-        # Verify repository-relative
-        if not base_path.startswith("/"):
-            raise ValueError(
-                f"parent path must be repository-relative (start with /): '{path}'"
-            )
+            # Extract and validate path is repository-relative
+            path = match.group(2)
+            base_path = path.split("#")[0].split("?")[0]
+            if not base_path.startswith("/"):
+                raise ValueError(
+                    f"parent path must be repository-relative (start with /): '{path}'"
+                )
 
         return v
