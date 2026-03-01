@@ -56,80 +56,56 @@ def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None
     return None
 
 
+def _is_metadata_line(line: str, known_fields: list[str]) -> bool:
+    """Check if a line looks like metadata."""
+    if "|" in line:
+        return True
+    if ":" in line and not line.startswith("#"):
+        parts = line.split(":", 1)
+        key = parts[0].strip().lower()
+        return len(parts) == 2 and key in known_fields
+    return False
+
+
+def _should_stop_collection(line: str, collected_lines: list[str]) -> bool:
+    """Check if we should stop collecting metadata lines."""
+    if not line:
+        return bool(collected_lines)
+    if collected_lines and not collected_lines[-1].endswith("|"):
+        return True
+    return False
+
+
+def _join_metadata_lines(lines: list[str]) -> str:
+    """Join metadata lines and strip final trailing pipe."""
+    joined = " ".join(lines).rstrip()
+    if joined.endswith("|"):
+        joined = joined[:-1].rstrip()
+    return joined
+
+
 def _extract_next_metadata_line(lines: list[str], start_index: int) -> str | None:
-    """Extract metadata lines after start_index, supporting multi-line continuation.
-
-    Metadata lines either:
-    - Contain pipe separators (multi-field format)
-    - Start with a known field name followed by colon (single-field format)
-
-    Multi-line support:
-    - Lines ending with `|` indicate continuation to the next line
-    - Continues collecting lines while previous line ends with `|` and current line
-      contains `|` or starts with a known field
-    - Joins all collected lines with space separator and strips final trailing `|`
-
-    Returns the metadata line string (possibly multi-line joined), or None if no valid
-    metadata line found.
-    """
+    """Extract metadata lines after start_index, supporting multi-line continuation."""
     known_fields = ["sil", "sec", "version", "parent"]
     collected_lines = []
 
-    j = start_index + 1
-    while j < len(lines):
+    for j in range(start_index + 1, len(lines)):
         next_line = lines[j].strip()
 
-        # Skip empty lines before metadata starts
         if not next_line and not collected_lines:
-            j += 1
             continue
 
-        # Empty line after we've started collecting - stop
-        if not next_line and collected_lines:
+        if _should_stop_collection(next_line, collected_lines):
             break
 
-        # Check if this line looks like metadata
-        is_metadata = False
-        if "|" in next_line:
-            is_metadata = True
-        elif ":" in next_line and not next_line.startswith("#"):
-            parts = next_line.split(":", 1)
-            key = parts[0].strip().lower()
-            if len(parts) == 2 and key in known_fields:
-                is_metadata = True
-
-        if not is_metadata:
-            # If we haven't collected anything yet, this isn't metadata
-            if not collected_lines:
-                break
-            # If we have collected lines, check if previous line ended with `|`
-            # If not, we're done collecting
-            if not collected_lines[-1].endswith("|"):
-                break
-            # Previous line ended with `|` but this isn't metadata - stop
+        if not _is_metadata_line(next_line, known_fields):
             break
 
-        # This is a metadata line - collect it
         collected_lines.append(next_line)
-
-        # If this line doesn't end with `|`, stop collecting
         if not next_line.endswith("|"):
             break
 
-        j += 1
-
-    if not collected_lines:
-        return None
-
-    # Join all collected lines with space separator
-    joined = " ".join(collected_lines)
-
-    # Strip final trailing `|` if present
-    joined = joined.rstrip()
-    if joined.endswith("|"):
-        joined = joined[:-1].rstrip()
-
-    return joined
+    return _join_metadata_lines(collected_lines) if collected_lines else None
 
 
 def _parse_field_value(value: str) -> int | bool | str:
