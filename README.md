@@ -1,318 +1,245 @@
-# Fire - Fully Integrated Requirements Engineering
-
-A Requirements Management System for Bazel
+# FIRE — Fully Integrated Requirements Engineering
 
 [![CI](https://github.com/nesono/fire/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/nesono/fire/actions/workflows/ci.yaml)
 
-Fire is a Bazel module for managing safety-critical system requirements,
-parameters, and their relationships with support by Bazel's dependency graph.
+FIRE is a Bazel module for managing safety-critical requirements and parameters
+with versioned traceability between them. Requirements are written in Markdown
+and parameters in YAML, with cross-references validated at build time. Parameters
+can be consumed from generated source code libraries in C++, Python, Go, Rust,
+and Java.
 
-It is based on the following basic concepts:
+## Integration
 
-- **Parameters** (e.g. max speed) are defined in YAML files
-- **System** or **Software Component Requirements** are specified in Markdown files
-- **References** from Markdown files are all using Markdown link syntax
-- References support **versioning**, to flag affected downstream consumers
-- Parameters can be **consumed from source code** through code generated libraries
-- Support for **reporting**, e.g. for collaterals for notified bodies
-
-**📖 For detailed file format specifications, see [FORMAT_SPECIFICATION.md](FORMAT_SPECIFICATION.md)**
-
-## Usage
-
-### Consume Fire
-
-Add Fire to your `MODULE.bazel`:
+Add to `MODULE.bazel`:
 
 ```starlark
 bazel_dep(name = "fire", version = "0.3.1")
 
-# Add language rules for the languages you want to use (optional)
-bazel_dep(name = "rules_cc", version = "0.2.16")      # For C++ code generation
-bazel_dep(name = "rules_python", version = "1.7.0")   # For Python code generation
-# Add rules_rust, rules_go, rules_java as needed
+# Add language rules for the languages you intend to use
+bazel_dep(name = "rules_cc", version = "0.2.16")
+bazel_dep(name = "rules_python", version = "1.8.3")
 ```
 
-**Important**: Fire provides code generation functions that output source files
-(no Bazel targets). The reason is mostly to not clutter the consumers
-dependency tree with languages they might not need. The consumer is responsible
-for wrapping these source files into language's library targets or binaries.
-This keeps Fire's dependencies minimal - Fire itself only depends on
-`rules_python` (for YAML validation).
+## System Requirements
 
-### Define Parameter Libraries
+System requirements are stored in `.sysreq.md` files. Each requirement is an
+H2 heading followed by a metadata line and free-form Markdown text.
 
-Add parameters to a YAML file, e.g. like the following:
+**Metadata fields:**
 
-In file `vehicle_params.yaml`
+- `SIL`: Safety Integrity Level — `ASIL-A/B/C/D` (ISO 26262), `SIL-1/2/3/4`
+  (IEC 61508), `DAL-A/B/C/D/E` (DO-178C), `QM`, or `TODO(KEY-1234)`
+- `Sec`: Security flag — `true`, `false`, or `TODO(KEY-1234)`
+- `Version`: Positive integer, incremented when the requirement changes
+  semantically
+
+```markdown
+## REQ-BRK-001
+
+SIL: ASIL-D | Sec: true | Version: 4
+
+**Emergency Braking Distance**
+
+The vehicle SHALL come to a full stop within the distance defined by
+[@braking_distance_table](/vehicle/params.yaml?version=1#braking_distance_table).
+```
+
+References use standard Markdown links with repository-relative paths and a
+mandatory `?version=N` query parameter:
+
+- Parameters: `[@param_name](/path/to/params.yaml?version=N#param_name)`
+- Requirements: `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
+
+Register requirements in Bazel:
+
+```starlark
+load("@fire//fire/starlark:requirements.bzl", "requirement_library")
+
+requirement_library(
+    name = "vehicle_requirements",
+    srcs = glob(["requirements/*.sysreq.md"]),
+    deps = [":vehicle_params"],
+)
+```
+
+## Software (Component) Requirements
+
+Software requirements are stored in `.swreq.md` files. They follow the same
+format as system requirements with one addition: a `Parent` field that links
+back to the parent system requirement and tracks its version.
+
+Single parent on the same line:
+
+```markdown
+## REQ_BC_CALCULATE_FORCE
+
+SIL: ASIL-D | Sec: false | Version: 2 | Parent: [REQ-BRK-001](/requirements/braking.sysreq.md?version=4#REQ-BRK-001)
+```
+
+Multiple parents use multi-line continuation with a trailing `|`:
+
+```markdown
+## REQ_BC_EMERGENCY_FUSION
+
+SIL: ASIL-D | Sec: false | Version: 1 |
+Parent: [REQ-BRK-001](/requirements/braking.sysreq.md?version=4#REQ-BRK-001) |
+Parent: [REQ-SENS-003](/requirements/sensing.sysreq.md?version=2#REQ-SENS-003)
+```
+
+## Parameters YAML
+
+Parameter files define typed, versioned constants and lookup tables for use in
+requirements and source code.
+
+**Naming:** `<name>_v<N>` — lowercase snake_case with a mandatory version suffix.
+
+**Scalar parameters** infer their type from the YAML value (`f64` from float,
+`i64` from integer, `bool` from boolean, `string` from string):
 
 ```yaml
-maximum_vehicle_velocity_v1:
-  value: 55.0 # Type inferred as f64 from YAML float
+max_speed_v1:
+  value: 30.0
   unit: m/s
-  description: Maximum design velocity for the vehicle
+  description: Maximum allowed speed
 
 wheel_count_v1:
-  value: 4 # Type inferred as i64 from YAML integer
-  description: Number of wheels on the vehicle
+  value: 4
+  unit: count
+  description: Number of wheels
+```
 
+**Table parameters** require `type: table`. Column types are inferred from the
+first row — do not specify them explicitly:
+
+```yaml
 braking_distance_table_v1:
-  type: table # Tables require explicit type declaration
-  description: Braking distances under various conditions
+  type: table
+  description: Braking distances by velocity and friction coefficient
   columns:
     - name: velocity
-      type: f64 # Column types are explicit
       unit: m/s
-    - name: friction_coefficient
-      type: f64
-      unit: dimensionless
     - name: braking_distance
-      type: f64
       unit: m
   rows:
-    - [10.0, 0.7, 7.1]
-    - [20.0, 0.7, 28.6]
-    - [30.0, 0.7, 64.3]
+    - [10.0, 7.1]
+    - [20.0, 28.6]
 ```
 
-**Type Inference**: Types are automatically inferred from YAML native types:
+**Versioning:** Add a `_v<N+1>` key alongside the existing one to update a
+parameter. References to the old version are flagged as stale. At most two
+consecutive versions may coexist per parameter.
 
-- YAML integer (e.g., `42`) → `i64` (64-bit signed integer)
-- YAML float (e.g., `42.0`) → `f64` (64-bit double)
-- YAML boolean (e.g., `true`, `false`) → `bool`
-- YAML string (e.g., `"text"`) → `string`
-- Tables require explicit `type: table` and typed columns
-
-**Unit Suffixes**: Parameters and table columns with units automatically generate names with normalized unit suffixes:
-
-- `unit: m/s` → suffix `_MPS` (meters per second)
-- `unit: m/s^2` → suffix `_MPS2` (meters per second squared)
-- `unit: Hz` → suffix `_HZ`
-- `unit: m` → suffix `_M` (meters)
-- `unit: dimensionless` or no unit → no suffix added
-
-Unit normalization: "/" becomes "p" (for "per"), "^" is removed but exponents kept, special characters stripped.
-
-This applies to both parameter constant names and table column field names, ensuring units are always visible in the code.
-
-**Versioning**: Parameter keys use a `_vN` suffix to encode the version (e.g., `maximum_vehicle_velocity_v1`).
-When a parameter is updated, add a new key with the next version while keeping the old one
-(e.g., `maximum_vehicle_velocity_v1` + `maximum_vehicle_velocity_v2`). Versions must be
-consecutive starting from 1.
-
-### Generated Directory Structure
-
-Code generation produces a directory (TreeArtifact) of per-parameter-version files:
-
-```text
-vehicle_params/              # TreeArtifact produced by codegen rule
-  wheel_count_v1.py          # One file per parameter per version
-  maximum_vehicle_velocity_v1.py
-  maximum_vehicle_velocity_v2.py
-  braking_distance_table_v1.py
-```
-
-**Go uses sub-packages** (since Go packages = directories):
-
-```text
-vehicle_params/
-  wheel_count_v1/
-    wheel_count_v1.go        # package wheel_count_v1
-  maximum_vehicle_velocity_v1/
-    maximum_vehicle_velocity_v1.go
-```
-
-**Java uses PascalCase class names:**
-
-```text
-vehicle_params/
-  WheelCountV1.java
-  MaximumVehicleVelocityMpsV1.java  # Unit suffix in PascalCase
-```
-
-Each file exposes a simple constant (no accessor functions, no version dispatch).
-Version is encoded in the import/include path. Old versions that coexist with
-newer versions contain deprecation warnings. Non-existent versions produce natural
-build errors (file not found).
-
-### Create Bazel Targets For the Parameters
-
-In your `BUILD.bazel` file (e.g., in `vehicle/dynamics/`):
+Register in Bazel:
 
 ```starlark
 load("@fire//fire/starlark:parameters.bzl", "parameter_library")
-load("@fire//fire/starlark:codegen.bzl", "generate_cc_parameters")
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
-# Step 1: Validate parameters from YAML file
 parameter_library(
     name = "vehicle_params",
     src = "vehicle_params.yaml",
 )
-
-# Step 2: Generate C++ header directory
-generate_cc_parameters(
-    name = "vehicle_params_h",
-    parameter_library = ":vehicle_params",
-    namespace = "vehicle::dynamics",  # Optional namespace
-)
-
-# Step 3: Wrap in cc_library (you control this)
-cc_library(
-    name = "vehicle_params_cc",
-    hdrs = [":vehicle_params_h"],
-)
-
-# Step 4: Use generated parameters in C++ code
-cc_test(
-    name = "dynamics_test",
-    srcs = ["dynamics_test.cc"],
-    deps = [":vehicle_params_cc"],
-)
 ```
 
-### Consumption in Code
+## Code Generation
 
-All imports/includes are **repository-relative** (e.g., `vehicle/dynamics/vehicle_params/...`).
+FIRE generates one source file per parameter version into a directory artifact.
+Wrap this artifact in a language library target to use it in your code. Unit
+suffixes are embedded in generated names (e.g., `m/s` → `_MPS` in
+C++/Python/Rust, `Mps` in Go/Java).
 
-**C++ usage**
-
-```cpp
-#include "vehicle/dynamics/vehicle_params/maximum_vehicle_velocity_v1.h"
-#include "vehicle/dynamics/vehicle_params/wheel_count_v1.h"
-#include "vehicle/dynamics/vehicle_params/braking_distance_table_v1.h"
-
-int main() {
-    double max_vel = MAXIMUM_VEHICLE_VELOCITY_MPS;  // Unit suffix appended
-    int wheels = WHEEL_COUNT;  // No unit, no suffix
-
-    // Access table data (column fields include unit suffixes)
-    auto table = braking_distance_table();
-    for (size_t i = 0; i < BRAKING_DISTANCE_TABLE_SIZE; ++i) {
-        double velocity = table[i].velocity_mps;  // Unit suffix on column
-        double friction = table[i].friction_coefficient;  // Dimensionless, no suffix
-        double distance = table[i].braking_distance_m;  // Unit suffix on column
-    }
-
-    return 0;
-}
-```
-
-**Python usage**
-
-```python
-from vehicle.dynamics.vehicle_params.maximum_vehicle_velocity_v1 import MAXIMUM_VEHICLE_VELOCITY_MPS
-from vehicle.dynamics.vehicle_params.wheel_count_v1 import WHEEL_COUNT
-from vehicle.dynamics.vehicle_params.braking_distance_table_v1 import BRAKING_DISTANCE_TABLE
-
-def test_parameters():
-    assert MAXIMUM_VEHICLE_VELOCITY_MPS == 55.0  # Unit suffix appended
-    assert WHEEL_COUNT == 4  # No unit, no suffix
-
-    for row in BRAKING_DISTANCE_TABLE:
-        print(f"v={row.velocity_mps}, d={row.braking_distance_m}")  # Unit suffixes on fields
-```
-
-**Go usage**
-
-```go
-import (
-    velocity "yourproject/vehicle/dynamics/vehicle_params/maximum_vehicle_velocity_v1"
-    wheels "yourproject/vehicle/dynamics/vehicle_params/wheel_count_v1"
-    braking "yourproject/vehicle/dynamics/vehicle_params/braking_distance_table_v1"
-)
-
-func TestParameters(t *testing.T) {
-    if velocity.MaximumVehicleVelocityMpsV1 != 55.0 {  // Unit suffix in PascalCase
-        t.Error("Unexpected velocity")
-    }
-
-    for _, row := range braking.BrakingDistanceTableV1 {
-        // Access row.VelocityMps, row.FrictionCoefficient, row.BrakingDistanceM (unit suffixes in PascalCase)
-    }
-}
-```
-
-**Rust usage**
-
-```rust
-use vehicle_params_rs::*;
-
-#[test]
-fn test_parameters() {
-    assert_eq!(MAXIMUM_VEHICLE_VELOCITY_MPS_V1, 55.0);  // Unit suffix before version
-    assert_eq!(BRAKING_DISTANCE_TABLE_V1_SIZE, 6);
-
-    for row in &BRAKING_DISTANCE_TABLE_V1 {
-        println!("v={}, d={}", row.velocity_mps, row.braking_distance_m);  // Unit suffixes on fields
-    }
-}
-```
-
-**Java usage**
-
-```java
-import static com.example.VehicleParams.*;
-
-public class DynamicsTest {
-    @Test
-    public void testParameters() {
-        // Simple parameters accessed directly
-        assertEquals(55.0, MaximumVehicleVelocityMpsV1, 0.001);  // Unit suffix in PascalCase
-        assertEquals(4, WheelCountV1);  // No unit, no suffix
-
-        // Tables accessed through nested classes
-        for (var row : BrakingDistanceTableV1.TABLE) {
-            // Access row.velocityMps(), row.frictionCoefficient(), row.brakingDistanceM() (unit suffixes in camelCase)
-        }
-    }
-}
-```
-
-### Multi-Language Support
-
-Generate parameters for Python, Java, Go, and Rust (in `vehicle/dynamics/`):
+### C++
 
 ```starlark
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
-load("@rules_go//go:def.bzl", "go_library", "go_test")
-load("@rules_java//java:defs.bzl", "java_library", "java_test")
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
-load("//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_go_parameters", "generate_java_parameters", "generate_python_parameters", "generate_rust_parameters")
-load("//fire/starlark:parameters.bzl", "parameter_library")
+load("@fire//fire/starlark:codegen.bzl", "generate_cc_parameters")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 
-# Validate and create parameter library from YAML file
-parameter_library(
-    name = "vehicle_params",
-    src = "vehicle_params.yaml",
-)
-
-# Generate C++ headers (directory of per-param-version .h files)
 generate_cc_parameters(
     name = "vehicle_params_h",
-    base_name = "vehicle_params",
     parameter_library = ":vehicle_params",
+    namespace = "vehicle::dynamics",  # optional
 )
 
 cc_library(
     name = "vehicle_params_cc",
     hdrs = [":vehicle_params_h"],
 )
+```
 
-# Generate Python modules (directory of per-param-version .py files)
+```cpp
+#include "vehicle/dynamics/vehicle_params/max_speed_v1.h"
+
+double limit = MAX_SPEED_MPS_V1;
+```
+
+### Python
+
+```starlark
+load("@fire//fire/starlark:codegen.bzl", "generate_python_parameters")
+load("@rules_python//python:defs.bzl", "py_library")
+
 generate_python_parameters(
     name = "vehicle_params_py_src",
-    base_name = "vehicle_params",
     parameter_library = ":vehicle_params",
 )
 
 py_library(
     name = "vehicle_params_py",
-    data = [":vehicle_params_py_src"], # note that we need to use `data` here
+    data = [":vehicle_params_py_src"],
+)
+```
+
+```python
+from vehicle.dynamics.vehicle_params.max_speed_v1 import MAX_SPEED_MPS_V1
+```
+
+### Go
+
+Go generates one sub-package per parameter version (Go packages map to
+directories):
+
+```starlark
+load("@fire//fire/starlark:codegen.bzl", "generate_go_parameters")
+load("@rules_go//go:def.bzl", "go_library")
+
+generate_go_parameters(
+    name = "vehicle_params_go_src",
+    parameter_library = ":vehicle_params",
 )
 
-# Generate Java classes (directory of per-param-version .java files)
+go_library(
+    name = "max_speed_v1_go",
+    srcs = [":vehicle_params_go_src"],
+    importpath = "vehicle/dynamics/vehicle_params/max_speed_v1",
+)
+```
+
+```go
+import speed "vehicle/dynamics/vehicle_params/max_speed_v1"
+
+limit := speed.MaxSpeedMpsV1
+```
+
+### Rust
+
+```starlark
+load("@fire//fire/starlark:codegen.bzl", "generate_rust_parameters")
+
+generate_rust_parameters(
+    name = "vehicle_params_rs",
+    parameter_library = ":vehicle_params",
+)
+```
+
+```rust
+use vehicle_params_rs::MAX_SPEED_MPS_V1;
+```
+
+### Java
+
+```starlark
+load("@fire//fire/starlark:codegen.bzl", "generate_java_parameters")
+load("@rules_java//java:defs.bzl", "java_library")
+
 generate_java_parameters(
     name = "vehicle_params_java_src",
     package_prefix = "com.example",
@@ -323,196 +250,22 @@ java_library(
     name = "vehicle_params_java",
     srcs = [":vehicle_params_java_src"],
 )
-
-# Generate Go source (directory of sub-packages)
-generate_go_parameters(
-    name = "vehicle_params_go_src",
-    base_name = "vehicle_params",
-    parameter_library = ":vehicle_params",
-)
-
-# Go needs per-sub-package go_library targets
-go_library(
-    name = "wheel_count_v1_go",
-    srcs = [":vehicle_params_go_src"],
-    importpath = "vehicle/dynamics/vehicle_params/wheel_count_v1",
-)
-
-# Generate Rust modules (directory of per-param-version .rs files)
-generate_rust_parameters(
-    name = "vehicle_params_rs",
-    base_name = "vehicle_params",
-    parameter_library = ":vehicle_params",
-)
 ```
 
-### Defining System Requirements
+```java
+import static com.example.VehicleParams.*;
 
-System requirements are written in Markdown with a specific structure (that is
-validated by Fire). Requirements are collected in Bazel targets as follows:
+double limit = MaxSpeedMpsV1;
+```
+
+## Release Readiness Report
+
+The release readiness report checks version consistency across requirements and
+parameters, open TODOs, and implementation/verification trace coverage.
 
 ```starlark
-load("//fire/starlark:requirements.bzl", "requirement_library")
+load("@fire//fire/starlark:reports.bzl", "release_report", "release_readiness_test")
 
-requirement_library(
-  name = "vehicle_requirements",
-  srcs = glob(["*.md"]),
-  deps = [":vehicle_params"],
-)
-```
-
-## Requirements Format
-
-Requirements use section-based Markdown. The H1 header (`#`) can be chosen
-freely - we recommend to use a human readable title.
-Each requirement in the requirements file is identified by an H2 header (`##`)
-followed by blank line and then a line containing some structured data.
-
-### System Requirements (`.sysreq.md`)
-
-Note that the important part here is the header 2 (`##`), that includes the ID
-of the requirement and must be followed by a line containing SIL, Sec, and
-Version separated by `|` characters. The header 3 (`###`) sections are free
-text for now, even though we highly recommend you to use a fixed format for it.
-Note that a requirement file can contain multiple of such requirements.
-
-**Format:**
-
-- H2 headers (`##`) for requirement IDs
-- Text line with 3 fields: `SIL`, `Sec`, `Version`
-- Bold text (`**Title**`) for human readable requirement title (recommended)
-- Markdown links for all references (parameters, standards), including reference-style syntax
-
-**Text Fields:**
-
-- `SIL`: Safety/Assurance Classification - supports multiple industry standards:
-  - `ASIL-A/B/C/D`: ISO 26262 (Automotive Safety Integrity Level)
-  - `SIL-1/2/3/4`: IEC 61508 (General Industrial Safety Integrity Level)
-  - `DAL-A/B/C/D/E`: DO-178C/DO-254 (Aviation Design Assurance Level)
-  - `QM`: Quality Management (no safety classification)
-- `Sec`: Security-related flag - `true` or `false`
-- `Version`: Positive integer version number (1, 2, 3, ...)
-
-**Example**:
-
-```markdown
-# Velocity Requirements
-
-## REQ-VEL-001
-
-SIL: ASIL-D | Sec: false | Version: 2
-
-**Maximum Vehicle Velocity**
-
-The vehicle SHALL NOT exceed the maximum design velocity defined by [@maximum_vehicle_velocity](/examples/vehicle_params.yaml?version=1#maximum_vehicle_velocity) (55.0 m/s) under any operating conditions.
-
-### Rationale
-
-This requirement is derived from [ISO 26262:2018, Part 3, Section 7](https://www.iso.org/standard/68383.html) safety analysis for ASIL-D classification. The maximum velocity is constrained by:
-
-- Mechanical stress limits on drivetrain components
-- Tire rating specifications
-- Braking system performance envelope
-- Control system response time requirements
-
-### Verification
-
-- Static analysis of control algorithms
-- Hardware-in-the-loop testing with velocity limiting scenarios
-- Vehicle dynamics simulation at boundary conditions
-- Track testing with instrumentation
-
-### Changelog
-
-- **Version 2**: Added parent requirement version tracking support
-- **Version 1**: Initial maximum velocity requirement definition
-```
-
-### Software Component Requirements (`.swreq.md`)
-
-Software component requirements are derived from system requirements and follow a similar minimal format.
-
-**Format:**
-
-- H2 headers (`##`) for requirement IDs (e.g., `REQ_BC_CALCULATE_FORCE`)
-- Text line with 4 fields: `SIL`, `Sec`, `Version`, `Parent`
-- Bold text (`**Title**`) for human readable requirement title (recommended)
-- Markdown links for all references (parameters, tests, standards)
-
-**Example:**
-
-```markdown
-# Software Requirements: Brake Controller
-
-## REQ_BC_CALCULATE_FORCE
-
-SIL: ASIL-D | Sec: false | Version: 2 | Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=1#REQ-BRK-001)
-
-The brake controller component shall calculate the required brake force...
-```
-
-**Aviation Example (DAL):**
-
-```markdown
-# Flight Control Requirements
-
-## REQ-FCS-001
-
-SIL: DAL-A | Sec: false | Version: 1
-
-**Flight Control Update Rate**
-
-The flight control system SHALL maintain the update rate defined by [@fcs_update_rate](/avionics/params.yaml?version=1#fcs_update_rate) to ensure deterministic real-time performance per DO-178C Level A requirements.
-
-### Verification
-
-- Timing analysis with worst-case execution time (WCET) analysis
-- Real-time operating system (RTOS) scheduler verification
-- Hardware-in-the-loop testing with flight scenarios
-```
-
-Note that all requirement files can contain multiple requirements separated by
-
-```markdown
----
-```
-
-### Markdown References
-
-All cross-references use standard Markdown links with repository-relative paths:
-
-- **Parameter Reference**: `[@param_name](/path/to/file.yaml?version=1#param_name)`
-  - Uses `@` prefix to distinguish from regular links
-  - Link name needs to correspond to the target name
-  - Example: `[@maximum_vehicle_velocity](/examples/vehicle_params.yaml?version=1#maximum_vehicle_velocity)`
-
-- **Requirement Reference**: `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
-  - Includes `?version=N` query parameter to track parent version
-  - Needs to start with a `/`
-  - Needs to be repository-relative
-  - Link name needs to correspond to the target name
-  - Example: `[REQ-VEL-001](/examples/requirements/velocity_requirements.sysreq.md?version=2#REQ-VEL-001)`
-
-- **Standard Reference**: `[text](https://url)`
-  - Standard Markdown links for external standards and specifications
-  - Example: `[ISO 26262:2018, Part 3](https://www.iso.org/standard/68383.html)`
-
-### Version Tracking
-
-System requirements track their own versions in text line. Software requirements track parent versions in Markdown links.
-
-**Detecting Stale Requirements:**
-
-When a parent requirement version changes (e.g., REQ-VEL-001 v2 -> v3), any child requirement still referencing `?version=2` is flagged as potentially needing review.
-
-### Release Readiness Reporting
-
-Fire provides release readiness reporting to validate that your product is ready for release:
-
-```python
-load("//fire/starlark:reports.bzl", "release_report", "release_readiness_test")
-
-# Generate release readiness report
 release_report(
     name = "release_report",
     requirements = [":component_requirements"],
@@ -522,44 +275,18 @@ release_report(
     out = "RELEASE_REPORT.md",
 )
 
-# Validate release readiness (fails if not ready)
 release_readiness_test(
     name = "release_readiness",
     report = ":release_report",
 )
 ```
 
-Build and validate:
+Build and inspect the report during authoring:
 
 ```bash
-# Build release report
 bazel build //path/to:release_report
-
-# View generated report
 cat bazel-bin/path/to/RELEASE_REPORT.md
-
-# Validate release readiness (fails if not ready)
-bazel test //path/to:release_readiness
 ```
 
-**What the release report checks:**
-
-- **Version Consistency**: Detects stale references between requirements, parameters, and implementation/verification traces
-- **TODO Inventory**: Finds all TODO markers in requirements and parameters
-- **Implementation Coverage**: Identifies requirements missing implementation traces
-- **Verification Coverage**: Identifies requirements missing verification/test traces
-- **Traceability Graph**: Visualizes requirement dependencies using Mermaid diagrams
-
-**Report status:**
-
-- `READY FOR RELEASE`: All checks passed, no issues found
-- `NOT READY FOR RELEASE`: Issues found that must be addressed before release
-
-The `release_readiness_test` validates the report and fails the build if issues are found, making it suitable for CI/CD pipelines to gate releases.
-
-## Contributing
-
-1. PRs are welcome, even though we are at a very early stage
-2. Write tests for your features, both good path and bad path
-3. Use `pre-commit.com` and adhere to the checks
-4. Provide integration tests where appropriate
+Use `release_readiness_test` as a CI gate — it fails the build when the report
+status is `NOT READY FOR RELEASE`.
