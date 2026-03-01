@@ -1,6 +1,6 @@
 # Publishing a New Release
 
-1. Change the version field in MODULE.bazel, README.md, integration_test/MODULE.bazel.template, and FORMAT_SPECIFICATION.md
+1. Change the version field in MODULE.bazel, README.md, and integration_test/MODULE.bazel.template
 2. Create a new GitHub release and upload FORMAT_SPECIFICATION.md as a downloadable asset
 3. Go into `bazel-central-registry.git`
 4. Run `bazel run //tools:add_module` and answer all questions
