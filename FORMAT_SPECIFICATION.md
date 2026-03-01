@@ -2,7 +2,7 @@
 
 This document specifies the format for all input files used in the FIRE requirements management system.
 
-**Version:** 0.4.0
+**Version:** main
 **Last Updated:** 2026-03-01
 
 ## Table of Contents
