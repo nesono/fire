@@ -26,6 +26,8 @@ from fire.starlark.pydantic_tools import format_validation_errors  # type: ignor
 from fire.starlark.requirement_models import RequirementMetadata
 
 _BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
+_METADATA_CONTINUATION_MARKER: Final = "|"
+_METADATA_FIELD_SEPARATOR: Final = "|"
 
 
 def validate_no_bare_todos(content: str, file_path: str) -> list[str]:
@@ -58,7 +60,7 @@ def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None
 
 def _is_metadata_line(line: str, known_fields: list[str]) -> bool:
     """Check if a line looks like metadata."""
-    if "|" in line:
+    if _METADATA_FIELD_SEPARATOR in line:
         return True
     if ":" in line and not line.startswith("#"):
         parts = line.split(":", 1)
@@ -71,7 +73,9 @@ def _should_stop_collection(line: str, collected_lines: list[str]) -> bool:
     """Check if we should stop collecting metadata lines."""
     if not line:
         return bool(collected_lines)
-    if collected_lines and not collected_lines[-1].endswith("|"):
+    if collected_lines and not collected_lines[-1].endswith(
+        _METADATA_CONTINUATION_MARKER
+    ):
         return True
     return False
 
@@ -79,7 +83,7 @@ def _should_stop_collection(line: str, collected_lines: list[str]) -> bool:
 def _join_metadata_lines(lines: list[str]) -> str:
     """Join metadata lines and strip final trailing pipe."""
     joined = " ".join(lines).rstrip()
-    if joined.endswith("|"):
+    if joined.endswith(_METADATA_CONTINUATION_MARKER):
         joined = joined[:-1].rstrip()
     return joined
 
@@ -102,7 +106,7 @@ def _extract_next_metadata_line(lines: list[str], start_index: int) -> str | Non
             break
 
         collected_lines.append(next_line)
-        if not next_line.endswith("|"):
+        if not next_line.endswith(_METADATA_CONTINUATION_MARKER):
             break
 
     return _join_metadata_lines(collected_lines) if collected_lines else None
@@ -141,7 +145,7 @@ def _parse_field_value(value: str) -> int | bool | str:
 def _parse_metadata_fields(metadata_line: str, req_id: str) -> dict:
     """Parse pipe-separated metadata fields into a frontmatter dictionary.
 
-    Splits the line by '|' and parses each 'key: value' pair.
+    Splits the line and parses each 'key: value' pair.
     Keys are normalized to lowercase. Values are typed using _parse_field_value.
 
     Special handling for Parent field:
@@ -152,7 +156,7 @@ def _parse_metadata_fields(metadata_line: str, req_id: str) -> dict:
     frontmatter = {"id": req_id}
     parent_values = []
 
-    for field in metadata_line.split("|"):
+    for field in metadata_line.split(_METADATA_FIELD_SEPARATOR):
         field = field.strip()
         if not field or ":" not in field:
             continue
