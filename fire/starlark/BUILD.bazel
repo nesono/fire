@@ -206,6 +206,7 @@ py_test(
     srcs = ["validate_requirements_metadata_test.py"],
     deps = [
         ":requirement_models",
+        ":validate_cross_references_lib",
         "@pip//pydantic",
         "@pip//pytest",
     ],

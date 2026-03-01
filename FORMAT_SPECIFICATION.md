@@ -121,23 +121,61 @@ Version: 0      # Must be ≥ 1
 
 #### `Parent` Field (Optional)
 
-**Type:** Markdown link to parent requirement
+**Type:** Markdown link(s) to parent requirement(s)
 **Required:** No (optional for system requirements, commonly used for software requirements)
-**Format:** `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
+**Format:**
+
+- Single parent: `Parent: [REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
+- Multiple parents: Multi-line with `|` continuation
 
 The parent field can be used to create hierarchical relationships between requirements. It's optional for system requirements but commonly used in software requirements to trace back to system requirements.
 
-The parent link must:
+Each parent link must:
 
 - Be a Markdown link: `[text](url)`
 - Use a repository-relative path (starting with `/`)
 - Include version query parameter: `?version=N`
 - Include anchor to requirement ID: `#REQ-ID`
 
-**Examples:**
+**Single Parent Example:**
 
 ```text
-Parent: [REQ-SYS-001](/requirements/system.sysreq.md?version=1#REQ-SYS-001)
+SIL: ASIL-D | Sec: false | Version: 1 | Parent: [REQ-SYS-001](/requirements/system.sysreq.md?version=1#REQ-SYS-001)
+```
+
+**Multiple Parents Example (Multi-line):**
+
+```text
+SIL: ASIL-D | Sec: false | Version: 1 |
+Parent: [REQ-SYS-001](/requirements/system.sysreq.md?version=1#REQ-SYS-001) |
+Parent: [REQ-SYS-002](/requirements/system.sysreq.md?version=2#REQ-SYS-002)
+```
+
+**Multi-line Format Rules:**
+
+- Each line must end with `|` to indicate continuation to the next line
+- The trailing `|` on the last metadata line is optional but recommended for consistency
+- Empty lines between metadata lines will break the continuation
+- Each `Parent:` entry must be a valid markdown link or `TODO(KEY-1234)` placeholder
+
+**Use Cases for Multiple Parents:**
+
+Multiple parents are useful when a software requirement implements or derives from multiple system requirements. For example:
+
+```text
+## REQ-COLLISION-AVOIDANCE
+
+SIL: ASIL-D | Sec: false | Version: 1 |
+Parent: [REQ-BRK-001](/requirements/braking.sysreq.md?version=4#REQ-BRK-001) |
+Parent: [REQ-SENS-003](/requirements/sensing.sysreq.md?version=2#REQ-SENS-003)
+
+The collision avoidance system shall combine emergency braking capabilities
+with sensor fusion to prevent accidents.
+```
+
+**TODO Placeholder:**
+
+```text
 Parent: TODO(LINK-123)
 ```
 
@@ -242,11 +280,17 @@ SIL: <sil-value> | Sec: <sec-value> | Version: <version> | Parent: <parent-ref>
 
 #### `Parent` Field
 
-**Type:** Markdown link to parent requirement
+**Type:** Markdown link(s) to parent requirement(s)
 **Required:** No (but strongly recommended for traceability to system requirements)
-**Format:** `[REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
+**Format:**
 
-Software requirements typically include a parent to trace back to system requirements. The parent link must:
+- Single parent: `Parent: [REQ-ID](/path/to/file.sysreq.md?version=N#REQ-ID)`
+- Multiple parents: Multi-line with `|` continuation (see System Requirements section)
+
+Software requirements typically include one or more parents to trace back to system requirements. When a software requirement implements or derives
+from multiple system requirements, use the multi-line format with multiple Parent entries.
+
+Each parent link must:
 
 - Be a Markdown link: `[text](url)`
 - Use a repository-relative path (starting with `/`)
@@ -259,6 +303,14 @@ Software requirements typically include a parent to trace back to system require
 Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=4#REQ-BRK-001)
 Parent: [REQ-VEL-001](/requirements/velocity.sysreq.md?version=1#REQ-VEL-001)
 Parent: TODO(LINK-123)
+```
+
+**Multiple Parents (Multi-line):**
+
+```text
+SIL: ASIL-D | Sec: false | Version: 1 |
+Parent: [REQ-BRK-001](/requirements/braking_requirements.sysreq.md?version=4#REQ-BRK-001) |
+Parent: [REQ-VEL-001](/requirements/velocity.sysreq.md?version=1#REQ-VEL-001)
 ```
 
 **Invalid Examples:**
@@ -293,6 +345,19 @@ SIL: ASIL-D | Sec: false | Version: 1 | Parent: [REQ-BRK-001](/examples/requirem
 The brake actuator component shall control the electro-hydraulic valve using a PI
 (Proportional-Integral) controller running at 1000 Hz to maintain actual hydraulic
 pressure within 1 bar of the target pressure.
+
+---
+
+## REQ_BA_EMERGENCY_BRAKE_FUSION
+
+SIL: ASIL-D | Sec: false | Version: 1 |
+Parent: [REQ-BRK-001](/examples/requirements/braking_requirements.sysreq.md?version=4#REQ-BRK-001) |
+Parent: [REQ-SENS-003](/examples/requirements/sensing_requirements.sysreq.md?version=2#REQ-SENS-003)
+
+The brake actuator component shall integrate emergency braking commands with sensor
+fusion data to optimize braking performance based on detected road conditions and
+obstacle proximity. This requirement derives from both the braking system requirement
+and the sensing system requirement.
 
 ---
 ```
@@ -602,10 +667,12 @@ SIL: ASIL-D | Sec: true | Version: 1 | Parent: TODO(LINK-456)
    - Used as H2 heading (`## REQ-ID`)
 
 2. **Metadata Line:**
-   - Must be the first line after the requirement ID heading
+   - Must be the first line(s) after the requirement ID heading
    - Fields separated by `|` (space-pipe-space)
    - Required fields: SIL, Sec, Version
    - Optional field: Parent (recommended for software requirements to trace to system requirements)
+   - Supports multi-line format: lines ending with `|` continue to next line
+   - Empty lines break multi-line continuation
 
 3. **SIL Values:**
    - Must be one of the predefined values or `TODO(TICKET-ID)`
@@ -620,10 +687,12 @@ SIL: ASIL-D | Sec: true | Version: 1 | Parent: TODO(LINK-456)
    - Must be unquoted in metadata line
 
 6. **Parent References:**
-   - Must be Markdown link format
+   - Can specify single or multiple parents
+   - Each parent must be Markdown link format
    - Must use repository-relative paths (start with `/`)
    - Must include `?version=N` query parameter
    - Must include `#REQ-ID` anchor
+   - Multiple parents use multi-line format with separate `Parent:` entries
 
 ### Parameter Files (`.yaml`)
 

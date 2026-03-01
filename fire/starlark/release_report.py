@@ -132,13 +132,15 @@ def collect_requirement_references(
         _, version = path_common.extract_version_from_url(path)
         refs.append((req_id, version, path))
     parent = section["metadata"].get("parent")
-    if isinstance(parent, str):
-        match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, parent)
-        if match:
-            parent_id = match.group(1)
-            parent_path = match.group(2)
-            _, version = path_common.extract_version_from_url(parent_path)
-            refs.append((parent_id, version, parent_path))
+    if isinstance(parent, list):
+        for parent_value in parent:
+            if isinstance(parent_value, str):
+                match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, parent_value)
+                if match:
+                    parent_id = match.group(1)
+                    parent_path = match.group(2)
+                    _, version = path_common.extract_version_from_url(parent_path)
+                    refs.append((parent_id, version, parent_path))
     return refs
 
 
