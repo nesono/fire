@@ -104,7 +104,7 @@ max_speed_v1:
 
 wheel_count_v1:
   value: 4
-  unit: count
+  unit: "1"
   description: Number of wheels
 ```
 
