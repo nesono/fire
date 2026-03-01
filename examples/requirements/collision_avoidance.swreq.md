@@ -3,6 +3,12 @@
 This document contains software requirements for the collision avoidance system,
 which integrates emergency braking and velocity control to prevent accidents.
 
+> **Note on Hardcoded Values**: This example contains numeric constants (sample rates,
+> thresholds, margins, etc.) directly in the requirement text for simplicity and readability.
+> In a production codebase, these values should be defined in a parameter YAML file and
+> referenced using the `[@param_name]` syntax to enable version tracking and traceability.
+> See existing examples like `vehicle_params.yaml` for the recommended pattern.
+
 ## REQ-CA-EMERGENCY-BRAKE
 
 SIL: ASIL-D | Sec: false | Version: 1 |
