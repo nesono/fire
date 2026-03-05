@@ -1,0 +1,138 @@
+"""Genquery targets for failure test discovery.
+
+Each target produces a file listing the Bazel labels for one failure test
+category. run_failure_tests.sh builds these targets and reads the files to
+determine which tests belong to each category.
+
+When adding a new failure test target to any sub-package, add it to _SCOPE
+below so genquery can find it.
+"""
+
+# All targets in all failure test packages. genquery scope must enumerate
+# every target that the universe set expands to, and genquery expressions
+# cannot use recursive patterns (//...), so _SCOPE drives both.
+_SCOPE = [
+    # bare_todo
+    "//fire/starlark/failure_test/bare_todo:test_bare_todo",
+    "//fire/starlark/failure_test/bare_todo:test_bare_todo_validation",
+    "//fire/starlark/failure_test/bare_todo:test_todo_bad_format",
+    "//fire/starlark/failure_test/bare_todo:test_todo_bad_format_validation",
+    # dependency_failures
+    "//fire/starlark/failure_test/dependency_failures:test_missing_param_dep",
+    "//fire/starlark/failure_test/dependency_failures:test_missing_param_dep_validation",
+    "//fire/starlark/failure_test/dependency_failures:test_missing_req_dep",
+    "//fire/starlark/failure_test/dependency_failures:test_missing_req_dep_validation",
+    # invalid_metadata
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_dal",
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_dal_validation",
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_sec",
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_sec_validation",
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_sil",
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_sil_validation",
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_version_negative",
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_version_negative_validation",
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_version_zero",
+    "//fire/starlark/failure_test/invalid_metadata:test_invalid_version_zero_validation",
+    # missing_fields
+    "//fire/starlark/failure_test/missing_fields:test_missing_all",
+    "//fire/starlark/failure_test/missing_fields:test_missing_all_validation",
+    "//fire/starlark/failure_test/missing_fields:test_missing_sec",
+    "//fire/starlark/failure_test/missing_fields:test_missing_sec_validation",
+    "//fire/starlark/failure_test/missing_fields:test_missing_sil",
+    "//fire/starlark/failure_test/missing_fields:test_missing_sil_validation",
+    "//fire/starlark/failure_test/missing_fields:test_missing_version",
+    "//fire/starlark/failure_test/missing_fields:test_missing_version_validation",
+    # parameter_version
+    "//fire/starlark/failure_test/parameter_version:test_params",
+    "//fire/starlark/failure_test/parameter_version:test_params_cc",
+    "//fire/starlark/failure_test/parameter_version:test_params_go_lib",
+    "//fire/starlark/failure_test/parameter_version:test_params_go_src",
+    "//fire/starlark/failure_test/parameter_version:test_params_h",
+    "//fire/starlark/failure_test/parameter_version:test_params_java",
+    "//fire/starlark/failure_test/parameter_version:test_params_java_src",
+    "//fire/starlark/failure_test/parameter_version:test_params_py",
+    "//fire/starlark/failure_test/parameter_version:test_params_py_src",
+    "//fire/starlark/failure_test/parameter_version:test_params_rs",
+    "//fire/starlark/failure_test/parameter_version:test_params_rust_src",
+    "//fire/starlark/failure_test/parameter_version:test_params_validation",
+    "//fire/starlark/failure_test/parameter_version:test_version_too_old_cpp",
+    "//fire/starlark/failure_test/parameter_version:test_version_too_old_go",
+    "//fire/starlark/failure_test/parameter_version:test_version_too_old_java",
+    "//fire/starlark/failure_test/parameter_version:test_version_too_old_py",
+    "//fire/starlark/failure_test/parameter_version:test_version_too_old_rust",
+    "//fire/starlark/failure_test/parameter_version:test_version_upgraded_cpp",
+    "//fire/starlark/failure_test/parameter_version:test_version_upgraded_go",
+    "//fire/starlark/failure_test/parameter_version:test_version_upgraded_java",
+    "//fire/starlark/failure_test/parameter_version:test_version_upgraded_py",
+    "//fire/starlark/failure_test/parameter_version:test_version_upgraded_rust",
+    # relative_paths
+    "//fire/starlark/failure_test/relative_paths:base_requirement",
+    "//fire/starlark/failure_test/relative_paths:base_requirement_validation",
+    "//fire/starlark/failure_test/relative_paths:test_non_absolute_param",
+    "//fire/starlark/failure_test/relative_paths:test_non_absolute_param_validation",
+    "//fire/starlark/failure_test/relative_paths:test_non_absolute_parent",
+    "//fire/starlark/failure_test/relative_paths:test_non_absolute_parent_validation",
+    "//fire/starlark/failure_test/relative_paths:test_non_absolute_reference",
+    "//fire/starlark/failure_test/relative_paths:test_non_absolute_reference_validation",
+    "//fire/starlark/failure_test/relative_paths:test_params",
+    "//fire/starlark/failure_test/relative_paths:test_params_validation",
+    # source_traceability
+    "//fire/starlark/failure_test/source_traceability:test_future_version",
+    "//fire/starlark/failure_test/source_traceability:test_missing_version",
+    "//fire/starlark/failure_test/source_traceability:test_outdated_version",
+    # too_many_versions
+    "//fire/starlark/failure_test/too_many_versions:too_many_versions",
+    "//fire/starlark/failure_test/too_many_versions:too_many_versions_validation",
+    # version_mismatch
+    "//fire/starlark/failure_test/version_mismatch:test_param_version_mismatch",
+    "//fire/starlark/failure_test/version_mismatch:test_param_version_mismatch_error",
+    "//fire/starlark/failure_test/version_mismatch:test_param_version_mismatch_error_validation",
+    "//fire/starlark/failure_test/version_mismatch:test_param_version_mismatch_validation",
+    "//fire/starlark/failure_test/version_mismatch:test_params_v2",
+    "//fire/starlark/failure_test/version_mismatch:test_params_v2_validation",
+    "//fire/starlark/failure_test/version_mismatch:test_version_mismatch",
+    "//fire/starlark/failure_test/version_mismatch:test_version_mismatch_validation",
+]
+
+# Build a set() expression from _SCOPE so that genquery expressions can use
+# the same list without recursive patterns (which genquery forbids).
+_UNIVERSE = "set(" + " ".join(_SCOPE) + ")"
+
+_NO_VALIDATION = "except filter(\".*_validation$\", {universe})".format(universe = _UNIVERSE)
+
+_SPECIFIC_TAGS = [
+    "version_too_old",
+    "version_upgraded",
+    "too_many_versions",
+    "missing_version",
+    "outdated_version",
+    "future_version",
+]
+
+[genquery(
+    name = tag + "_targets",
+    expression = "attr(tags, {tag}, {universe}) {no_validation}".format(
+        no_validation = _NO_VALIDATION,
+        tag = tag,
+        universe = _UNIVERSE,
+    ),
+    scope = _SCOPE,
+) for tag in _SPECIFIC_TAGS]
+
+genquery(
+    name = "legacy_failure_targets",
+    expression = (
+        "attr(tags, failure_test, {universe}) {no_validation}".format(
+            no_validation = _NO_VALIDATION,
+            universe = _UNIVERSE,
+        ) +
+        "".join([
+            " except attr(tags, {tag}, {universe})".format(
+                tag = tag,
+                universe = _UNIVERSE,
+            )
+            for tag in _SPECIFIC_TAGS
+        ])
+    ),
+    scope = _SCOPE,
+)
