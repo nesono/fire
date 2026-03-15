@@ -9,9 +9,10 @@ This document specifies the format for all input files used in the FIRE requirem
 
 1. [System Requirements (`.sysreq.md`)](#system-requirements-sysreqmd)
 2. [Software Requirements (`.swreq.md`)](#software-requirements-swreqmd)
-3. [Parameter Files (`.yaml`)](#parameter-files-yaml)
-4. [Cross-References](#cross-references)
-5. [Validation Rules](#validation-rules)
+3. [Regulatory Requirements (`.regreq.md`)](#regulatory-requirements-regreqmd)
+4. [Parameter Files (`.yaml`)](#parameter-files-yaml)
+5. [Cross-References](#cross-references)
+6. [Validation Rules](#validation-rules)
 
 ---
 
@@ -358,6 +359,57 @@ The brake actuator component shall integrate emergency braking commands with sen
 fusion data to optimize braking performance based on detected road conditions and
 obstacle proximity. This requirement derives from both the braking system requirement
 and the sensing system requirement.
+
+---
+```
+
+---
+
+## Regulatory Requirements (`.regreq.md`)
+
+Regulatory requirements are stored in Markdown files with the `.regreq.md`
+extension. These capture regulatory obligations where safety integrity levels
+and security relevance may not apply.
+
+### File Structure
+
+Regulatory requirement files follow the same structure as system requirements.
+
+### Metadata Fields
+
+Regulatory requirements use a reduced metadata format where only `Version` is
+mandatory:
+
+```text
+Version: <version>
+```
+
+The `SIL`, `Sec`, and `Parent` fields are all optional:
+
+```text
+SIL: <sil-value> | Sec: <sec-value> | Version: <version> | Parent: <parent-ref>
+```
+
+### Complete Example
+
+```markdown
+# Data Protection Regulation Requirements
+
+## REQ-GDPR-DATA-RETENTION
+
+Version: 1
+
+The system shall delete personal data after the retention period defined by
+the applicable data protection regulation has expired.
+
+---
+
+## REQ-GDPR-DATA-ACCESS
+
+SIL: QM | Version: 2
+
+The system shall provide a mechanism for data subjects to request access to
+their personal data within 30 days of the request.
 
 ---
 ```

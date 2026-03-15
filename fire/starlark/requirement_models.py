@@ -45,7 +45,7 @@ SilValue = Literal[
 
 
 class RequirementMetadata(BaseModel):
-    """Model for requirement inline metadata."""
+    """Model for requirement inline metadata (sysreq/swreq)."""
 
     id: str = Field(pattern=REQ_ID_PATTERN.pattern)
 
@@ -62,7 +62,9 @@ class RequirementMetadata(BaseModel):
     @field_validator("sil", mode="before")
     @classmethod
     def validate_sil(cls, v: object) -> object:
-        """Accept valid SIL/ASIL/DAL literals or TODO(KEY-1234)."""
+        """Accept valid SIL/ASIL/DAL literals, TODO(KEY-1234), or None."""
+        if v is None:
+            return v
         if isinstance(v, str) and TODO_PATTERN.fullmatch(v):
             return v
         if v not in _VALID_SIL_VALUES:
@@ -78,7 +80,9 @@ class RequirementMetadata(BaseModel):
     @field_validator("sec", mode="before")
     @classmethod
     def validate_sec(cls, v: object) -> object:
-        """Accept strict booleans or TODO(KEY-1234)."""
+        """Accept strict booleans, TODO(KEY-1234), or None."""
+        if v is None:
+            return v
         if isinstance(v, str) and TODO_PATTERN.fullmatch(v):
             return v
         if not isinstance(v, bool):
@@ -120,3 +124,14 @@ class RequirementMetadata(BaseModel):
             raise ValueError(
                 f"parent path must be repository-relative (start with /): '{path}'"
             )
+
+
+class RegulatoryRequirementMetadata(RequirementMetadata):
+    """Model for regulatory requirement metadata (regreq).
+
+    Unlike sysreq/swreq, sil and sec are optional for regulatory requirements.
+    """
+
+    sil: Optional[Union[SilValue, str]] = None
+
+    sec: Optional[Union[bool, str]] = None
