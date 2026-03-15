@@ -29,6 +29,7 @@ from fire.starlark.requirement_models import (
 )
 
 _REGREQ_EXTENSION: Final = ".regreq.md"
+_REQUIREMENT_SUFFIXES: Final = (".sysreq.md", ".swreq.md", ".regreq.md")
 
 _BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
 _METADATA_CONTINUATION_MARKER: Final = "|"
@@ -356,6 +357,10 @@ def validate_requirement_reference(
     # Check if file exists
     if not os.path.exists(abs_path):
         return False, f"Requirement file does not exist: {req_path}"
+
+    # Plain .md files: just verify existence, skip metadata validation
+    if not path_without_fragment.endswith(_REQUIREMENT_SUFFIXES):
+        return True, None
 
     # Read file and verify it contains the correct requirement ID
     content, error = file_io_common.read_file_safe(abs_path)

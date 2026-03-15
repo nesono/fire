@@ -12,8 +12,8 @@ load("//fire/starlark:requirements.bzl", "requirement_library")
 requirement_library(
     name = "test_version_mismatch",
     srcs = [
-        "base_requirement_v2.md",
-        "test_version_mismatch.md",
+        "base_requirement_v2.sysreq.md",
+        "test_version_mismatch.sysreq.md",
     ],
     tags = [
         "failure_test",  # Expected to produce warning
