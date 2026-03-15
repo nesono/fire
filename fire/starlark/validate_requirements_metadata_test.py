@@ -6,7 +6,10 @@ import sys
 import pytest
 from pydantic import ValidationError
 
-from fire.starlark.requirement_models import RequirementMetadata
+from fire.starlark.requirement_models import (
+    RegulatoryRequirementMetadata,
+    RequirementMetadata,
+)
 from fire.starlark.validate_cross_references import (
     parse_inline_metadata_for_requirement,
 )
@@ -797,6 +800,131 @@ Body text.
     # Missing trailing pipe on first Parent line stops continuation
     assert len(metadata.parent) == 1
     assert metadata.parent[0] == "[REQ-A](/p1.md#REQ-A)"
+
+
+# --- Regulatory requirement metadata tests ---
+
+
+def test_regulatory_version_only():
+    """Regulatory requirements need only version."""
+    metadata = RegulatoryRequirementMetadata(id="REQ-REG-001", version=1)
+    assert metadata.version == 1
+    assert metadata.sil is None
+    assert metadata.sec is None
+
+
+def test_regulatory_with_sil():
+    """Regulatory requirements may optionally include sil."""
+    metadata = RegulatoryRequirementMetadata(id="REQ-REG-002", sil="ASIL-B", version=1)
+    assert metadata.sil == "ASIL-B"
+    assert metadata.sec is None
+
+
+def test_regulatory_with_sec():
+    """Regulatory requirements may optionally include sec."""
+    metadata = RegulatoryRequirementMetadata(id="REQ-REG-003", sec=True, version=1)
+    assert metadata.sil is None
+    assert metadata.sec is True
+
+
+def test_regulatory_with_all_fields():
+    """Regulatory requirements accept all fields."""
+    metadata = RegulatoryRequirementMetadata(
+        id="REQ-REG-004", sil="SIL-2", sec=False, version=3
+    )
+    assert metadata.sil == "SIL-2"
+    assert metadata.sec is False
+    assert metadata.version == 3
+
+
+def test_regulatory_version_still_required():
+    """Version is still mandatory for regulatory requirements."""
+    with pytest.raises(ValidationError):
+        RegulatoryRequirementMetadata(id="REQ-REG-005")
+
+
+def test_regulatory_invalid_sil_rejected():
+    """Invalid sil values are still rejected when provided."""
+    with pytest.raises(ValidationError):
+        RegulatoryRequirementMetadata(id="REQ-REG-006", sil="INVALID", version=1)
+
+
+def test_regulatory_invalid_sec_rejected():
+    """Invalid sec values are still rejected when provided."""
+    with pytest.raises(ValidationError):
+        RegulatoryRequirementMetadata(id="REQ-REG-007", sec="true", version=1)
+
+
+def test_regulatory_todo_sil():
+    """TODO(KEY-1234) is accepted for optional sil on regreq."""
+    metadata = RegulatoryRequirementMetadata(
+        id="REQ-REG-009", sil="TODO(JIRA-100)", version=1
+    )
+    assert metadata.sil == "TODO(JIRA-100)"
+
+
+def test_regulatory_parent_optional():
+    """Parent is optional for regulatory requirements."""
+    metadata = RegulatoryRequirementMetadata(
+        id="REQ-REG-008",
+        version=1,
+        parent=["[REQ-A](/path.md#REQ-A)"],
+    )
+    assert len(metadata.parent) == 1
+
+
+def test_parse_regulatory_version_only():
+    """Test parsing regreq metadata with only version."""
+    content = """
+## REQ-REG-001
+Version: 1
+
+Some regulatory text.
+---
+"""
+    metadata, error = parse_inline_metadata_for_requirement(
+        content, "REQ-REG-001", RegulatoryRequirementMetadata
+    )
+    assert error is None
+    assert metadata is not None
+    assert metadata.version == 1
+    assert metadata.sil is None
+    assert metadata.sec is None
+
+
+def test_parse_regulatory_with_sil_and_sec():
+    """Test parsing regreq metadata with optional sil and sec."""
+    content = """
+## REQ-REG-002
+SIL: ASIL-B | Sec: false | Version: 2
+
+Some regulatory text.
+---
+"""
+    metadata, error = parse_inline_metadata_for_requirement(
+        content, "REQ-REG-002", RegulatoryRequirementMetadata
+    )
+    assert error is None
+    assert metadata is not None
+    assert metadata.sil == "ASIL-B"
+    assert metadata.sec is False
+    assert metadata.version == 2
+
+
+def test_parse_sysreq_still_requires_sil_sec():
+    """Parsing with RequirementMetadata still requires sil and sec."""
+    content = """
+## REQ-001
+Version: 1
+
+Some text.
+---
+"""
+    metadata, error = parse_inline_metadata_for_requirement(
+        content, "REQ-001", RequirementMetadata
+    )
+    assert metadata is None
+    assert error is not None
 
 
 if __name__ == "__main__":

@@ -23,11 +23,23 @@ from pydantic import ValidationError
 
 from fire.starlark import file_io_common, markdown_common, path_common
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
-from fire.starlark.requirement_models import RequirementMetadata
+from fire.starlark.requirement_models import (
+    RequirementMetadata,
+    RegulatoryRequirementMetadata,
+)
+
+_REGREQ_EXTENSION: Final = ".regreq.md"
 
 _BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
 _METADATA_CONTINUATION_MARKER: Final = "|"
 _METADATA_FIELD_SEPARATOR: Final = "|"
+
+
+def _metadata_model_for_file(file_path: str) -> type[RequirementMetadata]:
+    """Return the Pydantic model class appropriate for the file extension."""
+    if file_path.endswith(_REGREQ_EXTENSION):
+        return RegulatoryRequirementMetadata
+    return RequirementMetadata
 
 
 def validate_no_bare_todos(content: str, file_path: str) -> list[str]:
@@ -179,30 +191,28 @@ def _parse_metadata_fields(metadata_line: str, req_id: str) -> dict:
     return frontmatter
 
 
-def parse_inline_metadata_for_requirement(content, req_id):
+def parse_inline_metadata_for_requirement(
+    content, req_id, model_class=RequirementMetadata
+):
     """Parse inline metadata for a specific requirement ID.
 
     Looks for ## REQ-ID heading followed by a line with pipe-separated fields.
     Format: Key1: value1 | Key2: value2 | Key3: [link](url)
     Returns tuple of (RequirementMetadata | None, ValidationError | None).
     """
-    # Find the requirement heading
     lines = content.split("\n")
     heading_index = _find_requirement_heading_index(lines, req_id)
     if heading_index is None:
         return None, None
 
-    # Extract the metadata line following the heading
     metadata_line = _extract_next_metadata_line(lines, heading_index)
     if not metadata_line:
         return None, None
 
-    # Parse the metadata fields into a dictionary
     frontmatter = _parse_metadata_fields(metadata_line, req_id)
 
-    # Validate with Pydantic
     try:
-        metadata = RequirementMetadata.model_validate(frontmatter)
+        metadata = model_class.model_validate(frontmatter)
         return metadata, None
     except ValidationError as e:
         return None, e
@@ -334,10 +344,10 @@ def validate_requirement_reference(
 
     # Check that filename has valid extension
     filename = os.path.basename(path_without_fragment)
-    if not (filename.endswith(".md") or filename.endswith(".sysreq.md")):
+    if not filename.endswith(".md"):
         return (
             False,
-            f"Requirement file must have .md or .sysreq.md extension: {filename}",
+            f"Requirement file must have .md extension: {filename}",
         )
 
     # Convert to absolute path
@@ -352,8 +362,10 @@ def validate_requirement_reference(
     if error:
         return False, error
 
-    # Parse inline metadata (pipe-separated format)
-    metadata, validation_error = parse_inline_metadata_for_requirement(content, req_id)
+    model_class = _metadata_model_for_file(path_without_fragment)
+    metadata, validation_error = parse_inline_metadata_for_requirement(
+        content, req_id, model_class
+    )
 
     if metadata is None:
         if validation_error:
@@ -405,8 +417,9 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
     req_id_pattern = r"^## ([A-Z][A-Z0-9_-]+)\s*$"
     for match in re.finditer(req_id_pattern, content, re.MULTILINE):
         req_id = match.group(1)
+        model_class = _metadata_model_for_file(file_path)
         metadata, validation_error = parse_inline_metadata_for_requirement(
-            content, req_id
+            content, req_id, model_class
         )
 
         if metadata is None:
