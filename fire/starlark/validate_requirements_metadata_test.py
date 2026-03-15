@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Unit tests for requirement metadata validation using Pydantic models."""
 
+import os
 import sys
+import tempfile
 
 import pytest
 from pydantic import ValidationError
@@ -12,6 +14,7 @@ from fire.starlark.requirement_models import (
 )
 from fire.starlark.validate_cross_references import (
     parse_inline_metadata_for_requirement,
+    validate_requirement_reference,
 )
 
 
@@ -925,6 +928,42 @@ Some text.
     )
     assert metadata is None
     assert error is not None
+
+
+# --- Plain .md file reference tests ---
+
+
+def test_plain_md_reference_valid():
+    """Plain .md files can be referenced without metadata validation."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        md_path = os.path.join(tmpdir, "design.md")
+        with open(md_path, "w") as f:
+            f.write("# Design Document\n\nSome design notes.\n")
+        valid, error = validate_requirement_reference(
+            "DESIGN-DOC", "/design.md", tmpdir
+        )
+        assert valid is True
+        assert error is None
+
+
+def test_plain_md_reference_nonexistent():
+    """Plain .md reference to nonexistent file still fails."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        valid, error = validate_requirement_reference("MISSING", "/missing.md", tmpdir)
+        assert valid is False
+        assert "does not exist" in error
+
+
+def test_sysreq_reference_still_validates_metadata():
+    """sysreq references still require metadata validation."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        md_path = os.path.join(tmpdir, "reqs.sysreq.md")
+        with open(md_path, "w") as f:
+            f.write("# Reqs\n\n## REQ-001\n\nNo metadata here.\n---\n")
+        valid, error = validate_requirement_reference(
+            "REQ-001", "/reqs.sysreq.md", tmpdir
+        )
+        assert valid is False
 
 
 if __name__ == "__main__":
