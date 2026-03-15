@@ -3,15 +3,22 @@
 # Use Bzlmod for dependency management
 common --enable_bzlmod
 
+# Auto-select platform config (linux/macos/windows)
+common --enable_platform_specific_config
+
 # Python configuration
 build --incompatible_default_to_explicit_init_py
 
 # Test output
 test --test_output=errors
 
-# C++ configuration
-build --cxxopt=-std=c++17
-build --host_cxxopt=-std=c++17
+# C++ configuration (platform-specific)
+build:linux --cxxopt=-std=c++17
+build:linux --host_cxxopt=-std=c++17
+build:macos --cxxopt=-std=c++17
+build:macos --host_cxxopt=-std=c++17
+build:windows --cxxopt=/std:c++17
+build:windows --host_cxxopt=/std:c++17
 
 # Java configuration - use Java 17 for records support
 build --java_language_version=17
