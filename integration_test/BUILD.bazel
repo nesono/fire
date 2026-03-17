@@ -40,6 +40,10 @@ generate_rust_parameters(
 rust_library(
     name = "test_params_rs",
     srcs = [":test_params_rs_src"],
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
 )
 

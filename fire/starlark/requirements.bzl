@@ -13,6 +13,7 @@ def _validate_requirements_impl(ctx):
     # Build arguments list
     args = ctx.actions.args()
     args.add(workspace_root)
+    args.add("--output", output.path)
     args.add("--allowed-deps")
 
     # Add allowed dependency paths (short_path format)
@@ -27,27 +28,15 @@ def _validate_requirements_impl(ctx):
     for src in ctx.files.srcs:
         args.add(src.short_path)
 
-    # Create a wrapper script that runs the validator and touches the output
-    wrapper_script = ctx.actions.declare_file(ctx.label.name + "_wrapper.sh")
-    ctx.actions.write(
-        output = wrapper_script,
-        content = """#!/bin/bash
-"$@" && touch {output}
-""".format(output = output.path),
-        is_executable = True,
-    )
-
     # Get runfiles for the script
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
 
-    # Run validation script
-    # Note: We need to disable sandbox or make all potential reference targets available
+    # Run validation script directly (no shell wrapper needed)
     ctx.actions.run(
         inputs = ctx.files.srcs + ctx.files.deps + script_runfiles,
         outputs = [output],
-        executable = wrapper_script,
-        arguments = [script.path, args],
-        tools = [script],
+        executable = script,
+        arguments = [args],
         mnemonic = "ValidateRequirements",
         progress_message = "Validating cross-references in %s" % ctx.label.name,
         use_default_shell_env = True,

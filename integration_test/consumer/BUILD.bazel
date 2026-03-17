@@ -23,6 +23,10 @@ rust_test(
     name = "test_rust_test",
     srcs = ["test_rust.rs"],
     crate_root = "test_rust.rs",
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = ["//:test_params_rs"],
 )
 
