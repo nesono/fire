@@ -62,18 +62,13 @@ jobs:
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
         run: |
+          BAZEL_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             # Exclude Rust: rules_rust toolchain cannot build on Windows
-            bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" \
-              //fire/starlark/... \
-              //examples:vehicle_params_cc_test //examples:vehicle_params_cc_custom_ns_test \
-              //examples:vehicle_params_py_test //examples:vehicle_params_py_alt_test \
-              //examples:vehicle_params_java_test \
-              //examples:vehicle_params_go_test //examples:vehicle_params_go_alt_test \
-              //examples/brake_control:brake_controller_test \
-              --test_output=errors
+            TARGETS="//fire/starlark/... //examples:vehicle_params_cc_test //examples:vehicle_params_cc_custom_ns_test //examples:vehicle_params_py_test //examples:vehicle_params_py_alt_test //examples:vehicle_params_java_test //examples:vehicle_params_go_test //examples:vehicle_params_go_alt_test //examples/brake_control:brake_controller_test"
+            bazel test $BAZEL_OPTS $TARGETS --test_output=errors
           else
-            bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors
+            bazel test $BAZEL_OPTS //... --test_output=errors
           fi
 
       - name: Build all targets
@@ -81,16 +76,12 @@ jobs:
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
         run: |
+          BAZEL_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" \
-              //fire/starlark/... //examples/brake_control/... \
-              //examples:vehicle_params_cc //examples:vehicle_params_cc_custom_ns \
-              //examples:vehicle_params_py //examples:vehicle_params_py_alt \
-              //examples:vehicle_params_java \
-              //examples:vehicle_params_go //examples:vehicle_params_go_alt \
-              //examples:vehicle_requirements //examples:component_requirements
+            TARGETS="//fire/starlark/... //examples/brake_control/... //examples:vehicle_params_cc //examples:vehicle_params_cc_custom_ns //examples:vehicle_params_py //examples:vehicle_params_py_alt //examples:vehicle_params_java //examples:vehicle_params_go //examples:vehicle_params_go_alt //examples:vehicle_requirements //examples:component_requirements"
+            bazel build $BAZEL_OPTS $TARGETS
           else
-            bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //...
+            bazel build $BAZEL_OPTS //...
           fi
 
   typecheck:
