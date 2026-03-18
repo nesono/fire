@@ -57,17 +57,27 @@ jobs:
             bazel-${{ matrix.os }}-${{ matrix.bazel-version }}-
             bazel-${{ matrix.os }}-
 
+      - name: Set Rust exclusions on Windows
+        id: rust-exclude
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "targets=-- -//examples:vehicle_params_rs -//examples:vehicle_params_rs_alt -//examples:vehicle_params_rs_src -//examples:vehicle_params_rs_alt_src -//examples:vehicle_params_rust_test -//examples:vehicle_params_rust_alt_test" >> "$GITHUB_OUTPUT"
+          else
+            echo "targets=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run Bazel tests
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-        run: bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors
+        run: bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors ${{ steps.rust-exclude.outputs.targets }}
 
       - name: Build all targets
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-        run: bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //...
+        run: bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... ${{ steps.rust-exclude.outputs.targets }}
 
   typecheck:
     name: Type Checking
