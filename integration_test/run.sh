@@ -29,10 +29,10 @@ done
 
 fail=0
 
-# Exclude Rust targets on Windows (rules_rust toolchain cannot build on Windows)
-RUST_EXCLUDE=""
+# Detect Windows (rules_rust toolchain cannot build on Windows)
+IS_WINDOWS=false
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
-    RUST_EXCLUDE="-- -//:test_params_rs -//:test_params_rs_src -//consumer:test_rust_test"
+    IS_WINDOWS=true
 fi
 
 echo "========================================="
@@ -47,7 +47,15 @@ sed "s/{{PYTHON_VERSION}}/$PYTHON_VERSION/g" MODULE.bazel.template > MODULE.baze
 echo ""
 
 echo "Running all Bazel tests..."
-bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors $RUST_EXCLUDE
+if [[ "$IS_WINDOWS" == true ]]; then
+    # Exclude Rust targets: rules_rust toolchain cannot build on Windows
+    bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" \
+        //:test_speed_limit //:test_braking //:test_update_rate \
+        //consumer:test_cpp_test \
+        --test_output=errors
+else
+    bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors
+fi
 echo ""
 
 echo "Building release report..."

@@ -57,27 +57,41 @@ jobs:
             bazel-${{ matrix.os }}-${{ matrix.bazel-version }}-
             bazel-${{ matrix.os }}-
 
-      - name: Set Rust exclusions on Windows
-        id: rust-exclude
-        shell: bash
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "targets=-- -//examples:vehicle_params_rs -//examples:vehicle_params_rs_alt -//examples:vehicle_params_rs_src -//examples:vehicle_params_rs_alt_src -//examples:vehicle_params_rust_test -//examples:vehicle_params_rust_alt_test" >> "$GITHUB_OUTPUT"
-          else
-            echo "targets=" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Run Bazel tests
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-        run: bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors ${{ steps.rust-exclude.outputs.targets }}
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            # Exclude Rust: rules_rust toolchain cannot build on Windows
+            bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" \
+              //fire/starlark/... \
+              //examples:vehicle_params_cc_test //examples:vehicle_params_cc_custom_ns_test \
+              //examples:vehicle_params_py_test //examples:vehicle_params_py_alt_test \
+              //examples:vehicle_params_java_test \
+              //examples:vehicle_params_go_test //examples:vehicle_params_go_alt_test \
+              //examples/brake_control:brake_controller_test \
+              --test_output=errors
+          else
+            bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors
+          fi
 
       - name: Build all targets
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-        run: bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... ${{ steps.rust-exclude.outputs.targets }}
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" \
+              //fire/starlark/... //examples/brake_control/... \
+              //examples:vehicle_params_cc //examples:vehicle_params_cc_custom_ns \
+              //examples:vehicle_params_py //examples:vehicle_params_py_alt \
+              //examples:vehicle_params_java \
+              //examples:vehicle_params_go //examples:vehicle_params_go_alt \
+              //examples:vehicle_requirements //examples:component_requirements
+          else
+            bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //...
+          fi
 
   typecheck:
     name: Type Checking
