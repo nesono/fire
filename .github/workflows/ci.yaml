@@ -113,9 +113,8 @@ jobs:
 
       - name: Run failure tests
         shell: bash
-        env:
-          BAZEL_EXTRA_OPTS: "--config=ci --repository_cache=$HOME/.cache/bazel-repo-failure"
         run: |
+          export BAZEL_EXTRA_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo-failure"
           ./fire/starlark/failure_test/run_failure_tests.sh
 
   integration-test:
@@ -143,8 +142,7 @@ jobs:
 
       - name: Run integration test
         shell: bash
-        env:
-          BAZEL_EXTRA_OPTS: "--config=ci --repository_cache=$HOME/.cache/bazel-repo"
         run: |
+          export BAZEL_EXTRA_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo"
           cd integration_test
           ./run.sh --python-version ${{ matrix.python-version }}
