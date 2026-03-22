@@ -61,6 +61,8 @@ jobs:
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: "*"
         run: |
           BAZEL_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
@@ -75,6 +77,8 @@ jobs:
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: "*"
         run: |
           BAZEL_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
@@ -126,6 +130,9 @@ jobs:
 
       - name: Run failure tests
         shell: bash
+        env:
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: "*"
         run: |
           ./fire/starlark/failure_test/run_failure_tests.sh
 
@@ -154,6 +161,9 @@ jobs:
 
       - name: Run integration test
         shell: bash
+        env:
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: "*"
         run: |
           cd integration_test
           ./run.sh --python-version ${{ matrix.python-version }}

@@ -6,6 +6,10 @@
 
 set -euo pipefail
 
+# Disable MSYS path conversion on Windows (prevents //target from becoming /target)
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL="*"
+
 echo "========================================="
 echo "Running Failure Tests"
 echo "========================================="
