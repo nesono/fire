@@ -40,6 +40,7 @@ generate_rust_parameters(
 rust_library(
     name = "test_params_rs",
     srcs = [":test_params_rs_src"],
+    tags = ["requires-rust"],
     visibility = ["//visibility:public"],
 )
 

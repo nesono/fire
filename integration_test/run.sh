@@ -9,9 +9,6 @@
 
 set -euo pipefail
 
-# Disable MSYS path conversion for Bazel targets (prevents //target from becoming /target)
-export MSYS2_ARG_CONV_EXCL="*"
-
 cd "$(dirname "$0")"
 
 # Parse command line arguments
@@ -30,9 +27,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-fail=0
+# Accept extra Bazel options from environment (e.g., --config=ci --repository_cache=...)
+BAZEL_OPTS="${BAZEL_EXTRA_OPTS:-}"
 
-# Detect Windows (rules_rust toolchain cannot build on Windows)
+# Detect Windows for release_readiness_test skip (generates .sh test script)
 IS_WINDOWS=false
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
     IS_WINDOWS=true
@@ -49,30 +47,22 @@ echo "Generating MODULE.bazel for Python $PYTHON_VERSION..."
 sed "s/{{PYTHON_VERSION}}/$PYTHON_VERSION/g" MODULE.bazel.template > MODULE.bazel
 echo ""
 
-REPO_CACHE=$(cygpath -w "$HOME/.cache/bazel-repo" 2>/dev/null || echo "$HOME/.cache/bazel-repo")
-
 echo "Running all Bazel tests..."
-if [[ "$IS_WINDOWS" == true ]]; then
-    # Exclude Rust targets: rules_rust toolchain cannot build on Windows
-    TARGETS="//:test_speed_limit //:test_braking //:test_update_rate //consumer:test_cpp_test"
-    bazel test --config=ci --repository_cache="$REPO_CACHE" $TARGETS --test_output=errors
-else
-    bazel test --config=ci --repository_cache="$REPO_CACHE" //... --test_output=errors
-fi
+bazel test $BAZEL_OPTS //... --test_output=errors
 echo ""
 
 echo "Building release report..."
-bazel build --config=ci --repository_cache="$REPO_CACHE" //:integration_release_report
+bazel build $BAZEL_OPTS //:integration_release_report
 echo ""
 
 echo "Verifying release report..."
 if [ -f bazel-bin/RELEASE_REPORT.md ]; then
-    echo "✓ Release report generated successfully"
+    echo "Release report generated successfully"
     echo ""
     echo "Report summary:"
     head -20 bazel-bin/RELEASE_REPORT.md
 else
-    echo "✗ Release report not found"
+    echo "Release report not found"
     exit 1
 fi
 echo ""
@@ -81,7 +71,7 @@ echo "Running release readiness test..."
 if [[ "$IS_WINDOWS" == true ]]; then
     echo "Skipping release readiness test on Windows (sh_test not supported)"
 else
-    bazel test --config=ci --repository_cache="$REPO_CACHE" //:integration_release_readiness --test_output=all
+    bazel test $BAZEL_OPTS //:integration_release_readiness --test_output=all
 fi
 echo ""
 

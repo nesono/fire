@@ -61,37 +61,15 @@ jobs:
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-          MSYS2_ARG_CONV_EXCL: "*"
         run: |
-          REPO_CACHE=$(cygpath -w "$HOME/.cache/bazel-repo" 2>/dev/null || echo "$HOME/.cache/bazel-repo")
-          BAZEL_OPTS="--config=ci --repository_cache=$REPO_CACHE"
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            # Exclude Rust: rules_rust toolchain cannot build on Windows
-            # List fire/starlark sub-packages explicitly, skipping parameter_version
-            # (its BUILD loads rules_rust which triggers broken toolchain resolution on Windows)
-            STARLARK_TARGETS="//fire/starlark:all //fire/starlark/failure_test/bare_todo:all //fire/starlark/failure_test/dependency_failures:all //fire/starlark/failure_test/invalid_metadata:all //fire/starlark/failure_test/missing_fields:all //fire/starlark/failure_test/relative_paths:all //fire/starlark/failure_test/source_traceability:all //fire/starlark/failure_test/too_many_versions:all //fire/starlark/failure_test/version_mismatch:all"
-            EXAMPLE_TARGETS="//examples:vehicle_params_cc_test //examples:vehicle_params_cc_custom_ns_test //examples:vehicle_params_py_test //examples:vehicle_params_py_alt_test //examples:vehicle_params_java_test //examples:vehicle_params_go_test //examples:vehicle_params_go_alt_test //examples/brake_control:brake_controller_test"
-            bazel test $BAZEL_OPTS $STARLARK_TARGETS $EXAMPLE_TARGETS --test_output=errors
-          else
-            bazel test $BAZEL_OPTS //... --test_output=errors
-          fi
+          bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors
 
       - name: Build all targets
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-          MSYS2_ARG_CONV_EXCL: "*"
         run: |
-          REPO_CACHE=$(cygpath -w "$HOME/.cache/bazel-repo" 2>/dev/null || echo "$HOME/.cache/bazel-repo")
-          BAZEL_OPTS="--config=ci --repository_cache=$REPO_CACHE"
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            # Skip parameter_version package (loads rules_rust which breaks on Windows)
-            STARLARK_TARGETS="//fire/starlark:all //fire/starlark/failure_test/bare_todo:all //fire/starlark/failure_test/dependency_failures:all //fire/starlark/failure_test/invalid_metadata:all //fire/starlark/failure_test/missing_fields:all //fire/starlark/failure_test/relative_paths:all //fire/starlark/failure_test/source_traceability:all //fire/starlark/failure_test/too_many_versions:all //fire/starlark/failure_test/version_mismatch:all"
-            EXAMPLE_TARGETS="//examples/brake_control/... //examples:vehicle_params_cc //examples:vehicle_params_cc_custom_ns //examples:vehicle_params_py //examples:vehicle_params_py_alt //examples:vehicle_params_java //examples:vehicle_params_go //examples:vehicle_params_go_alt //examples:vehicle_requirements //examples:component_requirements"
-            bazel build $BAZEL_OPTS $STARLARK_TARGETS $EXAMPLE_TARGETS
-          else
-            bazel build $BAZEL_OPTS //...
-          fi
+          bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //...
 
   typecheck:
     name: Type Checking
@@ -136,7 +114,7 @@ jobs:
       - name: Run failure tests
         shell: bash
         env:
-          MSYS2_ARG_CONV_EXCL: "*"
+          BAZEL_EXTRA_OPTS: "--config=ci --repository_cache=$HOME/.cache/bazel-repo-failure"
         run: |
           ./fire/starlark/failure_test/run_failure_tests.sh
 
@@ -166,7 +144,7 @@ jobs:
       - name: Run integration test
         shell: bash
         env:
-          MSYS2_ARG_CONV_EXCL: "*"
+          BAZEL_EXTRA_OPTS: "--config=ci --repository_cache=$HOME/.cache/bazel-repo"
         run: |
           cd integration_test
           ./run.sh --python-version ${{ matrix.python-version }}

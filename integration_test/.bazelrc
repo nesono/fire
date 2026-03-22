@@ -3,6 +3,13 @@
 # Use Bzlmod for dependency management
 common --enable_bzlmod
 
+# Auto-select platform config (linux/macos/windows)
+common --enable_platform_specific_config
+
+# Windows: exclude Rust targets (rules_rust toolchain cannot build on Windows)
+build:windows --build_tag_filters=-requires-rust
+test:windows --test_tag_filters=-requires-rust
+
 # CI configuration - enables caching for GitHub Actions
 # Note: repository_cache path must be passed as a flag for proper $HOME expansion
 build:ci --announce_rc
