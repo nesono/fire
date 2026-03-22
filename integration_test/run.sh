@@ -9,8 +9,7 @@
 
 set -euo pipefail
 
-# Disable MSYS path conversion on Windows (prevents //target from becoming /target)
-export MSYS_NO_PATHCONV=1
+# Disable MSYS path conversion for Bazel targets (prevents //target from becoming /target)
 export MSYS2_ARG_CONV_EXCL="*"
 
 cd "$(dirname "$0")"
@@ -50,20 +49,20 @@ echo "Generating MODULE.bazel for Python $PYTHON_VERSION..."
 sed "s/{{PYTHON_VERSION}}/$PYTHON_VERSION/g" MODULE.bazel.template > MODULE.bazel
 echo ""
 
+REPO_CACHE=$(cygpath -w "$HOME/.cache/bazel-repo" 2>/dev/null || echo "$HOME/.cache/bazel-repo")
+
 echo "Running all Bazel tests..."
 if [[ "$IS_WINDOWS" == true ]]; then
     # Exclude Rust targets: rules_rust toolchain cannot build on Windows
-    bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" \
-        //:test_speed_limit //:test_braking //:test_update_rate \
-        //consumer:test_cpp_test \
-        --test_output=errors
+    TARGETS="//:test_speed_limit //:test_braking //:test_update_rate //consumer:test_cpp_test"
+    bazel test --config=ci --repository_cache="$REPO_CACHE" $TARGETS --test_output=errors
 else
-    bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors
+    bazel test --config=ci --repository_cache="$REPO_CACHE" //... --test_output=errors
 fi
 echo ""
 
 echo "Building release report..."
-bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //:integration_release_report
+bazel build --config=ci --repository_cache="$REPO_CACHE" //:integration_release_report
 echo ""
 
 echo "Verifying release report..."
@@ -79,7 +78,7 @@ fi
 echo ""
 
 echo "Running release readiness test..."
-bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //:integration_release_readiness --test_output=all
+bazel test --config=ci --repository_cache="$REPO_CACHE" //:integration_release_readiness --test_output=all
 echo ""
 
 echo "Integration tests completed successfully!"

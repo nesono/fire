@@ -6,8 +6,7 @@
 
 set -euo pipefail
 
-# Disable MSYS path conversion on Windows (prevents //target from becoming /target)
-export MSYS_NO_PATHCONV=1
+# Disable MSYS path conversion for Bazel targets (prevents //target from becoming /target)
 export MSYS2_ARG_CONV_EXCL="*"
 
 echo "========================================="
@@ -19,7 +18,8 @@ FAILURES=0
 SUCCESSES=0
 
 # Bazel options for CI with repository cache (separate cache for failure tests)
-BAZEL_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo-failure"
+REPO_CACHE=$(cygpath -w "$HOME/.cache/bazel-repo-failure" 2>/dev/null || echo "$HOME/.cache/bazel-repo-failure")
+BAZEL_OPTS="--config=ci --repository_cache=$REPO_CACHE"
 
 # Query Bazel once for all targets with build output format (easy to parse!)
 # Output format: //package:target|tag1 tag2 tag3

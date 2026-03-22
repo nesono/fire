@@ -61,10 +61,10 @@ jobs:
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-          MSYS_NO_PATHCONV: 1
           MSYS2_ARG_CONV_EXCL: "*"
         run: |
-          BAZEL_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo"
+          REPO_CACHE=$(cygpath -w "$HOME/.cache/bazel-repo" 2>/dev/null || echo "$HOME/.cache/bazel-repo")
+          BAZEL_OPTS="--config=ci --repository_cache=$REPO_CACHE"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             # Exclude Rust: rules_rust toolchain cannot build on Windows
             TARGETS="//fire/starlark/... //examples:vehicle_params_cc_test //examples:vehicle_params_cc_custom_ns_test //examples:vehicle_params_py_test //examples:vehicle_params_py_alt_test //examples:vehicle_params_java_test //examples:vehicle_params_go_test //examples:vehicle_params_go_alt_test //examples/brake_control:brake_controller_test"
@@ -77,10 +77,10 @@ jobs:
         shell: bash
         env:
           USE_BAZEL_VERSION: ${{ matrix.bazel-version }}
-          MSYS_NO_PATHCONV: 1
           MSYS2_ARG_CONV_EXCL: "*"
         run: |
-          BAZEL_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo"
+          REPO_CACHE=$(cygpath -w "$HOME/.cache/bazel-repo" 2>/dev/null || echo "$HOME/.cache/bazel-repo")
+          BAZEL_OPTS="--config=ci --repository_cache=$REPO_CACHE"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             TARGETS="//fire/starlark/... //examples/brake_control/... //examples:vehicle_params_cc //examples:vehicle_params_cc_custom_ns //examples:vehicle_params_py //examples:vehicle_params_py_alt //examples:vehicle_params_java //examples:vehicle_params_go //examples:vehicle_params_go_alt //examples:vehicle_requirements //examples:component_requirements"
             bazel build $BAZEL_OPTS $TARGETS
@@ -131,7 +131,6 @@ jobs:
       - name: Run failure tests
         shell: bash
         env:
-          MSYS_NO_PATHCONV: 1
           MSYS2_ARG_CONV_EXCL: "*"
         run: |
           ./fire/starlark/failure_test/run_failure_tests.sh
@@ -162,7 +161,6 @@ jobs:
       - name: Run integration test
         shell: bash
         env:
-          MSYS_NO_PATHCONV: 1
           MSYS2_ARG_CONV_EXCL: "*"
         run: |
           cd integration_test
