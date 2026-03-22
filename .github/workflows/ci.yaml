@@ -67,8 +67,11 @@ jobs:
           BAZEL_OPTS="--config=ci --repository_cache=$REPO_CACHE"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             # Exclude Rust: rules_rust toolchain cannot build on Windows
-            TARGETS="//fire/starlark/... //examples:vehicle_params_cc_test //examples:vehicle_params_cc_custom_ns_test //examples:vehicle_params_py_test //examples:vehicle_params_py_alt_test //examples:vehicle_params_java_test //examples:vehicle_params_go_test //examples:vehicle_params_go_alt_test //examples/brake_control:brake_controller_test"
-            bazel test $BAZEL_OPTS $TARGETS --test_output=errors
+            # List fire/starlark sub-packages explicitly, skipping parameter_version
+            # (its BUILD loads rules_rust which triggers broken toolchain resolution on Windows)
+            STARLARK_TARGETS="//fire/starlark:all //fire/starlark/failure_test/bare_todo:all //fire/starlark/failure_test/dependency_failures:all //fire/starlark/failure_test/invalid_metadata:all //fire/starlark/failure_test/missing_fields:all //fire/starlark/failure_test/relative_paths:all //fire/starlark/failure_test/source_traceability:all //fire/starlark/failure_test/too_many_versions:all //fire/starlark/failure_test/version_mismatch:all"
+            EXAMPLE_TARGETS="//examples:vehicle_params_cc_test //examples:vehicle_params_cc_custom_ns_test //examples:vehicle_params_py_test //examples:vehicle_params_py_alt_test //examples:vehicle_params_java_test //examples:vehicle_params_go_test //examples:vehicle_params_go_alt_test //examples/brake_control:brake_controller_test"
+            bazel test $BAZEL_OPTS $STARLARK_TARGETS $EXAMPLE_TARGETS --test_output=errors
           else
             bazel test $BAZEL_OPTS //... --test_output=errors
           fi
@@ -82,8 +85,10 @@ jobs:
           REPO_CACHE=$(cygpath -w "$HOME/.cache/bazel-repo" 2>/dev/null || echo "$HOME/.cache/bazel-repo")
           BAZEL_OPTS="--config=ci --repository_cache=$REPO_CACHE"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            TARGETS="//fire/starlark/... //examples/brake_control/... //examples:vehicle_params_cc //examples:vehicle_params_cc_custom_ns //examples:vehicle_params_py //examples:vehicle_params_py_alt //examples:vehicle_params_java //examples:vehicle_params_go //examples:vehicle_params_go_alt //examples:vehicle_requirements //examples:component_requirements"
-            bazel build $BAZEL_OPTS $TARGETS
+            # Skip parameter_version package (loads rules_rust which breaks on Windows)
+            STARLARK_TARGETS="//fire/starlark:all //fire/starlark/failure_test/bare_todo:all //fire/starlark/failure_test/dependency_failures:all //fire/starlark/failure_test/invalid_metadata:all //fire/starlark/failure_test/missing_fields:all //fire/starlark/failure_test/relative_paths:all //fire/starlark/failure_test/source_traceability:all //fire/starlark/failure_test/too_many_versions:all //fire/starlark/failure_test/version_mismatch:all"
+            EXAMPLE_TARGETS="//examples/brake_control/... //examples:vehicle_params_cc //examples:vehicle_params_cc_custom_ns //examples:vehicle_params_py //examples:vehicle_params_py_alt //examples:vehicle_params_java //examples:vehicle_params_go //examples:vehicle_params_go_alt //examples:vehicle_requirements //examples:component_requirements"
+            bazel build $BAZEL_OPTS $STARLARK_TARGETS $EXAMPLE_TARGETS
           else
             bazel build $BAZEL_OPTS //...
           fi

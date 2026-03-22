@@ -78,7 +78,11 @@ fi
 echo ""
 
 echo "Running release readiness test..."
-bazel test --config=ci --repository_cache="$REPO_CACHE" //:integration_release_readiness --test_output=all
+if [[ "$IS_WINDOWS" == true ]]; then
+    echo "Skipping release readiness test on Windows (sh_test not supported)"
+else
+    bazel test --config=ci --repository_cache="$REPO_CACHE" //:integration_release_readiness --test_output=all
+fi
 echo ""
 
 echo "Integration tests completed successfully!"
