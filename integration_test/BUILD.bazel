@@ -102,4 +102,5 @@ release_report(
 release_readiness_test(
     name = "integration_release_readiness",
     report = ":integration_release_report",
+    tags = ["requires-shell"],
 )

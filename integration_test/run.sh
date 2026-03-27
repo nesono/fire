@@ -30,12 +30,6 @@ done
 # Accept extra Bazel options from environment (e.g., --config=ci --repository_cache=...)
 BAZEL_OPTS="${BAZEL_EXTRA_OPTS:-}"
 
-# Detect Windows for release_readiness_test skip (generates .sh test script)
-IS_WINDOWS=false
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
-    IS_WINDOWS=true
-fi
-
 echo "========================================="
 echo "Fire Integration Test"
 echo "Python Version: $PYTHON_VERSION"
@@ -68,11 +62,7 @@ fi
 echo ""
 
 echo "Running release readiness test..."
-if [[ "$IS_WINDOWS" == true ]]; then
-    echo "Skipping release readiness test on Windows (sh_test not supported)"
-else
-    bazel test $BAZEL_OPTS //:integration_release_readiness --test_output=all
-fi
+bazel test $BAZEL_OPTS //:integration_release_readiness --test_output=all
 echo ""
 
 echo "Integration tests completed successfully!"
