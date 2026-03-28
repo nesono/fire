@@ -62,7 +62,16 @@ fi
 echo ""
 
 echo "Running release readiness test..."
+set +e
 bazel test $BAZEL_OPTS //:integration_release_readiness --test_output=all
+rc=$?
+set -e
+if [ $rc -eq 4 ]; then
+    # Exit code 4 means no test targets matched (e.g., filtered out on Windows)
+    echo "Release readiness test skipped (filtered by platform tag)"
+elif [ $rc -ne 0 ]; then
+    exit $rc
+fi
 echo ""
 
 echo "Integration tests completed successfully!"
