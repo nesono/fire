@@ -14,8 +14,8 @@ echo ""
 FAILURES=0
 SUCCESSES=0
 
-# Bazel options for CI with repository cache (separate cache for failure tests)
-BAZEL_OPTS="--config=ci --repository_cache=$HOME/.cache/bazel-repo-failure"
+# Accept extra Bazel options from environment (e.g., --config=ci --repository_cache=...)
+BAZEL_OPTS="${BAZEL_EXTRA_OPTS:-}"
 
 # Query Bazel once for all targets with build output format (easy to parse!)
 # Output format: //package:target|tag1 tag2 tag3

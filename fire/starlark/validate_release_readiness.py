@@ -16,7 +16,7 @@ def validate_release_readiness(report_path: str) -> int:
     Returns:
         0 if ready for release, 1 if not ready
     """
-    with open(report_path, "r") as f:
+    with open(report_path, "r", encoding="utf-8") as f:
         content = f.read()
 
     # Check if the report indicates readiness

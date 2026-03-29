@@ -14,6 +14,7 @@ Python handles file I/O and applies the same validation rules defined in Starlar
 """
 
 import os
+import pathlib
 import re
 import sys
 
@@ -523,6 +524,9 @@ def main():
         "--allowed-deps", nargs="*", default=None, help="Allowed dependency file paths"
     )
     parser.add_argument(
+        "--output", default=None, help="Marker file to create on success"
+    )
+    parser.add_argument(
         "requirement_files", nargs="+", help="Requirement files to validate"
     )
 
@@ -544,8 +548,10 @@ def main():
         for error in all_errors:
             print(f"  ERROR: {error}")
         sys.exit(1)
-    else:
-        sys.exit(0)
+
+    if args.output:
+        pathlib.Path(args.output).touch()
+    sys.exit(0)
 
 
 if __name__ == "__main__":

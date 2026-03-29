@@ -27,7 +27,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-fail=0
+# Accept extra Bazel options from environment (e.g., --config=ci --repository_cache=...)
+BAZEL_OPTS="${BAZEL_EXTRA_OPTS:-}"
 
 echo "========================================="
 echo "Fire Integration Test"
@@ -41,27 +42,36 @@ sed "s/{{PYTHON_VERSION}}/$PYTHON_VERSION/g" MODULE.bazel.template > MODULE.baze
 echo ""
 
 echo "Running all Bazel tests..."
-bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //... --test_output=errors
+bazel test $BAZEL_OPTS //... --test_output=errors
 echo ""
 
 echo "Building release report..."
-bazel build --config=ci --repository_cache="$HOME/.cache/bazel-repo" //:integration_release_report
+bazel build $BAZEL_OPTS //:integration_release_report
 echo ""
 
 echo "Verifying release report..."
 if [ -f bazel-bin/RELEASE_REPORT.md ]; then
-    echo "✓ Release report generated successfully"
+    echo "Release report generated successfully"
     echo ""
     echo "Report summary:"
     head -20 bazel-bin/RELEASE_REPORT.md
 else
-    echo "✗ Release report not found"
+    echo "Release report not found"
     exit 1
 fi
 echo ""
 
 echo "Running release readiness test..."
-bazel test --config=ci --repository_cache="$HOME/.cache/bazel-repo" //:integration_release_readiness --test_output=all
+set +e
+bazel test $BAZEL_OPTS //:integration_release_readiness --test_output=all
+rc=$?
+set -e
+if [ $rc -eq 4 ]; then
+    # Exit code 4 means no test targets matched (e.g., filtered out on Windows)
+    echo "Release readiness test skipped (filtered by platform tag)"
+elif [ $rc -ne 0 ]; then
+    exit $rc
+fi
 echo ""
 
 echo "Integration tests completed successfully!"

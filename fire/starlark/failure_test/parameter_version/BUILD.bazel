@@ -68,6 +68,7 @@ generate_rust_parameters(
 rust_library(
     name = "test_params_rs",
     srcs = [":test_params_rust_src"],
+    tags = ["requires-rust"],
 )
 
 # Generate Java code (directory of per-param-version .java files)
@@ -130,6 +131,7 @@ rust_binary(
     tags = [
         "failure_test",
         "manual",
+        "requires-rust",
         "version_too_old",
     ],
     deps = [":test_params_rs"],
@@ -172,6 +174,7 @@ rust_binary(
     tags = [
         "failure_test",
         "manual",
+        "requires-rust",
         "version_upgraded",
     ],
     deps = [":test_params_rs"],
