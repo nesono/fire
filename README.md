@@ -290,3 +290,63 @@ cat bazel-bin/path/to/RELEASE_REPORT.md
 
 Use `release_readiness_test` as a CI gate — it fails the build when the report
 status is `NOT READY FOR RELEASE`.
+
+## Windows Support
+
+FIRE supports Windows with the following limitations:
+
+### Rust code generation
+
+The `rules_rust` toolchain cannot build on Windows due to an upstream linker
+issue with the process_wrapper. All Rust targets must be tagged with
+`requires-rust` so they are automatically excluded on Windows via `.bazelrc`:
+
+```starlark
+rust_library(
+    name = "my_params_rs",
+    srcs = [":my_params_rs_src"],
+    tags = ["requires-rust"],
+)
+```
+
+### Shell-based test rules
+
+`release_readiness_test` generates a shell script as its test executable, which
+Windows cannot run via `CreateProcessW`. Tag these targets with `requires-shell`
+to exclude them on Windows:
+
+```starlark
+release_readiness_test(
+    name = "release_readiness",
+    report = ":release_report",
+    tags = ["requires-shell"],
+)
+```
+
+### Platform configuration
+
+Windows exclusions are handled automatically via `.bazelrc` platform config.
+Projects consuming FIRE should include these lines in their `.bazelrc`:
+
+```text
+common --enable_platform_specific_config
+
+build:windows --build_tag_filters=-requires-rust,-requires-shell
+test:windows --test_tag_filters=-requires-rust,-requires-shell
+```
+
+### C++ standard
+
+Windows (MSVC) requires C++20 for designated initializer support. Configure
+in `.bazelrc`:
+
+```text
+build:windows --cxxopt=/std:c++20
+build:windows --host_cxxopt=/std:c++20
+```
+
+### File encoding
+
+Python scripts that read or write files containing Unicode characters (e.g.,
+`✓`, `⚠️`) must specify `encoding="utf-8"` explicitly, as Windows defaults to
+`cp1252`.
