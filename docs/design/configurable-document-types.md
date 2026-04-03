@@ -4,7 +4,7 @@
 
 FIRE currently hardcodes three document types (`.sysreq.md`, `.swreq.md`, `.regreq.md`)
 with validation rules embedded in Python Pydantic models. Systems engineering teams need
-many more document types (`.handbook.md`, `.ipsra.md`, `.opman.md`, etc.) each with
+many more document types (`.handbook.md`, `.hara.md`, `.tara.md`, `.opman.md`, etc.) each with
 different mandatory/optional fields. The issue asks for a consumer-configurable system
 where document formats are defined in YAML, validated by FIRE tooling via Bazel, and
 auto-generated into a FORMAT_SPECIFICATION.md usable as LLM context.
@@ -35,10 +35,14 @@ field_definitions:
         "DAL-C",
         "DAL-D",
         "DAL-E",
+        "PL-a",
+        "PL-b",
+        "PL-c",
+        "PL-d",
         "QM",
       ]
     allow_todo: true
-    description: "Safety Integrity Level (ISO 26262, IEC 61508, DO-178C/DO-254, QM)"
+    description: "Safety Integrity Level (ISO 26262, IEC 61508, DO-178C/DO-254, ISO 13849, QM)"
 
   sec:
     display_name: "Sec"
@@ -89,7 +93,7 @@ Consumers extend this by adding their own types:
 handbook:
   suffix: ".handbook.md"
   display_name: "Handbook Entry"
-  description: "Operational handbook entries"
+  description: "Product handbook entries"
   required_fields: [version]
   optional_fields: []
 ```
