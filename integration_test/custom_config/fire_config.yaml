@@ -58,6 +58,28 @@ document_types:
     optional_fields:
       - parent
 
+  swreq:
+    suffix: ".swreq.md"
+    display_name: "Software Requirement"
+    description: "Implementation-level software requirements"
+    required_fields:
+      - sil
+      - sec
+      - version
+    optional_fields:
+      - parent
+
+  regreq:
+    suffix: ".regreq.md"
+    display_name: "Regulatory Requirement"
+    description: "Regulatory obligations (SIL/Sec optional)"
+    required_fields:
+      - version
+    optional_fields:
+      - sil
+      - sec
+      - parent
+
   handbook:
     suffix: ".handbook.md"
     display_name: "Handbook Entry"
