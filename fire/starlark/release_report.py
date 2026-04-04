@@ -17,7 +17,7 @@ _VALID_TRACE_TYPES: Final = {"impl", "verif"}
 
 def load_yaml_file(path: str) -> object:
     """Load YAML from disk and normalize empty files to an empty list."""
-    with open(path, "r", encoding="utf-8") as handle:
+    with open(path) as handle:
         data = yaml.safe_load(handle)
     return data if data is not None else []
 
@@ -26,7 +26,7 @@ def load_json_file(path: str) -> object:
     """Load JSON from disk."""
     import json
 
-    with open(path, "r", encoding="utf-8") as handle:
+    with open(path) as handle:
         return json.load(handle)
 
 
@@ -332,7 +332,7 @@ def generate_release_report(
     for path in requirement_paths:
         if not path.endswith(".md"):
             continue
-        content = open(path, "r", encoding="utf-8").read()
+        content = open(path).read()
         sections.extend(parse_requirement_sections(content, path, known_fields))
         for todo in extract_todos(content):
             todos.append((path, todo))
@@ -348,7 +348,7 @@ def generate_release_report(
             continue
         data = load_yaml_file(path)
         param_maps.append(build_param_version_map(data, path))
-        content = open(path, "r", encoding="utf-8").read()
+        content = open(path).read()
         for todo in extract_todos(content):
             todos.append((path, todo))
         bare_todos.extend(
@@ -566,7 +566,7 @@ def main() -> int:
         product_name=args.product,
         config=config,
     )
-    with open(args.out, "w", encoding="utf-8") as handle:
+    with open(args.out, "w") as handle:
         handle.write(report)
         handle.write("\n")
 

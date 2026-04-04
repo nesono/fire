@@ -306,7 +306,7 @@ def main() -> int:
     config = load_config(args.config)
     content = generate_format_spec(config)
 
-    with open(args.out, "w", encoding="utf-8") as f:
+    with open(args.out, "w") as f:
         f.write(content)
         f.write("\n")
 

@@ -40,7 +40,6 @@ generate_rust_parameters(
 rust_library(
     name = "test_params_rs",
     srcs = [":test_params_rs_src"],
-    tags = ["requires-rust"],
     visibility = ["//visibility:public"],
 )
 
@@ -102,5 +101,4 @@ release_report(
 release_readiness_test(
     name = "integration_release_readiness",
     report = ":integration_release_report",
-    tags = ["requires-shell"],
 )

@@ -166,6 +166,7 @@ py_test(
 py_library(
     name = "config_models",
     srcs = ["config_models.py"],
+    data = ["default_fire_config.yaml"],
     visibility = ["//visibility:public"],
     deps = [
         "@pip//pydantic",

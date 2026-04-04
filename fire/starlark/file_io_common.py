@@ -28,7 +28,7 @@ def read_file_safe(file_path: str) -> tuple[str | None, str | None]:
         ...     process(content)
     """
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path) as f:
             return f.read(), None
     except FileNotFoundError:
         return None, f"File not found: {file_path}"
@@ -57,7 +57,7 @@ def load_yaml_safe(file_path: str) -> tuple[Any | None, str | None]:
         ...     process(data)
     """
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path) as f:
             data = yaml.safe_load(f)
             return data, None
     except FileNotFoundError:
@@ -86,7 +86,7 @@ def write_yaml_safe(file_path: str, data: Any) -> str | None:
         ...     print(f"Failed: {error}")
     """
     try:
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(file_path, "w") as f:
             yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
             return None
     except PermissionError:
