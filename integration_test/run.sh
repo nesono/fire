@@ -9,9 +9,10 @@
 
 set -euo pipefail
 
-# Prevent MSYS2 (Git Bash on Windows) from converting // to / in arguments.
-# Bazel target labels like //custom_config:target look like UNC paths to MSYS2.
-export MSYS2_ARG_CONV_EXCL="*"
+# Prevent MSYS2 (Git Bash on Windows) from converting //foo to /foo in
+# Bazel target labels. The exclusion pattern matches arguments starting
+# with // so that real file paths are still converted normally.
+export MSYS2_ARG_CONV_EXCL="//"
 
 cd "$(dirname "$0")"
 
