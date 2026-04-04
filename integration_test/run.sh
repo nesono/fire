@@ -61,6 +61,43 @@ else
 fi
 echo ""
 
+echo "Building custom config targets (configurable document types)..."
+bazel build $BAZEL_OPTS //custom_config:custom_format_spec //custom_config:custom_release_report
+echo ""
+
+echo "Verifying custom FORMAT_SPECIFICATION.md..."
+CUSTOM_FORMAT_SPEC="bazel-bin/custom_config/FORMAT_SPECIFICATION.md"
+if [ -f "$CUSTOM_FORMAT_SPEC" ]; then
+    echo "Custom format spec generated successfully"
+    # Verify it contains the custom handbook type
+    if grep -q "Handbook Entry" "$CUSTOM_FORMAT_SPEC"; then
+        echo "Custom document type 'Handbook Entry' found in format spec"
+    else
+        echo "ERROR: Custom document type 'Handbook Entry' not found in format spec"
+        exit 1
+    fi
+else
+    echo "ERROR: Custom format spec not found"
+    exit 1
+fi
+echo ""
+
+echo "Verifying custom release report..."
+CUSTOM_REPORT="bazel-bin/custom_config/CUSTOM_RELEASE_REPORT.md"
+if [ -f "$CUSTOM_REPORT" ]; then
+    echo "Custom release report generated successfully"
+    if grep -q "HB-001" "$CUSTOM_REPORT"; then
+        echo "Handbook requirement HB-001 found in release report"
+    else
+        echo "ERROR: Handbook requirement HB-001 not found in release report"
+        exit 1
+    fi
+else
+    echo "ERROR: Custom release report not found"
+    exit 1
+fi
+echo ""
+
 echo "Running release readiness test..."
 set +e
 bazel test $BAZEL_OPTS //:integration_release_readiness --test_output=all

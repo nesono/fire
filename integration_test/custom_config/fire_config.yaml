@@ -1,0 +1,67 @@
+fire_config_version: 1
+
+field_definitions:
+  sil:
+    display_name: "SIL"
+    type: enum
+    values:
+      - "ASIL-A"
+      - "ASIL-B"
+      - "ASIL-C"
+      - "ASIL-D"
+      - "SIL-1"
+      - "SIL-2"
+      - "SIL-3"
+      - "SIL-4"
+      - "DAL-A"
+      - "DAL-B"
+      - "DAL-C"
+      - "DAL-D"
+      - "DAL-E"
+      - "PL-a"
+      - "PL-b"
+      - "PL-c"
+      - "PL-d"
+      - "QM"
+    allow_todo: true
+    description: "Safety Integrity Level"
+
+  sec:
+    display_name: "Sec"
+    type: bool
+    allow_todo: true
+    description: "Security relevance flag"
+
+  version:
+    display_name: "Version"
+    type: int
+    min_value: 1
+    allow_todo: false
+    description: "Requirement version"
+
+  parent:
+    display_name: "Parent"
+    type: parent_link
+    allow_todo: true
+    allow_multiple: true
+    description: "Markdown link(s) to parent requirement(s)"
+
+document_types:
+  sysreq:
+    suffix: ".sysreq.md"
+    display_name: "System Requirement"
+    description: "High-level system requirements"
+    required_fields:
+      - sil
+      - sec
+      - version
+    optional_fields:
+      - parent
+
+  handbook:
+    suffix: ".handbook.md"
+    display_name: "Handbook Entry"
+    description: "Product handbook entries with version tracking"
+    required_fields:
+      - version
+    optional_fields: []
