@@ -293,9 +293,11 @@ status is `NOT READY FOR RELEASE`.
 
 ## Custom Document Types
 
-FIRE ships with three built-in document types (`.sysreq.md`, `.swreq.md`,
-`.regreq.md`). You can define additional types by providing a
-`fire_config.yaml`:
+When no config is provided, FIRE uses three built-in document types
+(`.sysreq.md`, `.swreq.md`, `.regreq.md`). You can provide a
+`fire_config.yaml` to fully define which document types and fields are
+available. A custom config replaces the defaults, so include any
+built-in types you still need:
 
 ```yaml
 fire_config_version: 1
@@ -313,6 +315,14 @@ field_definitions:
     allow_todo: true
 
 document_types:
+  # Include built-in types you need
+  sysreq:
+    suffix: ".sysreq.md"
+    display_name: "System Requirement"
+    required_fields: [sil, version]
+    optional_fields: []
+
+  # Add your own types
   handbook:
     suffix: ".handbook.md"
     display_name: "Handbook Entry"
