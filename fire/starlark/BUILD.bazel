@@ -1,6 +1,8 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 
 exports_files([
+    "default_fire_config.yaml",
+    "format_spec.bzl",
     "parameters.bzl",
     "requirements.bzl",
     "reports.bzl",
@@ -111,6 +113,8 @@ py_binary(
     main = "validate_cross_references.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":config_models",
+        ":dynamic_requirement_model",
         ":file_io_common",
         ":markdown_common",
         ":path_common",
@@ -126,6 +130,7 @@ py_binary(
     main = "release_report.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":config_models",
         ":markdown_common",
         ":path_common",
         ":patterns",
@@ -157,6 +162,82 @@ py_test(
     ],
 )
 
+# FIRE configuration models
+py_library(
+    name = "config_models",
+    srcs = ["config_models.py"],
+    data = ["default_fire_config.yaml"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@pip//pydantic",
+        "@pip//pyyaml",
+    ],
+)
+
+py_test(
+    name = "config_models_test",
+    size = "small",
+    srcs = ["config_models_test.py"],
+    deps = [
+        ":config_models",
+        "@pip//pytest",
+        "@pip//pyyaml",
+    ],
+)
+
+# Dynamic requirement model factory
+py_library(
+    name = "dynamic_requirement_model",
+    srcs = ["dynamic_requirement_model.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":config_models",
+        ":markdown_common",
+        ":patterns",
+        "@pip//pydantic",
+    ],
+)
+
+py_test(
+    name = "dynamic_requirement_model_test",
+    size = "small",
+    srcs = ["dynamic_requirement_model_test.py"],
+    deps = [
+        ":config_models",
+        ":dynamic_requirement_model",
+        ":requirement_models",
+        "@pip//pydantic",
+        "@pip//pytest",
+    ],
+)
+
+# Format specification generator
+py_library(
+    name = "generate_format_spec_lib",
+    srcs = ["generate_format_spec.py"],
+    visibility = ["//visibility:public"],
+    deps = [":config_models"],
+)
+
+py_binary(
+    name = "generate_format_spec_script",
+    srcs = ["generate_format_spec.py"],
+    main = "generate_format_spec.py",
+    visibility = ["//visibility:public"],
+    deps = [":config_models"],
+)
+
+py_test(
+    name = "generate_format_spec_test",
+    size = "small",
+    srcs = ["generate_format_spec_test.py"],
+    deps = [
+        ":config_models",
+        ":generate_format_spec_lib",
+        "@pip//pytest",
+    ],
+)
+
 # Python library for requirement models
 py_library(
     name = "requirement_models",
@@ -177,6 +258,7 @@ py_library(
     srcs = ["release_report.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":config_models",
         ":markdown_common",
         ":path_common",
         ":patterns",
@@ -191,6 +273,8 @@ py_library(
     srcs = ["validate_cross_references.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":config_models",
+        ":dynamic_requirement_model",
         ":file_io_common",
         ":markdown_common",
         ":path_common",

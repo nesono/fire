@@ -20,9 +20,14 @@ import sys
 
 from typing import Final
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from fire.starlark import file_io_common, markdown_common, path_common
+from fire.starlark.config_models import FireConfig, load_config
+from fire.starlark.dynamic_requirement_model import (
+    build_models_from_config,
+    model_for_suffix,
+)
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
 from fire.starlark.requirement_models import (
     RequirementMetadata,
@@ -37,8 +42,21 @@ _METADATA_CONTINUATION_MARKER: Final = "|"
 _METADATA_FIELD_SEPARATOR: Final = "|"
 
 
-def _metadata_model_for_file(file_path: str) -> type[RequirementMetadata]:
-    """Return the Pydantic model class appropriate for the file extension."""
+def _metadata_model_for_file(
+    file_path: str,
+    config: FireConfig | None = None,
+    models: dict[str, type[BaseModel]] | None = None,
+) -> type[RequirementMetadata] | type[BaseModel]:
+    """Return the Pydantic model class appropriate for the file extension.
+
+    When *config* and *models* are provided, looks up the model from the
+    configuration.  Otherwise falls back to the hardcoded static models.
+    """
+    if config is not None and models is not None:
+        model = model_for_suffix(config, models, file_path)
+        if model is not None:
+            return model
+    # Fallback to static models
     if file_path.endswith(_REGREQ_EXTENSION):
         return RegulatoryRequirementMetadata
     return RequirementMetadata
@@ -102,9 +120,14 @@ def _join_metadata_lines(lines: list[str]) -> str:
     return joined
 
 
-def _extract_next_metadata_line(lines: list[str], start_index: int) -> str | None:
+def _extract_next_metadata_line(
+    lines: list[str],
+    start_index: int,
+    known_fields: list[str] | None = None,
+) -> str | None:
     """Extract metadata lines after start_index, supporting multi-line continuation."""
-    known_fields = ["sil", "sec", "version", "parent"]
+    if known_fields is None:
+        known_fields = ["sil", "sec", "version", "parent"]
     collected_lines = []
 
     for j in range(start_index + 1, len(lines)):
@@ -193,8 +216,18 @@ def _parse_metadata_fields(metadata_line: str, req_id: str) -> dict:
     return frontmatter
 
 
+def _requirement_suffixes(config: FireConfig | None = None) -> tuple[str, ...]:
+    """Return known requirement file suffixes from config or the hardcoded default."""
+    if config is not None:
+        return tuple(dt.suffix for dt in config.document_types.values())
+    return _REQUIREMENT_SUFFIXES
+
+
 def parse_inline_metadata_for_requirement(
-    content, req_id, model_class=RequirementMetadata
+    content,
+    req_id,
+    model_class=RequirementMetadata,
+    known_fields: list[str] | None = None,
 ):
     """Parse inline metadata for a specific requirement ID.
 
@@ -207,7 +240,7 @@ def parse_inline_metadata_for_requirement(
     if heading_index is None:
         return None, None
 
-    metadata_line = _extract_next_metadata_line(lines, heading_index)
+    metadata_line = _extract_next_metadata_line(lines, heading_index, known_fields)
     if not metadata_line:
         return None, None
 
@@ -333,7 +366,13 @@ def validate_parameter_reference(
 
 
 def validate_requirement_reference(
-    req_id, req_path, workspace_root, ref_version=None, source_file=None
+    req_id,
+    req_path,
+    workspace_root,
+    ref_version=None,
+    source_file=None,
+    config: FireConfig | None = None,
+    models: dict[str, type[BaseModel]] | None = None,
 ):
     """Validate that a requirement reference exists and check version if specified."""
     # Normalize repository-relative path
@@ -360,7 +399,8 @@ def validate_requirement_reference(
         return False, f"Requirement file does not exist: {req_path}"
 
     # Plain .md files: just verify existence, skip metadata validation
-    if not path_without_fragment.endswith(_REQUIREMENT_SUFFIXES):
+    suffixes = _requirement_suffixes(config)
+    if not path_without_fragment.endswith(suffixes):
         return True, None
 
     # Read file and verify it contains the correct requirement ID
@@ -368,9 +408,10 @@ def validate_requirement_reference(
     if error:
         return False, error
 
-    model_class = _metadata_model_for_file(path_without_fragment)
+    model_class = _metadata_model_for_file(path_without_fragment, config, models)
+    kf = config.known_fields() if config else None
     metadata, validation_error = parse_inline_metadata_for_requirement(
-        content, req_id, model_class
+        content, req_id, model_class, kf
     )
 
     if metadata is None:
@@ -399,13 +440,21 @@ def validate_requirement_reference(
     return True, None
 
 
-def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
+def validate_requirement_file(
+    file_path,
+    workspace_root,
+    allowed_deps=None,
+    config: FireConfig | None = None,
+    models: dict[str, type[BaseModel]] | None = None,
+):
     """Validate all cross-references in a single requirement file.
 
     Args:
         file_path: Path to the requirement file to validate
         workspace_root: Workspace root directory
         allowed_deps: Set of allowed dependency file paths (for strict validation)
+        config: Optional FireConfig for config-driven validation
+        models: Optional pre-built dynamic models dict
     """
     errors = []
     if allowed_deps is None:
@@ -418,14 +467,16 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
     # Validate no bare/malformed TODOs in the entire file
     errors.extend(validate_no_bare_todos(content, file_path))
 
+    known_fields = config.known_fields() if config else None
+
     # Validate the requirement file's own metadata
     # Find all requirement IDs in the file and validate each one
     req_id_pattern = r"^## ([A-Z][A-Z0-9_-]+)\s*$"
     for match in re.finditer(req_id_pattern, content, re.MULTILINE):
         req_id = match.group(1)
-        model_class = _metadata_model_for_file(file_path)
+        model_class = _metadata_model_for_file(file_path, config, models)
         metadata, validation_error = parse_inline_metadata_for_requirement(
-            content, req_id, model_class
+            content, req_id, model_class, known_fields
         )
 
         if metadata is None:
@@ -505,7 +556,13 @@ def validate_requirement_file(file_path, workspace_root, allowed_deps=None):
                 continue  # Skip further validation for this requirement
 
         valid, error = validate_requirement_reference(
-            req_id, req_path, workspace_root, ref_version, file_path
+            req_id,
+            req_path,
+            workspace_root,
+            ref_version,
+            file_path,
+            config=config,
+            models=models,
         )
         if not valid:
             errors.append(f"{file_path}: {error}")
@@ -526,6 +583,7 @@ def main():
     parser.add_argument(
         "--output", default=None, help="Marker file to create on success"
     )
+    parser.add_argument("--config", default=None, help="Path to fire_config.yaml")
     parser.add_argument(
         "requirement_files", nargs="+", help="Requirement files to validate"
     )
@@ -537,10 +595,20 @@ def main():
     allowed_deps = set(args.allowed_deps) if args.allowed_deps is not None else None
     requirement_files = args.requirement_files
 
+    # Load configuration and build dynamic models
+    config = load_config(args.config)
+    models = build_models_from_config(config)
+
     all_errors = []
 
     for req_file in requirement_files:
-        errors = validate_requirement_file(req_file, workspace_root, allowed_deps)
+        errors = validate_requirement_file(
+            req_file,
+            workspace_root,
+            allowed_deps,
+            config=config,
+            models=models,
+        )
         all_errors.extend(errors)
 
     if all_errors:

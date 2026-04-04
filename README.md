@@ -291,6 +291,66 @@ cat bazel-bin/path/to/RELEASE_REPORT.md
 Use `release_readiness_test` as a CI gate — it fails the build when the report
 status is `NOT READY FOR RELEASE`.
 
+## Custom Document Types
+
+FIRE ships with three built-in document types (`.sysreq.md`, `.swreq.md`,
+`.regreq.md`). You can define additional types by providing a
+`fire_config.yaml`:
+
+```yaml
+fire_config_version: 1
+
+field_definitions:
+  version:
+    display_name: "Version"
+    type: int
+    min_value: 1
+
+  sil:
+    display_name: "SIL"
+    type: enum
+    values: ["ASIL-A", "ASIL-B", "ASIL-C", "ASIL-D", "QM"]
+    allow_todo: true
+
+document_types:
+  handbook:
+    suffix: ".handbook.md"
+    display_name: "Handbook Entry"
+    description: "Product handbook entries"
+    required_fields: [version]
+    optional_fields: [sil]
+```
+
+Pass the config to FIRE rules:
+
+```starlark
+load("@fire//fire/starlark:requirements.bzl", "requirement_library")
+
+requirement_library(
+    name = "handbook_entries",
+    srcs = glob(["docs/*.handbook.md"]),
+    config = ":fire_config.yaml",
+)
+```
+
+The default configuration (matching the built-in types) is at
+`@fire//fire/starlark:default_fire_config.yaml`.
+
+### Format Specification
+
+Generate a `FORMAT_SPECIFICATION.md` from your config for use as
+documentation or LLM context:
+
+```starlark
+load("@fire//fire/starlark:format_spec.bzl", "generate_format_specification")
+
+generate_format_specification(
+    name = "format_spec",
+    config = ":fire_config.yaml",
+    out = "FORMAT_SPECIFICATION.md",
+)
+```
+
 ## Windows Support
 
 FIRE supports Windows with the following limitations:
