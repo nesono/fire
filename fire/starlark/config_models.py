@@ -92,9 +92,89 @@ class FireConfig(BaseModel):
         return [fd.display_name.lower() for fd in self.field_definitions.values()]
 
 
-def _default_config_path() -> Path:
-    """Return the path to the built-in default_fire_config.yaml."""
-    return Path(__file__).parent / "default_fire_config.yaml"
+_DEFAULT_CONFIG_YAML = """\
+fire_config_version: 1
+
+field_definitions:
+  sil:
+    display_name: "SIL"
+    type: enum
+    values:
+      - "ASIL-A"
+      - "ASIL-B"
+      - "ASIL-C"
+      - "ASIL-D"
+      - "SIL-1"
+      - "SIL-2"
+      - "SIL-3"
+      - "SIL-4"
+      - "DAL-A"
+      - "DAL-B"
+      - "DAL-C"
+      - "DAL-D"
+      - "DAL-E"
+      - "PL-a"
+      - "PL-b"
+      - "PL-c"
+      - "PL-d"
+      - "QM"
+    allow_todo: true
+    description: "Safety Integrity Level (ISO 26262, IEC 61508, DO-178C/DO-254, ISO 13849, QM)"
+
+  sec:
+    display_name: "Sec"
+    type: bool
+    allow_todo: true
+    description: "Security relevance flag"
+
+  version:
+    display_name: "Version"
+    type: int
+    min_value: 1
+    allow_todo: false
+    description: "Requirement version, positive integer >= 1"
+
+  parent:
+    display_name: "Parent"
+    type: parent_link
+    allow_todo: true
+    allow_multiple: true
+    description: "Markdown link(s) to parent requirement(s)"
+
+document_types:
+  sysreq:
+    suffix: ".sysreq.md"
+    display_name: "System Requirement"
+    description: "High-level system requirements"
+    required_fields:
+      - sil
+      - sec
+      - version
+    optional_fields:
+      - parent
+
+  swreq:
+    suffix: ".swreq.md"
+    display_name: "Software Requirement"
+    description: "Implementation-level software requirements"
+    required_fields:
+      - sil
+      - sec
+      - version
+    optional_fields:
+      - parent
+
+  regreq:
+    suffix: ".regreq.md"
+    display_name: "Regulatory Requirement"
+    description: "Regulatory obligations (SIL/Sec optional)"
+    required_fields:
+      - version
+    optional_fields:
+      - sil
+      - sec
+      - parent
+"""
 
 
 def load_config(config_path: str | Path | None = None) -> FireConfig:
@@ -103,11 +183,10 @@ def load_config(config_path: str | Path | None = None) -> FireConfig:
     When *config_path* is ``None``, the built-in default is used.
     """
     if config_path is None:
-        config_path = _default_config_path()
+        raw = yaml.safe_load(_DEFAULT_CONFIG_YAML)
     else:
         config_path = Path(config_path)
-
-    with open(config_path, encoding="utf-8") as f:
-        raw = yaml.safe_load(f)
+        with open(config_path, encoding="utf-8") as f:
+            raw = yaml.safe_load(f)
 
     return FireConfig.model_validate(raw)
