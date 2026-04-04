@@ -9,11 +9,6 @@
 
 set -euo pipefail
 
-# Prevent MSYS2 (Git Bash on Windows) from converting //foo to /foo in
-# Bazel target labels. The exclusion pattern matches arguments starting
-# with // so that real file paths are still converted normally.
-export MSYS2_ARG_CONV_EXCL="//"
-
 cd "$(dirname "$0")"
 
 # Parse command line arguments
@@ -104,16 +99,7 @@ fi
 echo ""
 
 echo "Running release readiness test..."
-set +e
 bazel test $BAZEL_OPTS //:integration_release_readiness --test_output=all
-rc=$?
-set -e
-if [ $rc -eq 4 ]; then
-    # Exit code 4 means no test targets matched (e.g., filtered out on Windows)
-    echo "Release readiness test skipped (filtered by platform tag)"
-elif [ $rc -ne 0 ]; then
-    exit $rc
-fi
 echo ""
 
 echo "Integration tests completed successfully!"

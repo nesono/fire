@@ -109,7 +109,6 @@ generate_rust_parameters(
 rust_library(
     name = "vehicle_params_rs",
     srcs = [":vehicle_params_rs_src"],
-    tags = ["requires-rust"],
 )
 
 # Second Rust library
@@ -121,7 +120,6 @@ generate_rust_parameters(
 rust_library(
     name = "vehicle_params_rs_alt",
     srcs = [":vehicle_params_rs_alt_src"],
-    tags = ["requires-rust"],
 )
 
 # C++ tests
@@ -178,7 +176,6 @@ rust_test(
     name = "vehicle_params_rust_test",
     srcs = ["vehicle_params_test.rs"],
     crate_root = "vehicle_params_test.rs",
-    tags = ["requires-rust"],
     deps = [":vehicle_params_rs"],
 )
 
@@ -186,7 +183,6 @@ rust_test(
     name = "vehicle_params_rust_alt_test",
     srcs = ["vehicle_params_alt_test.rs"],
     crate_root = "vehicle_params_alt_test.rs",
-    tags = ["requires-rust"],
     deps = [":vehicle_params_rs_alt"],
 )
 

@@ -23,7 +23,6 @@ rust_test(
     name = "test_rust_test",
     srcs = ["test_rust.rs"],
     crate_root = "test_rust.rs",
-    tags = ["requires-rust"],
     deps = ["//:test_params_rs"],
 )
 

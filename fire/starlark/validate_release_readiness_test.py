@@ -18,9 +18,7 @@ def test_validate_ready_for_release():
 
 ✓ No issues found - all checks passed
 """
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".md", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
         f.write(content)
         f.flush()
         result = validate_release_readiness.validate_release_readiness(f.name)
@@ -41,9 +39,7 @@ def test_validate_not_ready_for_release():
 - ⚠️  Missing implementation traces: **2** ([details](#missing-implementation-traces))
 - ⚠️  Open TODOs: **1** ([details](#todo-inventory))
 """
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".md", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
         f.write(content)
         f.flush()
         result = validate_release_readiness.validate_release_readiness(f.name)
@@ -57,9 +53,7 @@ def test_validate_malformed_report():
 
 This is not a release report.
 """
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".md", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
         f.write(content)
         f.flush()
         result = validate_release_readiness.validate_release_readiness(f.name)

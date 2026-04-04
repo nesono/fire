@@ -169,7 +169,7 @@ class TestLoadConfig:
             },
         }
         config_file = tmp_path / "fire_config.yaml"
-        config_file.write_text(yaml.dump(config_data), encoding="utf-8")
+        config_file.write_text(yaml.dump(config_data))
         cfg = load_config(config_file)
         assert "handbook" in cfg.document_types
         assert cfg.document_types["handbook"].suffix == ".handbook.md"
