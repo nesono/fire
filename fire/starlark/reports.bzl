@@ -10,6 +10,10 @@ def _release_report_impl(ctx):
     args.add("--product")
     args.add(ctx.attr.product)
 
+    # Pass config file if provided
+    if ctx.file.config:
+        args.add("--config", ctx.file.config.path)
+
     requirement_files = [f for f in ctx.files.requirements if f.path.endswith(".md")]
     param_files = [
         f
@@ -22,12 +26,14 @@ def _release_report_impl(ctx):
     args.add_all(param_files, before_each = "--params")
     args.add_all(trace_files, before_each = "--source-traces")
 
+    config_inputs = [ctx.file.config] if ctx.file.config else []
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
 
     ctx.actions.run(
         inputs = requirement_files +
                  param_files +
                  trace_files +
+                 config_inputs +
                  [script] +
                  script_runfiles,
         outputs = [ctx.outputs.out],
@@ -42,6 +48,10 @@ def _release_report_impl(ctx):
 release_report = rule(
     implementation = _release_report_impl,
     attrs = {
+        "config": attr.label(
+            allow_single_file = [".yaml", ".yml"],
+            doc = "Optional fire_config.yaml for custom document types",
+        ),
         "out": attr.output(
             mandatory = True,
             doc = "Output markdown file",

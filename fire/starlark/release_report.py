@@ -9,6 +9,7 @@ from typing import Final
 import yaml
 
 from fire.starlark import markdown_common, path_common, validate_cross_references
+from fire.starlark.config_models import FireConfig, load_config
 from fire.starlark.patterns import PARAM_VERSION_SUFFIX_RE, REQ_ID_PATTERN, TODO_PATTERN
 
 _VALID_TRACE_TYPES: Final = {"impl", "verif"}
@@ -76,7 +77,11 @@ def extract_todos(content: str) -> list[str]:
     return TODO_PATTERN.findall(content)
 
 
-def parse_requirement_sections(content: str, file_path: str) -> list[dict]:
+def parse_requirement_sections(
+    content: str,
+    file_path: str,
+    known_fields: list[str] | None = None,
+) -> list[dict]:
     """Split a requirements file into sections with parsed inline metadata."""
     sections: list[dict] = []
     lines = content.split("\n")
@@ -94,7 +99,7 @@ def parse_requirement_sections(content: str, file_path: str) -> list[dict]:
         section_lines = lines[start:end]
 
         metadata_line = validate_cross_references._extract_next_metadata_line(
-            section_lines, 0
+            section_lines, 0, known_fields
         )
         metadata = {}
         if metadata_line:
@@ -317,8 +322,10 @@ def generate_release_report(
     parameter_paths: list[str],
     source_trace_paths: list[str],
     product_name: str,
+    config: FireConfig | None = None,
 ) -> str:
     """Build the full release readiness report from requirements and traces."""
+    known_fields = config.known_fields() if config else None
     sections: list[dict] = []
     todos: list[tuple[str, str]] = []
     bare_todos: list[str] = []
@@ -326,7 +333,7 @@ def generate_release_report(
         if not path.endswith(".md"):
             continue
         content = open(path, "r", encoding="utf-8").read()
-        sections.extend(parse_requirement_sections(content, path))
+        sections.extend(parse_requirement_sections(content, path, known_fields))
         for todo in extract_todos(content):
             todos.append((path, todo))
         bare_todos.extend(
@@ -545,15 +552,19 @@ def main() -> int:
     parser.add_argument("--params", action="append", default=[])
     parser.add_argument("--source-traces", action="append", default=[])
     parser.add_argument("--product", default="Product")
+    parser.add_argument("--config", default=None, help="Path to fire_config.yaml")
     parser.add_argument("--out", required=True)
 
     args = parser.parse_args()
+
+    config = load_config(args.config)
 
     report = generate_release_report(
         requirement_paths=args.requirements,
         parameter_paths=args.params,
         source_trace_paths=args.source_traces,
         product_name=args.product,
+        config=config,
     )
     with open(args.out, "w", encoding="utf-8") as handle:
         handle.write(report)

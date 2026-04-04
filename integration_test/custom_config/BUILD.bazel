@@ -1,0 +1,31 @@
+"""Integration test for custom document types via fire_config.yaml."""
+
+load("@fire//fire/starlark:format_spec.bzl", "generate_format_specification")
+load("@fire//fire/starlark:reports.bzl", "release_report")
+load("@fire//fire/starlark:requirements.bzl", "requirement_library")
+
+exports_files(["fire_config.yaml"])
+
+# Requirement library using a custom config that adds .handbook.md type
+requirement_library(
+    name = "custom_requirements",
+    srcs = glob(["*.md"]),
+    config = ":fire_config.yaml",
+    visibility = ["//visibility:public"],
+)
+
+# Generate FORMAT_SPECIFICATION.md from the custom config
+generate_format_specification(
+    name = "custom_format_spec",
+    out = "FORMAT_SPECIFICATION.md",
+    config = ":fire_config.yaml",
+)
+
+# Release report using the custom config
+release_report(
+    name = "custom_release_report",
+    out = "CUSTOM_RELEASE_REPORT.md",
+    config = ":fire_config.yaml",
+    product = "Custom Config Integration Test",
+    requirements = [":custom_requirements"],
+)

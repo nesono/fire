@@ -14,6 +14,11 @@ def _validate_requirements_impl(ctx):
     args = ctx.actions.args()
     args.add(workspace_root)
     args.add("--output", output.path)
+
+    # Pass config file if provided
+    if ctx.file.config:
+        args.add("--config", ctx.file.config.path)
+
     args.add("--allowed-deps")
 
     # Add allowed dependency paths (short_path format)
@@ -31,9 +36,11 @@ def _validate_requirements_impl(ctx):
     # Get runfiles for the script
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
 
+    config_inputs = [ctx.file.config] if ctx.file.config else []
+
     # Run validation script directly (no shell wrapper needed)
     ctx.actions.run(
-        inputs = ctx.files.srcs + ctx.files.deps + script_runfiles,
+        inputs = ctx.files.srcs + ctx.files.deps + config_inputs + script_runfiles,
         outputs = [output],
         executable = script,
         arguments = [args],
@@ -50,6 +57,10 @@ def _validate_requirements_impl(ctx):
 _validate_requirements = rule(
     implementation = _validate_requirements_impl,
     attrs = {
+        "config": attr.label(
+            allow_single_file = [".yaml", ".yml"],
+            doc = "Optional fire_config.yaml for custom document types",
+        ),
         "deps": attr.label_list(
             allow_files = [".md", ".yaml", ".yml"],
             default = [],
@@ -72,7 +83,7 @@ _validate_requirements = rule(
     doc = "Validates cross-references in requirement documents",
 )
 
-def requirement_library(name, srcs, deps = [], tags = [], visibility = None):
+def requirement_library(name, srcs, deps = [], config = None, tags = [], visibility = None):
     """Validates requirement documents and creates a filegroup.
 
     This validates that all cross-references (parameters, requirements, tests)
@@ -82,6 +93,7 @@ def requirement_library(name, srcs, deps = [], tags = [], visibility = None):
         name: Name of the target
         srcs: List of requirement markdown files
         deps: List of dependencies that srcs references (requirement files and parameter files)
+        config: Optional fire_config.yaml label for custom document types
         tags: Tags for this target (e.g., ["manual", "failure_test"])
         visibility: Visibility of the target
 
@@ -108,6 +120,7 @@ def requirement_library(name, srcs, deps = [], tags = [], visibility = None):
         name = validation_name,
         srcs = srcs,
         deps = deps,
+        config = config,
         out = validation_name + ".marker",
         tags = tags,  # tags is a built-in attribute available on all rules
     )
