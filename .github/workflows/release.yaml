@@ -11,8 +11,8 @@ on:
         type: string
 
 jobs:
-  upload-format-spec:
-    name: Upload Format Specification
+  upload-tarball:
+    name: Upload Source Tarball
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -29,10 +29,6 @@ jobs:
             echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Update FORMAT_SPECIFICATION.md version
-        run: |
-          sed -i "s/^\*\*Version:\*\* main$/\*\*Version:\*\* ${{ steps.get_version.outputs.version }}/" FORMAT_SPECIFICATION.md
-
       - name: Create deterministic source tarball
         run: |
           VERSION=${{ steps.get_version.outputs.version }}
@@ -47,6 +43,5 @@ jobs:
           VERSION=${{ steps.get_version.outputs.version }}
           VERSION_NUM=${VERSION#v}
           gh release upload ${{ steps.get_version.outputs.version }} \
-            FORMAT_SPECIFICATION.md \
             fire-${VERSION_NUM}.tar.gz \
             --clobber
