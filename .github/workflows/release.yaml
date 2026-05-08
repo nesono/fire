@@ -10,6 +10,8 @@ on:
         required: true
         type: string
 
+permissions: {}
+
 jobs:
   upload-format-spec:
     name: Upload Format Specification
