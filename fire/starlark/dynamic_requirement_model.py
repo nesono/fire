@@ -10,7 +10,6 @@ that FIRE shipped before the configuration system was introduced.
 from __future__ import annotations
 
 import re
-from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -98,28 +97,28 @@ def _build_parent_link_validator(
 def _annotation_for_field(field_def: FieldDefinition, *, required: bool) -> type:
     """Return the Python type annotation for a field definition."""
     if field_def.type == "enum":
-        base = Union[str, str]  # enum values are strings; TODO is also a string
+        base = str  # enum values are strings; TODO is also a string
         if field_def.allow_todo:
             base = str
         else:
             base = str
     elif field_def.type == "bool":
         if field_def.allow_todo:
-            base = Union[bool, str]
+            base = bool | str
         else:
             base = bool
     elif field_def.type == "int":
         base = int
     elif field_def.type == "parent_link":
         if field_def.allow_multiple:
-            base = Optional[List[str]]
+            base = list[str] | None
         else:
-            base = Optional[List[str]]
+            base = list[str] | None
     else:
         base = str
 
     if not required and field_def.type != "parent_link":
-        base = Optional[base]
+        base = base | None
 
     return base
 
