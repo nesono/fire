@@ -34,7 +34,7 @@ def read_file_safe(file_path: str) -> tuple[str | None, str | None]:
         return None, f"File not found: {file_path}"
     except PermissionError:
         return None, f"Permission denied: {file_path}"
-    except Exception as e:
+    except OSError as e:
         return None, f"Error reading {file_path}: {e}"
 
 
@@ -66,7 +66,7 @@ def load_yaml_safe(file_path: str) -> tuple[Any | None, str | None]:
         return None, f"Invalid YAML syntax in {file_path}: {e}"
     except PermissionError:
         return None, f"Permission denied: {file_path}"
-    except Exception as e:
+    except OSError as e:
         return None, f"Error loading YAML from {file_path}: {e}"
 
 
@@ -93,5 +93,5 @@ def write_yaml_safe(file_path: str, data: Any) -> str | None:
         return f"Permission denied: {file_path}"
     except yaml.YAMLError as e:
         return f"Error serializing YAML to {file_path}: {e}"
-    except Exception as e:
+    except OSError as e:
         return f"Error writing YAML to {file_path}: {e}"
