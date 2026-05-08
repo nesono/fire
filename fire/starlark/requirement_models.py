@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Pydantic models for requirement metadata validation."""
 
+from __future__ import annotations
+
 import re
-from typing import Literal, Optional, Union, Final, List
+from typing import Final, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -49,13 +51,13 @@ class RequirementMetadata(BaseModel):
 
     id: str = Field(pattern=REQ_ID_PATTERN.pattern)
 
-    sil: Union[SilValue, str]
+    sil: SilValue | str
 
-    sec: Union[bool, str]
+    sec: bool | str
 
     version: int = Field(ge=1, strict=True)
 
-    parent: Optional[List[str]] = None
+    parent: list[str] | None = None
 
     model_config = {"extra": "forbid"}
 
@@ -91,7 +93,7 @@ class RequirementMetadata(BaseModel):
 
     @field_validator("parent")
     @classmethod
-    def validate_parent_format(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+    def validate_parent_format(cls, v: list[str] | None) -> list[str] | None:
         """Validate parent is a list of markdown links, TODO(KEY-1234), or None."""
         if v is None:
             return v
@@ -132,6 +134,6 @@ class RegulatoryRequirementMetadata(RequirementMetadata):
     Unlike sysreq/swreq, sil and sec are optional for regulatory requirements.
     """
 
-    sil: Optional[Union[SilValue, str]] = None
+    sil: SilValue | str | None = None
 
-    sec: Optional[Union[bool, str]] = None
+    sec: bool | str | None = None

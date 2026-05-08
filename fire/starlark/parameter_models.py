@@ -5,8 +5,10 @@ This module defines the Pydantic models that replace the JSON schema
 for validating parameter YAML files.
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Literal
 
 from pydantic import (
     BaseModel,
@@ -46,7 +48,7 @@ def infer_type_from_value(value: Any) -> str:
         raise ValueError(f"Cannot infer type from {type(value).__name__}")
 
 
-def infer_parameter_type(data: Dict[str, Any]) -> str:
+def infer_parameter_type(data: dict[str, Any]) -> str:
     """Infer parameter type for a parameter.
 
     Args:
@@ -138,23 +140,19 @@ class TableParameter(AllParamBase):
     """Table parameter with columns and rows."""
 
     type: Literal["table"]
-    columns: List[Column] = Field(min_length=1)
-    rows: List[List[Any]] = Field(min_length=1)
+    columns: list[Column] = Field(min_length=1)
+    rows: list[list[Any]] = Field(min_length=1)
 
     model_config = {"extra": "forbid"}
 
 
 # Union of all parameter types (type field injected by ParameterFile validator)
-Parameter = Union[
-    I64Parameter,
-    F64Parameter,
-    StringParameter,
-    BoolParameter,
-    TableParameter,
-]
+Parameter = (
+    I64Parameter | F64Parameter | StringParameter | BoolParameter | TableParameter
+)
 
 
-def _reject_explicit_type_fieds_in_columns(param_name: str, columns: List[Any]):
+def _reject_explicit_type_fieds_in_columns(param_name: str, columns: list[Any]):
     """Asserting no explicit types are set in table columns."""
     for i, col in enumerate(columns):
         if isinstance(col, dict) and "type" in col:
@@ -167,7 +165,7 @@ def _reject_explicit_type_fieds_in_columns(param_name: str, columns: List[Any]):
 
 
 def _reject_inconsistent_types_in_table(
-    param_name: str, rows: List[Any], columns: List[Any]
+    param_name: str, rows: list[Any], columns: list[Any]
 ):
     """Assert all values in the table are of a consistent type per column."""
     # Infer types from first row and inject into columns
@@ -189,10 +187,10 @@ def _reject_inconsistent_types_in_table(
                 )
 
 
-class ParameterFile(RootModel[Dict[str, Parameter]]):
+class ParameterFile(RootModel[dict[str, Parameter]]):
     """Root model for parameter YAML files."""
 
-    root: Dict[str, Parameter] = Field(min_length=1)
+    root: dict[str, Parameter] = Field(min_length=1)
 
     @model_validator(mode="before")
     @classmethod
@@ -233,7 +231,7 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
     @model_validator(mode="after")
     def validate_version_suffixes(self):
         """Validate that all parameter keys use _vN suffix and versions are consecutive."""
-        groups: Dict[str, Dict[int, str]] = defaultdict(dict)
+        groups: dict[str, dict[int, str]] = defaultdict(dict)
 
         for key in self.root:
             m = PARAM_VERSION_SUFFIX_RE.match(key)

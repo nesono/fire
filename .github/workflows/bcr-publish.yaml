@@ -23,11 +23,15 @@ jobs:
 
       - name: Determine version
         id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.tag }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$INPUT_TAG"
           else
-            TAG="${{ github.event.release.tag_name }}"
+            TAG="$RELEASE_TAG"
           fi
           # Strip v prefix
           VERSION="${TAG#v}"
@@ -37,9 +41,10 @@ jobs:
 
       - name: Download release tarball and compute integrity
         id: integrity
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          TAG="${{ steps.version.outputs.tag }}"
           URL="https://github.com/nesono/fire/releases/download/${TAG}/fire-${VERSION}.tar.gz"
 
           echo "Downloading $URL ..."
@@ -54,8 +59,9 @@ jobs:
           echo "Integrity: $INTEGRITY"
 
       - name: Extract MODULE.bazel from tarball
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
           tar xzf "fire-${VERSION}.tar.gz" "fire-${VERSION}/MODULE.bazel" --strip-components=1
 
           # Remove local_path_override blocks (not valid for BCR)
@@ -74,8 +80,8 @@ jobs:
       - name: Clone BCR fork and create branch
         env:
           BCR_PUBLISH_TOKEN: ${{ secrets.BCR_PUBLISH_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
           BRANCH="fire-${VERSION}"
 
           git clone "https://x-access-token:${BCR_PUBLISH_TOKEN}@github.com/nesono/bazel-central-registry.git" bcr
@@ -83,20 +89,24 @@ jobs:
           git checkout -b "$BRANCH"
 
       - name: Add version files to BCR
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SOURCE_URL: ${{ steps.integrity.outputs.url }}
+          SOURCE_INTEGRITY: ${{ steps.integrity.outputs.integrity }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
           VERSION_DIR="bcr/modules/fire/${VERSION}"
           mkdir -p "$VERSION_DIR"
 
           # source.json
           python3 -c "
-          import json
+          import json, os
           data = {
-              'url': '${{ steps.integrity.outputs.url }}',
-              'integrity': '${{ steps.integrity.outputs.integrity }}',
-              'strip_prefix': 'fire-${VERSION}',
+              'url': os.environ['SOURCE_URL'],
+              'integrity': os.environ['SOURCE_INTEGRITY'],
+              'strip_prefix': 'fire-' + os.environ['VERSION'],
           }
-          with open('${VERSION_DIR}/source.json', 'w') as f:
+          version_dir = os.path.join('bcr', 'modules', 'fire', os.environ['VERSION'])
+          with open(os.path.join(version_dir, 'source.json'), 'w') as f:
               json.dump(data, f, indent=4)
               f.write('\n')
           "
@@ -109,11 +119,12 @@ jobs:
 
           # Update metadata.json — append the new version
           python3 -c "
-          import json
+          import json, os
+          version = os.environ['VERSION']
           with open('bcr/modules/fire/metadata.json') as f:
               meta = json.load(f)
-          if '${VERSION}' not in meta['versions']:
-              meta['versions'].append('${VERSION}')
+          if version not in meta['versions']:
+              meta['versions'].append(version)
           with open('bcr/modules/fire/metadata.json', 'w') as f:
               json.dump(meta, f, indent=4)
               f.write('\n')
@@ -122,8 +133,8 @@ jobs:
       - name: Commit and push
         env:
           BCR_PUBLISH_TOKEN: ${{ secrets.BCR_PUBLISH_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
           cd bcr
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -134,8 +145,8 @@ jobs:
       - name: Create pull request on BCR fork
         env:
           GH_TOKEN: ${{ secrets.BCR_PUBLISH_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
           gh pr create \
             --repo nesono/bazel-central-registry \
             --base main \

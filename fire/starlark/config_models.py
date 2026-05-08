@@ -9,7 +9,7 @@ Consumers supply a fire_config.yaml; when absent, the built-in default
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -23,10 +23,10 @@ class FieldDefinition(BaseModel):
     description: str = ""
 
     # enum-specific
-    values: Optional[List[str]] = None
+    values: list[str] | None = None
 
     # int-specific
-    min_value: Optional[int] = None
+    min_value: int | None = None
 
     # todo support
     allow_todo: bool = False
@@ -53,8 +53,8 @@ class DocumentTypeDefinition(BaseModel):
     suffix: str
     display_name: str
     description: str = ""
-    required_fields: List[str] = Field(default_factory=list)
-    optional_fields: List[str] = Field(default_factory=list)
+    required_fields: list[str] = Field(default_factory=list)
+    optional_fields: list[str] = Field(default_factory=list)
 
     @field_validator("suffix")
     @classmethod
