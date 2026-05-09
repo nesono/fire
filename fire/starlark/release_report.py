@@ -332,7 +332,8 @@ def generate_release_report(
     for path in requirement_paths:
         if not path.endswith(".md"):
             continue
-        content = open(path).read()
+        with open(path) as f:
+            content = f.read()
         sections.extend(parse_requirement_sections(content, path, known_fields))
         for todo in extract_todos(content):
             todos.append((path, todo))
@@ -348,7 +349,8 @@ def generate_release_report(
             continue
         data = load_yaml_file(path)
         param_maps.append(build_param_version_map(data, path))
-        content = open(path).read()
+        with open(path) as f:
+            content = f.read()
         for todo in extract_todos(content):
             todos.append((path, todo))
         bare_todos.extend(
