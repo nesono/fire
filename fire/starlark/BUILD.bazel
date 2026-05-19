@@ -28,8 +28,8 @@ py_binary(
     main = "generate_code.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":file_io_common",
         "@pip//jinja2",
-        "@pip//pyyaml",
     ],
 )
 
@@ -506,8 +506,8 @@ py_library(
     ],
     data = glob(["templates/*.j2"]),
     deps = [
+        ":file_io_common",
         "@pip//jinja2",
-        "@pip//pyyaml",
     ],
 )
 

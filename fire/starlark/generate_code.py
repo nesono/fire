@@ -25,8 +25,7 @@ import zipfile
 from collections import defaultdict
 from pathlib import Path
 
-import yaml
-
+from fire.starlark import file_io_common
 from fire.starlark.generators.cpp import generate_cpp_files
 from fire.starlark.generators.go import generate_go_files
 from fire.starlark.generators.java import generate_java_files
@@ -170,16 +169,11 @@ def main():
     args = parser.parse_args()
 
     # Load parameter data
-    try:
-        with open(args.input, "r") as f:
-            yaml_data = yaml.safe_load(f)
-        items = yaml_to_items(yaml_data)
-    except FileNotFoundError:
-        print(f"Error: Input file not found: {args.input}", file=sys.stderr)
+    yaml_data, error = file_io_common.load_yaml_safe(args.input)
+    if error:
+        print(f"Error: {error}", file=sys.stderr)
         sys.exit(1)
-    except yaml.YAMLError as e:
-        print(f"Error: Invalid YAML in {args.input}: {e}", file=sys.stderr)
-        sys.exit(1)
+    items = yaml_to_items(yaml_data)
 
     # Generate files based on language
     if args.language == "cpp":
