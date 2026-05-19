@@ -4,16 +4,18 @@
 Usage:
     generate_code.py cpp <input> <output_dir> [--namespace=<ns>]
     generate_code.py python <input> <output_dir>
-    generate_code.py go <input> <output_dir>
+    generate_code.py go <input> <output_dir> [--package-name=<pkg>]
     generate_code.py rust <input> <output_dir>
-    generate_code.py java <input> <output_dir> [--namespace=<ns>]
+    generate_code.py java <input> <output_dir> [--package-prefix=<pkg>]
 
 Arguments:
     <input>      Path to the YAML parameter data file
     <output_dir> Path to the output directory (TreeArtifact)
 
 Options:
-    --namespace=<ns>    C++ namespace or Java package
+    --namespace=<ns>          C++ namespace
+    --package-prefix=<pkg>    Java package prefix (e.g. com.example)
+    --package-name=<pkg>      Go package name
 """
 
 import argparse
@@ -141,7 +143,9 @@ def main():
     go_parser = subparsers.add_parser("go", help="Generate Go packages")
     go_parser.add_argument("input", help="Input YAML file")
     go_parser.add_argument("output", help="Output directory path")
-    go_parser.add_argument("--namespace", dest="namespace", help="Package namespace")
+    go_parser.add_argument(
+        "--package-name", dest="package_name", help="Go package name"
+    )
 
     # Rust subcommand
     rust_parser = subparsers.add_parser("rust", help="Generate Rust modules")
@@ -153,9 +157,9 @@ def main():
     java_parser.add_argument("input", help="Input YAML file")
     java_parser.add_argument("output", help="Output directory path")
     java_parser.add_argument(
-        "--namespace",
-        dest="namespace",
-        help="Java package namespace (e.g., com.example)",
+        "--package-prefix",
+        dest="package_prefix",
+        help="Java package prefix (e.g., com.example)",
     )
     java_parser.add_argument(
         "--class-name",
@@ -164,11 +168,6 @@ def main():
     )
 
     args = parser.parse_args()
-
-    # Determine namespace
-    namespace = (
-        getattr(args, "namespace", None) or getattr(args, "cpp_namespace", None) or ""
-    )
 
     # Load parameter data
     try:
@@ -205,7 +204,10 @@ def main():
             output_name = Path(args.output).stem
             # Convert to PascalCase: remove underscores and capitalize
             class_name = "".join(word.capitalize() for word in output_name.split("_"))
-        files = generate_java_files(items, namespace=namespace, class_name=class_name)
+        package_prefix = getattr(args, "package_prefix", None) or ""
+        files = generate_java_files(
+            items, namespace=package_prefix, class_name=class_name
+        )
     else:
         print(f"Error: Unknown language: {args.language}", file=sys.stderr)
         sys.exit(1)
