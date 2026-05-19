@@ -14,7 +14,12 @@ from fire.starlark import (
     validate_cross_references,
 )
 from fire.starlark.config_models import FireConfig, load_config
-from fire.starlark.patterns import PARAM_VERSION_SUFFIX_RE, REQ_ID_PATTERN, TODO_PATTERN
+from fire.starlark.patterns import REQ_ID_PATTERN, TODO_PATTERN
+from fire.starlark.version_tracking import (
+    build_param_version_map,
+    build_requirement_version_map,
+    merge_param_versions,
+)
 
 _VALID_TRACE_TYPES: Final = {"impl", "verif"}
 
@@ -161,44 +166,6 @@ def collect_param_references(
         _, version = path_common.extract_version_from_url(path)
         refs.append((param_name, version, path))
     return refs
-
-
-def build_param_version_map(data: object, source: str) -> dict[str, int]:
-    """Extract latest parameter versions from a parameter YAML mapping."""
-    if data is None:
-        return {}
-    if not isinstance(data, dict):
-        raise ValueError(f"{source}: expected mapping for parameter file")
-    versions: dict[str, int] = {}
-    for key in data:
-        match = PARAM_VERSION_SUFFIX_RE.match(key)
-        if not match:
-            continue
-        base_name = match.group(1)
-        version = int(match.group(2))
-        versions[base_name] = version
-    return versions
-
-
-def build_requirement_version_map(sections: list[dict]) -> dict[str, int]:
-    """Build a requirement id to version map from parsed sections."""
-    versions: dict[str, int] = {}
-    for section in sections:
-        version = section["metadata"].get("version")
-        if isinstance(version, int):
-            versions[section["id"]] = version
-    return versions
-
-
-def merge_param_versions(maps: list[dict[str, int]]) -> dict[str, int]:
-    """Merge parameter version maps by taking the highest version per name."""
-    merged: dict[str, int] = {}
-    for version_map in maps:
-        for name, version in version_map.items():
-            current = merged.get(name)
-            if current is None or version > current:
-                merged[name] = version
-    return merged
 
 
 def find_stale_requirement_references(

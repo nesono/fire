@@ -140,6 +140,7 @@ py_binary(
         ":path_common",
         ":patterns",
         ":validate_cross_references_lib",
+        ":version_tracking",
     ],
 )
 
@@ -275,6 +276,7 @@ py_library(
         ":path_common",
         ":patterns",
         ":validate_cross_references_lib",
+        ":version_tracking",
     ],
 )
 
@@ -283,6 +285,23 @@ py_library(
     name = "metadata_parsing",
     srcs = ["metadata_parsing.py"],
     deps = [":markdown_common"],
+)
+
+# Common utilities - parameter/requirement version tracking
+py_library(
+    name = "version_tracking",
+    srcs = ["version_tracking.py"],
+    deps = [":patterns"],
+)
+
+py_test(
+    name = "version_tracking_test",
+    size = "small",
+    srcs = ["version_tracking_test.py"],
+    deps = [
+        ":version_tracking",
+        "@pip//pytest",
+    ],
 )
 
 py_test(
