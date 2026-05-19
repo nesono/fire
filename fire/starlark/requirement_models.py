@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Pydantic models for requirement metadata validation."""
 
-import re
 from typing import Literal, Optional, Union, Final, List
 
 from pydantic import BaseModel, Field, field_validator
@@ -98,32 +97,8 @@ class RequirementMetadata(BaseModel):
         if not isinstance(v, list):
             raise ValueError("parent must be a list")
         for parent_value in v:
-            cls._validate_single_parent(parent_value)
+            markdown_common.validate_parent_link(parent_value)
         return v
-
-    @classmethod
-    def _validate_single_parent(cls, parent_value: str) -> None:
-        """Validate a single parent entry."""
-        if not isinstance(parent_value, str):
-            raise ValueError("each parent entry must be a string")
-        if TODO_PATTERN.fullmatch(parent_value):
-            return
-        cls._validate_parent_markdown_link(parent_value)
-
-    @classmethod
-    def _validate_parent_markdown_link(cls, parent_value: str) -> None:
-        """Validate parent is a proper markdown link with repository-relative path."""
-        match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, parent_value)
-        if not match:
-            raise ValueError(
-                "parent must be a markdown link: [REQ-ID](/path.md?version=N#REQ-ID)"
-            )
-        path = match.group(2)
-        base_path = path.split("#")[0].split("?")[0]
-        if not base_path.startswith("/"):
-            raise ValueError(
-                f"parent path must be repository-relative (start with /): '{path}'"
-            )
 
 
 class RegulatoryRequirementMetadata(RequirementMetadata):

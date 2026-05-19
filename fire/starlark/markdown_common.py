@@ -7,10 +7,42 @@ markdown references used in requirements documents.
 import re
 from typing import Final
 
+from fire.starlark.patterns import TODO_PATTERN
+
 # Regex patterns for markdown reference parsing
 MARKDOWN_LINK_PATTERN: Final = r"\[([^\]]+)\]\(([^\)]+)\)"
 PARAM_REFERENCE_PATTERN: Final = r"\[@([a-zA-Z_][a-zA-Z0-9_]*)\]\(([^)]+)\)"
 REQUIREMENT_REFERENCE_PATTERN: Final = r"\[([A-Z][A-Z0-9_-]+)\]\(([^)]+\.md[^)]*)\)"
+
+
+def validate_parent_link(parent_value: object) -> None:
+    """Validate a single parent-link value.
+
+    A parent link must be either a TODO marker (e.g. ``TODO(KEY-1234)``) or
+    a markdown link of the form ``[REQ-ID](/path.md?version=N#REQ-ID)`` with
+    a repository-relative path (starting with ``/``).
+
+    Args:
+        parent_value: The value to validate.
+
+    Raises:
+        ValueError: If the value is not a valid parent link.
+    """
+    if not isinstance(parent_value, str):
+        raise ValueError("each parent entry must be a string")
+    if TODO_PATTERN.fullmatch(parent_value):
+        return
+    match = re.match(MARKDOWN_LINK_PATTERN, parent_value)
+    if not match:
+        raise ValueError(
+            "parent must be a markdown link: [REQ-ID](/path.md?version=N#REQ-ID)"
+        )
+    path = match.group(2)
+    base_path = path.split("#")[0].split("?")[0]
+    if not base_path.startswith("/"):
+        raise ValueError(
+            f"parent path must be repository-relative (start with /): '{path}'"
+        )
 
 
 def extract_markdown_links(text: str) -> list[tuple[str, str]]:
