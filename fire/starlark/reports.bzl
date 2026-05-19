@@ -1,9 +1,10 @@
 """Bazel rules for release readiness reporting."""
 
+load("//fire/starlark:fire_rule_utils.bzl", "run_python_script")
+
 def _release_report_impl(ctx):
     """Implementation of the release_report rule."""
 
-    script = ctx.executable._script
     args = ctx.actions.args()
     args.add("--out")
     args.add(ctx.outputs.out.path)
@@ -27,18 +28,14 @@ def _release_report_impl(ctx):
     args.add_all(trace_files, before_each = "--source-traces")
 
     config_inputs = [ctx.file.config] if ctx.file.config else []
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
 
-    ctx.actions.run(
-        inputs = requirement_files +
-                 param_files +
-                 trace_files +
-                 config_inputs +
-                 [script] +
-                 script_runfiles,
+    run_python_script(
+        ctx,
+        script = ctx.executable._script,
+        script_target = ctx.attr._script,
+        args = args,
+        extra_inputs = requirement_files + param_files + trace_files + config_inputs,
         outputs = [ctx.outputs.out],
-        executable = script,
-        arguments = [args],
         mnemonic = "ReleaseReport",
         progress_message = "Generating release report for %s" % ctx.label.name,
     )

@@ -8,9 +8,10 @@ This design keeps Fire's dependencies minimal - Fire only needs rules_python for
 validation. Consumers control which language rules they use and which versions.
 """
 
+load("//fire/starlark:fire_rule_utils.bzl", "run_python_script")
+
 def _generate_parameters_impl(ctx):
     """Implementation of parameter code generation rule."""
-    script = ctx.executable._script
     input_file = ctx.file.srcs
     language = ctx.attr.language
 
@@ -44,18 +45,16 @@ def _generate_parameters_impl(ctx):
     if ctx.attr.class_name:
         args.add("--class-name=" + ctx.attr.class_name)
 
-    # Get runfiles for the script
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
-
     # Language name for messages (capitalize first letter)
     lang_display = language.capitalize() if language != "cpp" else "C++"
 
-    # Run code generation
-    ctx.actions.run(
-        inputs = [input_file] + script_runfiles,
+    run_python_script(
+        ctx,
+        script = ctx.executable._script,
+        script_target = ctx.attr._script,
+        args = args,
+        extra_inputs = [input_file],
         outputs = [output],
-        executable = script,
-        arguments = [args],
         mnemonic = "Generate" + lang_display.replace("+", "").replace(" ", "") + "Parameters",
         progress_message = "Generating %s parameters from %s" % (lang_display, input_file.basename),
     )
