@@ -1,9 +1,10 @@
 """Common file I/O utilities for Fire requirements management system.
 
-This module provides safe file reading and YAML loading with consistent
+This module provides safe file reading and YAML/JSON loading with consistent
 error handling.
 """
 
+import json
 from typing import Any
 
 import yaml
@@ -68,6 +69,37 @@ def load_yaml_safe(file_path: str) -> tuple[Any | None, str | None]:
         return None, f"Permission denied: {file_path}"
     except Exception as e:
         return None, f"Error loading YAML from {file_path}: {e}"
+
+
+def load_json_safe(file_path: str) -> tuple[Any | None, str | None]:
+    """Safely load JSON file with consistent error handling.
+
+    Args:
+        file_path: Path to JSON file to load
+
+    Returns:
+        Tuple of (data, error_msg) where:
+        - data: Parsed JSON data if successful, None otherwise
+        - error_msg: Error message if failed, None otherwise
+
+    Example:
+        >>> data, error = load_json_safe("trace.json")
+        >>> if error:
+        ...     print(f"Failed: {error}")
+        ... else:
+        ...     process(data)
+    """
+    try:
+        with open(file_path) as f:
+            return json.load(f), None
+    except FileNotFoundError:
+        return None, f"File not found: {file_path}"
+    except json.JSONDecodeError as e:
+        return None, f"Invalid JSON syntax in {file_path}: {e}"
+    except PermissionError:
+        return None, f"Permission denied: {file_path}"
+    except Exception as e:
+        return None, f"Error loading JSON from {file_path}: {e}"
 
 
 def write_yaml_safe(file_path: str, data: Any) -> str | None:

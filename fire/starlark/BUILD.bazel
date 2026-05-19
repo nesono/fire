@@ -170,8 +170,8 @@ py_library(
     data = ["default_fire_config.yaml"],
     visibility = ["//visibility:public"],
     deps = [
+        ":file_io_common",
         "@pip//pydantic",
-        "@pip//pyyaml",
     ],
 )
 
@@ -260,11 +260,11 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":config_models",
+        ":file_io_common",
         ":markdown_common",
         ":path_common",
         ":patterns",
         ":validate_cross_references_lib",
-        "@pip//pyyaml",
     ],
 )
 
