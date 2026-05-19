@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 """Tests for the format specification generator."""
 
-import pytest
-
-from fire.starlark.config_models import FireConfig, load_config
+from fire.starlark.config_models import FireConfig
 from fire.starlark.generate_format_spec import generate_format_spec
-
-
-@pytest.fixture()
-def default_config():
-    return load_config()
 
 
 class TestGenerateFormatSpec:

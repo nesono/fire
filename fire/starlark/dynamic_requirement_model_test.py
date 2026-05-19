@@ -4,7 +4,6 @@
 import pytest
 from pydantic import ValidationError
 
-from fire.starlark.config_models import load_config
 from fire.starlark.dynamic_requirement_model import (
     build_models_from_config,
     model_for_suffix,
@@ -16,13 +15,8 @@ from fire.starlark.requirement_models import (
 
 
 @pytest.fixture()
-def config():
-    return load_config()
-
-
-@pytest.fixture()
-def models(config):
-    return build_models_from_config(config)
+def models(default_config):
+    return build_models_from_config(default_config)
 
 
 # ---------------------------------------------------------------------------
@@ -31,21 +25,21 @@ def models(config):
 
 
 class TestBuildModels:
-    def test_builds_all_document_types(self, config, models):
-        assert set(models.keys()) == set(config.document_types.keys())
+    def test_builds_all_document_types(self, default_config, models):
+        assert set(models.keys()) == set(default_config.document_types.keys())
 
-    def test_model_for_suffix_sysreq(self, config, models):
-        m = model_for_suffix(config, models, "some/path/req.sysreq.md")
+    def test_model_for_suffix_sysreq(self, default_config, models):
+        m = model_for_suffix(default_config, models, "some/path/req.sysreq.md")
         assert m is not None
         assert "sysreq" in m.__name__.lower()
 
-    def test_model_for_suffix_regreq(self, config, models):
-        m = model_for_suffix(config, models, "regulations.regreq.md")
+    def test_model_for_suffix_regreq(self, default_config, models):
+        m = model_for_suffix(default_config, models, "regulations.regreq.md")
         assert m is not None
         assert "regreq" in m.__name__.lower()
 
-    def test_model_for_suffix_unknown(self, config, models):
-        assert model_for_suffix(config, models, "notes.txt") is None
+    def test_model_for_suffix_unknown(self, default_config, models):
+        assert model_for_suffix(default_config, models, "notes.txt") is None
 
 
 # ---------------------------------------------------------------------------
