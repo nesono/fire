@@ -372,6 +372,17 @@ py_test(
 )
 
 py_test(
+    name = "parameter_models_test",
+    size = "small",
+    srcs = ["parameter_models_test.py"],
+    deps = [
+        ":parameter_models",
+        "@pip//pydantic",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
     name = "pydantic_tools_test",
     size = "small",
     srcs = ["pydantic_tools_test.py"],
