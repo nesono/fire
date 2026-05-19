@@ -356,6 +356,22 @@ py_test(
 )
 
 py_test(
+    name = "validate_cross_references_test",
+    size = "small",
+    srcs = [
+        "conftest.py",
+        "validate_cross_references_test.py",
+    ],
+    deps = [
+        ":config_models",
+        ":dynamic_requirement_model",
+        ":requirement_models",
+        ":validate_cross_references_lib",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
     name = "pydantic_tools_test",
     size = "small",
     srcs = ["pydantic_tools_test.py"],
