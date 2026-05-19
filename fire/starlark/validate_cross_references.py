@@ -22,7 +22,12 @@ from typing import Final
 
 from pydantic import BaseModel, ValidationError
 
-from fire.starlark import file_io_common, markdown_common, path_common
+from fire.starlark import (
+    file_io_common,
+    markdown_common,
+    metadata_parsing,
+    path_common,
+)
 from fire.starlark.config_models import FireConfig, load_config
 from fire.starlark.dynamic_requirement_model import (
     build_models_from_config,
@@ -38,8 +43,6 @@ _REGREQ_EXTENSION: Final = ".regreq.md"
 _REQUIREMENT_SUFFIXES: Final = (".sysreq.md", ".swreq.md", ".regreq.md")
 
 _BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
-_METADATA_CONTINUATION_MARKER: Final = "|"
-_METADATA_FIELD_SEPARATOR: Final = "|"
 
 
 def _metadata_model_for_file(
@@ -90,130 +93,6 @@ def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None
     return None
 
 
-def _is_metadata_line(line: str, known_fields: list[str]) -> bool:
-    """Check if a line looks like metadata."""
-    if _METADATA_FIELD_SEPARATOR in line:
-        return True
-    if ":" in line and not line.startswith("#"):
-        parts = line.split(":", 1)
-        key = parts[0].strip().lower()
-        return len(parts) == 2 and key in known_fields
-    return False
-
-
-def _should_stop_collection(line: str, collected_lines: list[str]) -> bool:
-    """Check if we should stop collecting metadata lines."""
-    if not line:
-        return bool(collected_lines)
-    if collected_lines and not collected_lines[-1].endswith(
-        _METADATA_CONTINUATION_MARKER
-    ):
-        return True
-    return False
-
-
-def _join_metadata_lines(lines: list[str]) -> str:
-    """Join metadata lines and strip final trailing pipe."""
-    joined = " ".join(lines).rstrip()
-    if joined.endswith(_METADATA_CONTINUATION_MARKER):
-        joined = joined[:-1].rstrip()
-    return joined
-
-
-def _extract_next_metadata_line(
-    lines: list[str],
-    start_index: int,
-    known_fields: list[str] | None = None,
-) -> str | None:
-    """Extract metadata lines after start_index, supporting multi-line continuation."""
-    if known_fields is None:
-        known_fields = ["sil", "sec", "version", "parent"]
-    collected_lines = []
-
-    for j in range(start_index + 1, len(lines)):
-        next_line = lines[j].strip()
-
-        if not next_line and not collected_lines:
-            continue
-
-        if _should_stop_collection(next_line, collected_lines):
-            break
-
-        if not _is_metadata_line(next_line, known_fields):
-            break
-
-        collected_lines.append(next_line)
-        if not next_line.endswith(_METADATA_CONTINUATION_MARKER):
-            break
-
-    return _join_metadata_lines(collected_lines) if collected_lines else None
-
-
-def _parse_field_value(value: str) -> int | bool | str:
-    """Parse a single metadata field value to its appropriate type.
-
-    Handles:
-    - Markdown links (returned as-is)
-    - Integers (converted to int)
-    - Booleans (true/false converted to bool)
-    - Strings (returned as-is)
-    """
-    # Markdown links stay as strings
-    if value.startswith("[") and "](" in value:
-        # Validate it matches the expected link pattern
-        match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, value)
-        if match:
-            return value
-
-    # Parse integers
-    if value.isdigit():
-        return int(value)
-
-    # Parse booleans
-    if value.lower() == "true":
-        return True
-    if value.lower() == "false":
-        return False
-
-    # Default: return as string
-    return value
-
-
-def _parse_metadata_fields(metadata_line: str, req_id: str) -> dict:
-    """Parse pipe-separated metadata fields into a frontmatter dictionary.
-
-    Splits the line and parses each 'key: value' pair.
-    Keys are normalized to lowercase. Values are typed using _parse_field_value.
-
-    Special handling for Parent field:
-    - Multiple Parent fields are aggregated into a list
-    - Stored as frontmatter["parent"] = [value1, value2, ...]
-    - Always stored as list for consistency, even if single parent
-    """
-    frontmatter = {"id": req_id}
-    parent_values = []
-
-    for field in metadata_line.split(_METADATA_FIELD_SEPARATOR):
-        field = field.strip()
-        if not field or ":" not in field:
-            continue
-
-        # Split by first ':' to get key and value
-        parts = field.split(":", 1)
-        key = parts[0].strip().lower()
-        value = parts[1].strip() if len(parts) > 1 else ""
-
-        # Special handling for parent field - aggregate into list
-        if key == "parent":
-            parent_values.append(_parse_field_value(value))
-        else:
-            frontmatter[key] = _parse_field_value(value)
-
-    # Store parent as list if any parent values were found
-    if parent_values:
-        frontmatter["parent"] = parent_values
-
-    return frontmatter
 
 
 def _requirement_suffixes(config: FireConfig | None = None) -> tuple[str, ...]:
@@ -240,11 +119,13 @@ def parse_inline_metadata_for_requirement(
     if heading_index is None:
         return None, None
 
-    metadata_line = _extract_next_metadata_line(lines, heading_index, known_fields)
+    metadata_line = metadata_parsing.extract_next_metadata_line(
+        lines, heading_index, known_fields
+    )
     if not metadata_line:
         return None, None
 
-    frontmatter = _parse_metadata_fields(metadata_line, req_id)
+    frontmatter = metadata_parsing.parse_metadata_fields(metadata_line, req_id)
 
     try:
         metadata = model_class.model_validate(frontmatter)
