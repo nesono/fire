@@ -38,9 +38,9 @@ def _generate_parameters_impl(ctx):
     if ctx.attr.namespace:
         args.add("--namespace=" + ctx.attr.namespace)
     if ctx.attr.package_prefix:
-        args.add("--namespace=" + ctx.attr.package_prefix)
+        args.add("--package-prefix=" + ctx.attr.package_prefix)
     if ctx.attr.package_name:
-        args.add("--namespace=" + ctx.attr.package_name)
+        args.add("--package-name=" + ctx.attr.package_name)
     if ctx.attr.class_name:
         args.add("--class-name=" + ctx.attr.class_name)
 
