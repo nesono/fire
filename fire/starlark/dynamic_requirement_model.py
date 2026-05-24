@@ -9,7 +9,6 @@ that FIRE shipped before the configuration system was introduced.
 
 from __future__ import annotations
 
-import re
 from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
@@ -59,25 +58,6 @@ def _build_bool_validator(field_name: str, field_def: FieldDefinition) -> classm
     return field_validator(field_name, mode="before")(classmethod(_validate))
 
 
-def _validate_single_parent(parent_value: str) -> None:
-    """Validate a single parent entry (shared by all parent_link fields)."""
-    if not isinstance(parent_value, str):
-        raise ValueError("each parent entry must be a string")
-    if TODO_PATTERN.fullmatch(parent_value):
-        return
-    match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, parent_value)
-    if not match:
-        raise ValueError(
-            "parent must be a markdown link: [REQ-ID](/path.md?version=N#REQ-ID)"
-        )
-    path = match.group(2)
-    base_path = path.split("#")[0].split("?")[0]
-    if not base_path.startswith("/"):
-        raise ValueError(
-            f"parent path must be repository-relative (start with /): '{path}'"
-        )
-
-
 def _build_parent_link_validator(
     field_name: str, field_def: FieldDefinition
 ) -> classmethod:
@@ -89,7 +69,7 @@ def _build_parent_link_validator(
         if not isinstance(v, list):
             raise ValueError(f"{field_name} must be a list")
         for entry in v:
-            _validate_single_parent(entry)
+            markdown_common.validate_parent_link(entry)
         return v
 
     return field_validator(field_name, mode="before")(classmethod(_validate))
