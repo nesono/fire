@@ -79,9 +79,7 @@ class TestInferParameterType:
 
 class TestI64Parameter:
     def test_valid(self):
-        p = I64Parameter(
-            type="i64", value=42, unit="m", description="length"
-        )
+        p = I64Parameter(type="i64", value=42, unit="m", description="length")
         assert p.value == 42
 
     def test_float_rejected_due_to_strict(self):
@@ -165,9 +163,7 @@ class TestTableParameter:
 
     def test_empty_columns_rejected(self):
         with pytest.raises(ValidationError):
-            TableParameter(
-                type="table", description="d", columns=[], rows=[[1]]
-            )
+            TableParameter(type="table", description="d", columns=[], rows=[[1]])
 
     def test_empty_rows_rejected(self):
         with pytest.raises(ValidationError):
