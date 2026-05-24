@@ -3,10 +3,7 @@
 
 import textwrap
 
-import pytest
-
 from fire.starlark import validate_cross_references as vcr
-from fire.starlark.config_models import FireConfig
 from fire.starlark.dynamic_requirement_model import build_models_from_config
 from fire.starlark.requirement_models import (
     RegulatoryRequirementMetadata,
