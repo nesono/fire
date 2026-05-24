@@ -2,6 +2,16 @@
 
 This module provides safe file reading and YAML/JSON loading with consistent
 error handling.
+
+Error-handling conventions used across ``fire/starlark``:
+
+- **Library functions that touch I/O** return ``(data, error_msg)`` tuples.
+  Callers branch on whether ``error_msg`` is ``None``. This module is the
+  reference implementation.
+- **Library functions that validate inputs** raise ``ValueError`` (or
+  pydantic's ``ValidationError``) with a descriptive message.
+- **CLI entry points** (modules with a ``main()`` function) catch errors,
+  print them to ``stderr``, and exit via ``sys.exit(1)``.
 """
 
 import json
@@ -35,7 +45,7 @@ def read_file_safe(file_path: str) -> tuple[str | None, str | None]:
         return None, f"File not found: {file_path}"
     except PermissionError:
         return None, f"Permission denied: {file_path}"
-    except Exception as e:
+    except OSError as e:
         return None, f"Error reading {file_path}: {e}"
 
 
@@ -67,7 +77,7 @@ def load_yaml_safe(file_path: str) -> tuple[Any | None, str | None]:
         return None, f"Invalid YAML syntax in {file_path}: {e}"
     except PermissionError:
         return None, f"Permission denied: {file_path}"
-    except Exception as e:
+    except OSError as e:
         return None, f"Error loading YAML from {file_path}: {e}"
 
 
@@ -98,7 +108,7 @@ def load_json_safe(file_path: str) -> tuple[Any | None, str | None]:
         return None, f"Invalid JSON syntax in {file_path}: {e}"
     except PermissionError:
         return None, f"Permission denied: {file_path}"
-    except Exception as e:
+    except OSError as e:
         return None, f"Error loading JSON from {file_path}: {e}"
 
 
@@ -125,5 +135,5 @@ def write_yaml_safe(file_path: str, data: Any) -> str | None:
         return f"Permission denied: {file_path}"
     except yaml.YAMLError as e:
         return f"Error serializing YAML to {file_path}: {e}"
-    except Exception as e:
+    except OSError as e:
         return f"Error writing YAML to {file_path}: {e}"
