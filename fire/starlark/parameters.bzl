@@ -3,23 +3,20 @@
 Parameters are defined in YAML files and validated at build time.
 """
 
+load("//fire/starlark:fire_rule_utils.bzl", "run_python_script")
+
 def _validate_parameters_impl(ctx):
     """Implementation of parameter validation rule."""
-    script = ctx.executable._script
     input_file = ctx.file.src
     output = ctx.outputs.out
 
-    # Get runfiles for the script
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
-
-    args = [input_file.path, output.path]
-
-    # Run validation
-    ctx.actions.run(
-        inputs = [input_file] + script_runfiles,
+    run_python_script(
+        ctx,
+        script = ctx.executable._script,
+        script_target = ctx.attr._script,
+        args = [input_file.path, output.path],
+        extra_inputs = [input_file],
         outputs = [output],
-        arguments = args,
-        executable = script,
         mnemonic = "ValidateParameters",
         progress_message = "Validating parameters in %s" % input_file.basename,
     )

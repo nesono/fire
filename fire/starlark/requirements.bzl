@@ -1,10 +1,9 @@
 """Bazel rules for requirement management."""
 
+load("//fire/starlark:fire_rule_utils.bzl", "run_python_script")
+
 def _validate_requirements_impl(ctx):
     """Implementation of requirement validation rule."""
-    script = ctx.executable._script
-
-    # Output validation marker file
     output = ctx.outputs.out
 
     # Use "." as workspace root - the sandbox will have the right structure
@@ -33,23 +32,21 @@ def _validate_requirements_impl(ctx):
     for src in ctx.files.srcs:
         args.add(src.short_path)
 
-    # Get runfiles for the script
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
-
     config_inputs = [ctx.file.config] if ctx.file.config else []
 
-    # Run validation script directly (no shell wrapper needed)
-    ctx.actions.run(
-        inputs = ctx.files.srcs + ctx.files.deps + config_inputs + script_runfiles,
+    run_python_script(
+        ctx,
+        script = ctx.executable._script,
+        script_target = ctx.attr._script,
+        args = args,
+        extra_inputs = ctx.files.srcs + ctx.files.deps + config_inputs,
         outputs = [output],
-        executable = script,
-        arguments = [args],
         mnemonic = "ValidateRequirements",
         progress_message = "Validating cross-references in %s" % ctx.label.name,
+        # no-sandbox + default shell env are needed so the validator can read
+        # workspace-relative file paths during the build.
         use_default_shell_env = True,
-        execution_requirements = {
-            "no-sandbox": "1",  # Disable sandbox so we can access workspace files
-        },
+        no_sandbox = True,
     )
 
     return [DefaultInfo(files = depset([output]))]

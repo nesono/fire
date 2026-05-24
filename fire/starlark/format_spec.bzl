@@ -1,8 +1,9 @@
 """Bazel rule for generating FORMAT_SPECIFICATION.md from FIRE config."""
 
+load("//fire/starlark:fire_rule_utils.bzl", "run_python_script")
+
 def _generate_format_specification_impl(ctx):
     """Implementation of the format specification generator rule."""
-    script = ctx.executable._script
     args = ctx.actions.args()
     args.add("--out", ctx.outputs.out.path)
 
@@ -11,13 +12,13 @@ def _generate_format_specification_impl(ctx):
         args.add("--config", ctx.file.config.path)
         config_inputs = [ctx.file.config]
 
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
-
-    ctx.actions.run(
-        inputs = config_inputs + [script] + script_runfiles,
+    run_python_script(
+        ctx,
+        script = ctx.executable._script,
+        script_target = ctx.attr._script,
+        args = args,
+        extra_inputs = config_inputs,
         outputs = [ctx.outputs.out],
-        executable = script,
-        arguments = [args],
         mnemonic = "GenerateFormatSpec",
         progress_message = "Generating format specification for %s" % ctx.label.name,
     )

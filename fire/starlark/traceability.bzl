@@ -1,10 +1,9 @@
 """Bazel rules for source-to-requirement traceability."""
 
+load("//fire/starlark:fire_rule_utils.bzl", "run_python_script")
+
 def _extract_source_traceability_impl(ctx):
     """Implementation of source traceability extraction rule."""
-    script = ctx.executable._script
-
-    # Output trace JSON file
     output = ctx.outputs.out
 
     # Build arguments list
@@ -27,21 +26,17 @@ def _extract_source_traceability_impl(ctx):
         args.add("--verifies-json")
         args.add(json.encode(ctx.attr.verifies))
 
-    # Get runfiles for the script
-    script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
-
-    # Run extraction script
-    ctx.actions.run(
-        inputs = ctx.files.deps + script_runfiles,
+    run_python_script(
+        ctx,
+        script = ctx.executable._script,
+        script_target = ctx.attr._script,
+        args = args,
+        extra_inputs = ctx.files.deps,
         outputs = [output],
-        executable = script,
-        arguments = [args],
         mnemonic = "ExtractSourceTraceability",
         progress_message = "Extracting source traceability for %s" % ctx.label.name,
         use_default_shell_env = True,
-        execution_requirements = {
-            "no-sandbox": "1",
-        },
+        no_sandbox = True,
     )
 
     return [DefaultInfo(files = depset([output]))]
