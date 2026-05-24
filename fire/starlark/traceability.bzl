@@ -1,19 +1,5 @@
 """Bazel rules for source-to-requirement traceability."""
 
-def _dict_to_json(d):
-    """Convert a Starlark string_list_dict to a JSON string."""
-    if not d:
-        return "{}"
-    pairs = []
-    for key, values in d.items():
-        escaped_key = key.replace("\\", "\\\\").replace('"', '\\"')
-        items = []
-        for v in values:
-            escaped_v = v.replace("\\", "\\\\").replace('"', '\\"')
-            items.append('"%s"' % escaped_v)
-        pairs.append('"%s": [%s]' % (escaped_key, ", ".join(items)))
-    return "{%s}" % ", ".join(pairs)
-
 def _extract_source_traceability_impl(ctx):
     """Implementation of source traceability extraction rule."""
     script = ctx.executable._script
@@ -35,11 +21,11 @@ def _extract_source_traceability_impl(ctx):
     # Serialize implements and verifies mappings as JSON
     if ctx.attr.implements:
         args.add("--implements-json")
-        args.add(_dict_to_json(ctx.attr.implements))
+        args.add(json.encode(ctx.attr.implements))
 
     if ctx.attr.verifies:
         args.add("--verifies-json")
-        args.add(_dict_to_json(ctx.attr.verifies))
+        args.add(json.encode(ctx.attr.verifies))
 
     # Get runfiles for the script
     script_runfiles = ctx.attr._script[DefaultInfo].default_runfiles.files.to_list()
