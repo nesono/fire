@@ -108,9 +108,7 @@ def parse_requirement_sections(
         )
         metadata = {}
         if metadata_line:
-            metadata = metadata_parsing.parse_metadata_fields(
-                metadata_line, req_id
-            )
+            metadata = metadata_parsing.parse_metadata_fields(metadata_line, req_id)
 
         body_start = 1
         if metadata_line:

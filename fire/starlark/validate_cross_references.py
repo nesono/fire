@@ -93,8 +93,6 @@ def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None
     return None
 
 
-
-
 def _requirement_suffixes(config: FireConfig | None = None) -> tuple[str, ...]:
     """Return known requirement file suffixes from config or the hardcoded default."""
     if config is not None:
