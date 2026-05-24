@@ -9,6 +9,7 @@ from typing import Final
 from fire.starlark import (
     file_io_common,
     markdown_common,
+    metadata_parsing,
     path_common,
     validate_cross_references,
 )
@@ -102,14 +103,12 @@ def parse_requirement_sections(
         end = indices[idx + 1][0] if idx + 1 < len(indices) else len(lines)
         section_lines = lines[start:end]
 
-        metadata_line = validate_cross_references._extract_next_metadata_line(
+        metadata_line = metadata_parsing.extract_next_metadata_line(
             section_lines, 0, known_fields
         )
         metadata = {}
         if metadata_line:
-            metadata = validate_cross_references._parse_metadata_fields(
-                metadata_line, req_id
-            )
+            metadata = metadata_parsing.parse_metadata_fields(metadata_line, req_id)
 
         body_start = 1
         if metadata_line:
