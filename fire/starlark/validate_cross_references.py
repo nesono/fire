@@ -85,10 +85,16 @@ def validate_no_bare_todos(content: str, file_path: str) -> list[str]:
 def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None:
     """Find the line index of the requirement heading.
 
-    Returns the index of the line starting with '## REQ_ID', or None if not found.
+    Matches a line that is exactly ``## <req_id>`` or ``## <req_id> ...``.
+    The trailing-space check prevents prefix collisions: searching for
+    ``REQ-1`` must not match a heading like ``## REQ-12``.
+
+    Returns the index of the matching line, or None if not found.
     """
+    target = f"## {req_id}"
     for i, line in enumerate(lines):
-        if line.startswith(f"## {req_id}"):
+        stripped = line.rstrip()
+        if stripped == target or stripped.startswith(target + " "):
             return i
     return None
 
