@@ -98,11 +98,8 @@ def _build_parent_link_validator(
 def _annotation_for_field(field_def: FieldDefinition, *, required: bool) -> type:
     """Return the Python type annotation for a field definition."""
     if field_def.type == "enum":
-        base = Union[str, str]  # enum values are strings; TODO is also a string
-        if field_def.allow_todo:
-            base = str
-        else:
-            base = str
+        # Enum values are strings; allow_todo is enforced by the validator.
+        base = str
     elif field_def.type == "bool":
         if field_def.allow_todo:
             base = Union[bool, str]
@@ -111,10 +108,8 @@ def _annotation_for_field(field_def: FieldDefinition, *, required: bool) -> type
     elif field_def.type == "int":
         base = int
     elif field_def.type == "parent_link":
-        if field_def.allow_multiple:
-            base = Optional[List[str]]
-        else:
-            base = Optional[List[str]]
+        # allow_multiple does not affect the annotation; the validator enforces shape.
+        base = Optional[List[str]]
     else:
         base = str
 

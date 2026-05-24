@@ -205,7 +205,7 @@
     "https://bcr.bazel.build/modules/rules_java/8.3.2/MODULE.bazel": "7336d5511ad5af0b8615fdc7477535a2e4e723a357b6713af439fe8cf0195017",
     "https://bcr.bazel.build/modules/rules_java/8.5.1/MODULE.bazel": "d8a9e38cc5228881f7055a6079f6f7821a073df3744d441978e7a43e20226939",
     "https://bcr.bazel.build/modules/rules_java/8.6.1/MODULE.bazel": "f4808e2ab5b0197f094cabce9f4b006a27766beb6a9975931da07099560ca9c2",
-    "https://bcr.bazel.build/modules/rules_java/9.0.3/MODULE.bazel": "1f98ed015f7e744a745e0df6e898a7c5e83562d6b759dfd475c76456dda5ccea",
+    "https://bcr.bazel.build/modules/rules_java/9.1.0/MODULE.bazel": "ee63f27e36a3fada80342869361182f120a9819c74320e8e65b1e04ba0cd7a9d",
     "https://bcr.bazel.build/modules/rules_java/9.6.1/MODULE.bazel": "6b0b7172ce598e37e31d1e24f2a492a5249b88304bd25b02b465ee22e3aa3752",
     "https://bcr.bazel.build/modules/rules_java/9.6.1/source.json": "d577c30fe3005821ac39c6ed43eb5accc77ff67c7b80f4043101aef4b027a903",
     "https://bcr.bazel.build/modules/rules_jvm_external/4.4.2/MODULE.bazel": "a56b85e418c83eb1839819f0b515c431010160383306d13ec21959ac412d2fe7",
@@ -387,7 +387,7 @@
     },
     "@@buildifier_prebuilt+//:defs.bzl%buildifier_prebuilt_deps_extension": {
       "general": {
-        "bzlTransitiveDigest": "U0Sf339YLmNujx0hpIB9NqjD3vxTPi4HpriLqUAqZ0g=",
+        "bzlTransitiveDigest": "hHWkbhFDnVSE7RWeF4Lo7OI0HWzi0irgDYuLlo1pU0E=",
         "usagesDigest": "m+RORtK3MOrJs2auGj/7mY7N11R7swVsHYHg1jls5hs=",
         "recordedInputs": [
           "REPO_MAPPING:buildifier_prebuilt+,bazel_skylib bazel_skylib+",
@@ -533,7 +533,7 @@
     },
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
-        "bzlTransitiveDigest": "ABI1D/sbS1ovwaW/kHDoj8nnXjQ0oKU9fzmzEG4iT8o=",
+        "bzlTransitiveDigest": "Ga4z8lQy1YQ5rAMy+dOl0dqcCEBnYNCXku8x3YQmDZI=",
         "usagesDigest": "QI2z8ZUR+mqtbwsf2fLqYdJAkPOHdOV+tF2yVAUgRzw=",
         "recordedInputs": [
           "REPO_MAPPING:rules_kotlin+,bazel_tools bazel_tools"
@@ -590,7 +590,7 @@
     },
     "@@rules_multitool+//multitool:extension.bzl%multitool": {
       "general": {
-        "bzlTransitiveDigest": "bUAIj7+iQveUL37FLVQ+wqtGkQMyahXU4dysFJ22+/g=",
+        "bzlTransitiveDigest": "4avMykFfU7yKLcNGDrP0DjyoXjCsFZPCwsEYp3ik6dA=",
         "usagesDigest": "p0Y7uKj5HQuQRaYjExZcuk4ZYYt/4r3NBEY5SKjujPU=",
         "recordedInputs": [
           "REPO_MAPPING:bazel_features+,bazel_features_globals bazel_features++version_extension+bazel_features_globals",
@@ -809,7 +809,7 @@
     },
     "@@rules_python+//python/extensions:config.bzl%config": {
       "general": {
-        "bzlTransitiveDigest": "wUM/eFwo5Zy7rn36nZ9ZxN9tXhmcWMVGXIExerGg6gM=",
+        "bzlTransitiveDigest": "vr9ddlKwZY5E9diixm5DtS4qbXGoYSdvchYrfpG6MdQ=",
         "usagesDigest": "lDbpRfhoWmZCHSaNxwZv/8fF2y0wu2th0G0f/uqX7VM=",
         "recordedInputs": [
           "REPO_MAPPING:rules_python+,bazel_tools bazel_tools",
