@@ -15,6 +15,7 @@ exports_files(["test_params.yaml"])
 parameter_library(
     name = "test_params",
     src = "test_params.yaml",
+    visibility = ["//visibility:public"],
 )
 
 # Generate C++ headers from parameters (directory: test_params_cc/)
