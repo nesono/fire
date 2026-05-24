@@ -11,8 +11,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Literal, Optional
 
-import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+from fire.starlark import file_io_common
 
 
 class FieldDefinition(BaseModel):
@@ -107,7 +108,8 @@ def load_config(config_path: str | Path | None = None) -> FireConfig:
     else:
         config_path = Path(config_path)
 
-    with open(config_path) as f:
-        raw = yaml.safe_load(f)
+    raw, error = file_io_common.load_yaml_safe(str(config_path))
+    if error:
+        raise OSError(error)
 
     return FireConfig.model_validate(raw)

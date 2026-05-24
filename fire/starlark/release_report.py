@@ -6,9 +6,12 @@ from __future__ import annotations
 import re
 from typing import Final
 
-import yaml
-
-from fire.starlark import markdown_common, path_common, validate_cross_references
+from fire.starlark import (
+    file_io_common,
+    markdown_common,
+    path_common,
+    validate_cross_references,
+)
 from fire.starlark.config_models import FireConfig, load_config
 from fire.starlark.patterns import PARAM_VERSION_SUFFIX_RE, REQ_ID_PATTERN, TODO_PATTERN
 
@@ -17,17 +20,18 @@ _VALID_TRACE_TYPES: Final = {"impl", "verif"}
 
 def load_yaml_file(path: str) -> object:
     """Load YAML from disk and normalize empty files to an empty list."""
-    with open(path) as handle:
-        data = yaml.safe_load(handle)
+    data, error = file_io_common.load_yaml_safe(path)
+    if error:
+        raise OSError(error)
     return data if data is not None else []
 
 
 def load_json_file(path: str) -> object:
     """Load JSON from disk."""
-    import json
-
-    with open(path) as handle:
-        return json.load(handle)
+    data, error = file_io_common.load_json_safe(path)
+    if error:
+        raise OSError(error)
+    return data
 
 
 def _ensure_list_of_dicts(data: object, source: str) -> list[dict]:
