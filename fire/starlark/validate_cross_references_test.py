@@ -65,10 +65,26 @@ class TestFindRequirementHeadingIndex:
         lines = ["## REQ-1", "body", "## REQ-1", "more"]
         assert vcr._find_requirement_heading_index(lines, "REQ-1") == 0
 
-    def test_partial_id_match_does_not_count(self):
+    def test_prefix_id_does_not_match_longer_id(self):
+        # Regression test for #268: searching for REQ-1 must not match
+        # a longer ID like REQ-12.
         lines = ["## REQ-12", "body"]
-        # `## REQ-1` matches the start of `## REQ-12`, so this is a known
-        # caveat of the prefix-based matcher — document it explicitly.
+        assert vcr._find_requirement_heading_index(lines, "REQ-1") is None
+
+    def test_skips_prefix_match_and_finds_exact(self):
+        # Even when a longer-ID heading precedes the exact match, the
+        # exact match is what gets returned.
+        lines = ["## REQ-12", "body", "## REQ-1", "more"]
+        assert vcr._find_requirement_heading_index(lines, "REQ-1") == 2
+
+    def test_matches_heading_with_trailing_text(self):
+        # Headings may have a trailing space and additional text;
+        # they should still match.
+        lines = ["## REQ-1 Some description"]
+        assert vcr._find_requirement_heading_index(lines, "REQ-1") == 0
+
+    def test_matches_heading_with_trailing_whitespace(self):
+        lines = ["## REQ-1   "]
         assert vcr._find_requirement_heading_index(lines, "REQ-1") == 0
 
 
