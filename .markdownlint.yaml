@@ -5,11 +5,9 @@
 default: true
 
 # MD013/line-length - Line length
-MD013:
-  # Allow longer lines for technical documentation
-  line_length: 200
-  code_blocks: false
-  tables: false
+# Disabled: markdown is authored one sentence per line so that each line holds a
+# self-contained expression, which keeps diffs isolated to the changed sentence.
+MD013: false
 
 # MD024/no-duplicate-heading - Multiple headings with the same content
 MD024:
