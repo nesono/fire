@@ -588,6 +588,7 @@ py_library(
         ":config_models",
         ":document_model",
         ":html_render",
+        "@pip//weasyprint",
     ],
 )
 
@@ -600,6 +601,7 @@ py_binary(
         ":config_models",
         ":document_model",
         ":html_render",
+        "@pip//weasyprint",
     ],
 )
 

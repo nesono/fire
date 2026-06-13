@@ -2,10 +2,10 @@
 """CLI: render a FIRE markdown document to a styled PDF via WeasyPrint.
 
 The pipeline reuses the render model (Phase 1) and HTML rendering (Phase 2):
-markdown + config → render model → self-contained HTML → PDF. The WeasyPrint
-import is guarded so a missing engine produces an actionable error rather than
-an opaque ``ImportError``; the engine and its fonts are provisioned in the host
-environment (see the README PDF Export prerequisites).
+markdown + config → render model → self-contained HTML → PDF. WeasyPrint
+itself is a normal pip dependency, but it loads native libraries (pango, cairo,
+harfbuzz) at import time; that load is guarded so a host missing those libraries
+or fonts produces an actionable error rather than an opaque ``OSError``.
 """
 
 from __future__ import annotations
@@ -18,9 +18,9 @@ from fire.starlark.render.document_model import build_render_document
 from fire.starlark.render.html_render import render_html
 
 _ENGINE_MISSING = (
-    "WeasyPrint is required to render PDFs but could not be imported. Install "
-    "it (`pip install weasyprint`) and provision its native libraries (pango, "
-    "cairo, harfbuzz) and fonts. See the PDF Export section of the README."
+    "WeasyPrint could not be initialized. Its native libraries (pango, cairo, "
+    "harfbuzz) and fonts must be available on the host; see the PDF Export "
+    "section of the README for prerequisites."
 )
 
 
@@ -44,10 +44,14 @@ def write_pdf(html: str, out: str) -> None:
 
 
 def _load_engine():
-    """Import WeasyPrint, raising an actionable error when it is missing."""
+    """Import WeasyPrint, raising an actionable error when its libs are missing.
+
+    A missing native library or font surfaces as ``OSError`` from the cffi
+    bindings at import time; ``ImportError`` covers an absent package.
+    """
     try:
         import weasyprint
-    except ImportError as exc:
+    except (ImportError, OSError) as exc:
         raise RuntimeError(_ENGINE_MISSING) from exc
     return weasyprint
 
