@@ -98,6 +98,26 @@ else
 fi
 echo ""
 
+echo "Rendering PDF deliverable (document_pdf)..."
+PDF_BUILD_LOG=$(mktemp)
+if bazel build $BAZEL_OPTS //:integration_pdf 2>"$PDF_BUILD_LOG"; then
+    PDF_OUT="bazel-bin/braking.pdf"
+    if [ -s "$PDF_OUT" ] && head -c 4 "$PDF_OUT" | grep -q "%PDF"; then
+        echo "PDF deliverable generated successfully ($(wc -c <"$PDF_OUT") bytes)"
+    else
+        echo "ERROR: PDF deliverable was not produced or is empty"
+        exit 1
+    fi
+elif grep -q "WeasyPrint could not" "$PDF_BUILD_LOG"; then
+    echo "WARNING: skipping PDF assertion - WeasyPrint native libraries/fonts"
+    echo "         are not available on this host (see README PDF Export)."
+else
+    cat "$PDF_BUILD_LOG"
+    echo "ERROR: PDF build failed"
+    exit 1
+fi
+echo ""
+
 echo "Running release readiness test..."
 bazel test $BAZEL_OPTS //:integration_release_readiness --test_output=all
 echo ""

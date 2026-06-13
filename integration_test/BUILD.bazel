@@ -2,6 +2,7 @@
 
 load("@fire//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_rust_parameters")
 load("@fire//fire/starlark:parameters.bzl", "parameter_library")
+load("@fire//fire/starlark:pdf.bzl", "document_pdf")
 load("@fire//fire/starlark:reports.bzl", "release_readiness_test", "release_report")
 load("@fire//fire/starlark:traceability.bzl", "source_traceability")
 load("@rules_cc//cc:defs.bzl", "cc_library")
@@ -86,6 +87,13 @@ source_traceability(
             "REQ-INT-004?version=1",
         ],
     },
+)
+
+# Render a styled PDF deliverable (end-to-end document_pdf rule)
+document_pdf(
+    name = "integration_pdf",
+    srcs = ["braking.sysreq.md"],
+    out = "braking.pdf",
 )
 
 # Release readiness report

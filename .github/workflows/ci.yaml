@@ -121,6 +121,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install WeasyPrint native libraries and fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 \
+            libgdk-pixbuf-2.0-0 libharfbuzz0b libffi-dev fonts-dejavu-core
+
       - name: Cache Bazel
         uses: actions/cache@v4
         with:
