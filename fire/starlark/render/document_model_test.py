@@ -41,6 +41,10 @@ class TestDocument:
         doc = build_render_document("## REQ-X\n", "brake.sysreq.md", default_config)
         assert doc.title == "brake"
 
+    def test_title_fallback_preserves_dotted_stem(self, default_config):
+        doc = build_render_document("## REQ-X\n", "brake.v1.sysreq.md", default_config)
+        assert doc.title == "brake.v1"
+
     def test_source_path(self, document):
         assert document.source_path == "brake.sysreq.md"
 

@@ -62,7 +62,7 @@ def build_render_document(
         source_path=file_path,
         doc_type=doc_key,
         display_name=doc_type.display_name,
-        title=_extract_title(content, file_path),
+        title=_extract_title(content, file_path, doc_type.suffix),
         entries=entries,
     )
 
@@ -77,12 +77,18 @@ def _resolve_document_type(
     raise ValueError(f"no document type matches '{file_path}'")
 
 
-def _extract_title(content: str, file_path: str) -> str:
-    """Return the first H1 heading, or the filename stem as a fallback."""
+def _extract_title(content: str, file_path: str, suffix: str) -> str:
+    """Return the first H1 heading, or the filename stem as a fallback.
+
+    The fallback strips the resolved document-type *suffix* rather than
+    splitting on the first dot, so dotted stems (``brake.v1.sysreq.md``)
+    are preserved (``brake.v1``).
+    """
     for line in content.split("\n"):
         if line.startswith("# "):
             return line[2:].strip()
-    return Path(file_path).name.split(".", 1)[0]
+    name = Path(file_path).name
+    return name[: -len(suffix)] if name.endswith(suffix) else name
 
 
 def _build_entry(
