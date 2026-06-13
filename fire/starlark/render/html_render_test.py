@@ -59,6 +59,17 @@ class TestEntryContract:
         )
 
 
+class TestTemplateOverride:
+    def test_custom_template_path_is_used(self, document, tmp_path):
+        custom = tmp_path / "minimal.html.j2"
+        custom.write_text("<h1>{{ document.title }}</h1>\n")
+        html = render_html(document, template_name=str(custom))
+        assert html.strip() == "<h1>Braking System Requirements</h1>"
+
+    def test_builtin_template_name_still_resolves(self, document):
+        assert "fire-entry" in render_html(document, template_name="document.html.j2")
+
+
 class TestStylesheets:
     def test_base_stylesheet_inlined(self, document):
         assert ".fire-entry" in render_html(document)

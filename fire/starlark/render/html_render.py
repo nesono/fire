@@ -32,10 +32,20 @@ def render_html(
     """Render *document* to a self-contained HTML string.
 
     *stylesheets* are filesystem paths whose contents are cascaded after the
-    FIRE default ``base.css``.
+    FIRE default ``base.css``. *template_name* is a built-in template name or a
+    path to a custom template file.
     """
-    template = _create_environment().get_template(template_name)
+    name, search_dirs = _resolve_template(template_name)
+    template = _create_environment(search_dirs).get_template(name)
     return template.render(document=document, stylesheets=_collect_styles(stylesheets))
+
+
+def _resolve_template(template_name: str) -> tuple[str, list[str]]:
+    """Return the loader name and search dirs for a name or custom path."""
+    path = Path(template_name)
+    if path.is_file():
+        return path.name, [str(path.parent), str(_TEMPLATES_DIR)]
+    return template_name, [str(_TEMPLATES_DIR)]
 
 
 def _collect_styles(extra: Sequence[str]) -> list[str]:
@@ -43,10 +53,10 @@ def _collect_styles(extra: Sequence[str]) -> list[str]:
     return [_BASE_CSS.read_text()] + [Path(p).read_text() for p in extra]
 
 
-def _create_environment() -> Environment:
+def _create_environment(search_dirs: Sequence[str]) -> Environment:
     """Create the Jinja2 environment with the markdown body filter registered."""
     env = Environment(
-        loader=FileSystemLoader(_TEMPLATES_DIR),
+        loader=FileSystemLoader(search_dirs),
         autoescape=select_autoescape(["html", "j2"]),
         trim_blocks=True,
         lstrip_blocks=True,

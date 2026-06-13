@@ -578,3 +578,37 @@ py_test(
         "@pip//pytest",
     ],
 )
+
+# PDF CLI: markdown → HTML → PDF via WeasyPrint (Phase 3)
+py_library(
+    name = "render_pdf_lib",
+    srcs = ["render/render_pdf.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":config_models",
+        ":document_model",
+        ":html_render",
+    ],
+)
+
+py_binary(
+    name = "render_pdf_script",
+    srcs = ["render/render_pdf.py"],
+    main = "render/render_pdf.py",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":config_models",
+        ":document_model",
+        ":html_render",
+    ],
+)
+
+py_test(
+    name = "render_pdf_test",
+    size = "small",
+    srcs = ["render/render_pdf_test.py"],
+    deps = [
+        ":render_pdf_lib",
+        "@pip//pytest",
+    ],
+)
