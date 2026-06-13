@@ -528,3 +528,21 @@ py_test(
         "@pip//pytest",
     ],
 )
+
+# PDF markdown→HTML body renderer (Phase 2)
+py_library(
+    name = "markdown_render",
+    srcs = ["render/markdown_render.py"],
+    visibility = ["//visibility:public"],
+    deps = ["@pip//markdown_it_py"],
+)
+
+py_test(
+    name = "markdown_render_test",
+    size = "small",
+    srcs = ["render/markdown_render_test.py"],
+    deps = [
+        ":markdown_render",
+        "@pip//pytest",
+    ],
+)
