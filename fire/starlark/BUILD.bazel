@@ -546,3 +546,35 @@ py_test(
         "@pip//pytest",
     ],
 )
+
+# PDF render model → HTML via the default template + base.css (Phase 2)
+py_library(
+    name = "html_render",
+    srcs = ["render/html_render.py"],
+    data = glob([
+        "render/templates/*.html.j2",
+        "render/styles/*.css",
+    ]),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":document_model",
+        ":markdown_render",
+        "@pip//jinja2",
+        "@pip//markupsafe",
+    ],
+)
+
+py_test(
+    name = "html_render_test",
+    size = "small",
+    srcs = [
+        "conftest.py",
+        "render/html_render_test.py",
+    ],
+    deps = [
+        ":config_models",
+        ":document_model",
+        ":html_render",
+        "@pip//pytest",
+    ],
+)

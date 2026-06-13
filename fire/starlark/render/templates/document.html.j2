@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ document.title }}</title>
+    {% for css in stylesheets %}
+    <style>
+{{ css | safe }}
+    </style>
+    {% endfor %}
+  </head>
+  <body>
+    <header class="fire-cover">
+      <h1 class="fire-cover__title">{{ document.title }}</h1>
+      <p class="fire-cover__type">{{ document.display_name }}</p>
+    </header>
+    <main class="fire-entries">
+      {% for entry in document.entries %}
+      <section class="fire-entry" data-doc-type="{{ document.doc_type }}">
+        <h2 class="fire-entry__id">{{ entry.entry_id }}</h2>
+        {% if entry.fields %}
+        <dl class="fire-fields">
+          {% for field in entry.fields %}
+          <div class="fire-field fire-field--{{ field.name }}" data-value="{{ field.value }}">
+            <dt>{{ field.display_name }}</dt>
+            <dd>{{ field.value }}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+        {% endif %}
+        <div class="fire-entry__body">{{ entry.body | markdown }}</div>
+      </section>
+      {% endfor %}
+    </main>
+  </body>
+</html>
