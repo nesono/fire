@@ -503,3 +503,28 @@ py_test(
         "@pip//pytest",
     ],
 )
+
+# PDF render model (Phase 1: type-agnostic intermediate, no rule yet)
+py_library(
+    name = "document_model",
+    srcs = ["render/document_model.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":config_models",
+        ":release_report",
+    ],
+)
+
+py_test(
+    name = "document_model_test",
+    size = "small",
+    srcs = [
+        "conftest.py",
+        "render/document_model_test.py",
+    ],
+    deps = [
+        ":config_models",
+        ":document_model",
+        "@pip//pytest",
+    ],
+)
