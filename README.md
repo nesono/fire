@@ -360,3 +360,52 @@ generate_format_specification(
     out = "FORMAT_SPECIFICATION.md",
 )
 ```
+
+## PDF Export
+
+Render a FIRE markdown document to a styled PDF with the `document_pdf` rule.
+Styling is controlled entirely through CSS: a default `base.css` ships with
+FIRE and your stylesheets cascade after it (no Python required).
+
+```starlark
+load("@fire//fire/starlark:pdf.bzl", "document_pdf")
+
+document_pdf(
+    name = "braking_pdf",
+    srcs = ["braking.sysreq.md"],
+    stylesheets = ["//branding:corporate.css"],  # optional, cascaded over base.css
+    # config = ":fire_config.yaml",               # optional, defaults to built-in
+    # template = "//branding:doc.html.j2",         # optional template override
+    out = "braking.pdf",
+)
+```
+
+```bash
+bazel build //path/to:braking_pdf
+open bazel-bin/path/to/braking.pdf
+```
+
+### Prerequisites
+
+Rendering uses [WeasyPrint](https://weasyprint.org/), which loads native
+libraries (pango, cairo, harfbuzz) and fonts from the host. The Python package
+is provided by Bazel, but the native libraries and fonts must be installed
+separately. On Debian/Ubuntu:
+
+```bash
+sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 \
+  libgdk-pixbuf-2.0-0 libharfbuzz0b libffi-dev fonts-dejavu-core
+```
+
+On macOS: `brew install pango` (and a font package such as
+`font-dejavu`). When the libraries or fonts are missing, the build fails with
+an actionable message rather than producing a partial PDF.
+
+### Known limitation: PDF rendering via Bazel on macOS
+
+Building a `document_pdf` target with `bazel` on macOS currently fails to find
+the Homebrew native libraries even when they are installed. macOS System
+Integrity Protection strips `DYLD_*` variables from the build action's
+environment, so the dynamic loader cannot locate `/opt/homebrew/lib`. Render on
+Linux (this is what CI uses); macOS rendering through Bazel is not yet
+supported.

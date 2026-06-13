@@ -5,11 +5,14 @@ exports_files([
     "fire_rule_utils.bzl",
     "format_spec.bzl",
     "parameters.bzl",
+    "pdf.bzl",
     "requirements.bzl",
     "reports.bzl",
     "traceability.bzl",
     "generate_code.py",
     "validate_cross_references.py",
+    "render/styles/base.css",
+    "render/templates/document.html.j2",
 ])
 
 py_binary(
