@@ -385,6 +385,43 @@ bazel build //path/to:braking_pdf
 open bazel-bin/path/to/braking.pdf
 ```
 
+### Customizing the styling
+
+The template emits a stable set of HTML classes and `data-` attributes that your
+stylesheets target, so new document types and fields are styled in CSS with no
+Python changes:
+
+```html
+<section class="fire-entry" data-doc-type="sysreq">
+  <h2 class="fire-entry__id">REQ-BRK-001</h2>
+  <dl class="fire-fields">
+    <div class="fire-field fire-field--sil" data-value="ASIL-D">
+      <dt>SIL</dt>
+      <dd>ASIL-D</dd>
+    </div>
+  </dl>
+  <div class="fire-entry__body">…</div>
+</section>
+```
+
+Each stylesheet in `stylesheets` cascades after the built-in `base.css`, so you
+override only what you need:
+
+```css
+.fire-entry[data-doc-type="sysreq"] .fire-entry__id {
+  color: #003366;
+}
+.fire-field--sil[data-value="ASIL-D"] dd {
+  color: #b00020;
+  font-weight: 700;
+}
+```
+
+The default stylesheet and template ship at
+`@fire//fire/starlark:render/styles/base.css` and
+`@fire//fire/starlark:render/templates/document.html.j2`; copy them as a starting
+point and pass your versions via `stylesheets` or `template`.
+
 ### Prerequisites
 
 Rendering uses [WeasyPrint](https://weasyprint.org/), which loads native

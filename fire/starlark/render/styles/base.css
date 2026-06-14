@@ -76,6 +76,7 @@ body {
   display: flex;
   gap: 1.5mm;
   align-items: baseline;
+  white-space: nowrap;
 }
 
 .fire-field dt {
