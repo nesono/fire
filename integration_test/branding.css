@@ -1,0 +1,9 @@
+/* Example branding stylesheet cascaded over the FIRE base.css. */
+
+.fire-cover__title {
+  color: #003366;
+}
+
+.fire-entry__id {
+  color: #00553b;
+}

@@ -94,6 +94,7 @@ document_pdf(
     name = "integration_pdf",
     srcs = ["braking.sysreq.md"],
     out = "braking.pdf",
+    stylesheets = ["branding.css"],
 )
 
 # Release readiness report
