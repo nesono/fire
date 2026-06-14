@@ -52,7 +52,7 @@ def _load_engine():
     try:
         import weasyprint
     except (ImportError, OSError) as exc:
-        raise RuntimeError(_ENGINE_MISSING) from exc
+        raise RuntimeError(f"{_ENGINE_MISSING}\n\nUnderlying error: {exc}") from exc
     return weasyprint
 
 

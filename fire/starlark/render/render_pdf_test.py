@@ -59,7 +59,13 @@ class TestBuildHtml:
 class TestEngineGuard:
     def test_write_pdf_raises_actionable_error(self, monkeypatch, tmp_path):
         _block_weasyprint(monkeypatch)
-        with pytest.raises(RuntimeError, match="WeasyPrint"):
+        with pytest.raises(RuntimeError) as excinfo:
+            write_pdf("<html></html>", str(tmp_path / "out.pdf"))
+        assert "WeasyPrint" in str(excinfo.value)
+
+    def test_write_pdf_surfaces_underlying_error(self, monkeypatch, tmp_path):
+        _block_weasyprint(monkeypatch)
+        with pytest.raises(RuntimeError, match="weasyprint not installed"):
             write_pdf("<html></html>", str(tmp_path / "out.pdf"))
 
     def test_main_reports_missing_engine(self, monkeypatch, capsys, source, tmp_path):
@@ -67,7 +73,9 @@ class TestEngineGuard:
         out = str(tmp_path / "out.pdf")
         monkeypatch.setattr("sys.argv", ["render_pdf", source, "--out", out])
         assert main() == 1
-        assert "WeasyPrint" in capsys.readouterr().err
+        err = capsys.readouterr().err
+        assert "WeasyPrint" in err
+        assert "weasyprint not installed" in err
 
 
 if __name__ == "__main__":
