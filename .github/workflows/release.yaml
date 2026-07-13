@@ -169,8 +169,10 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           cd bcr
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Author must be a CLA-signed identity, not the Actions bot, or the
+          # BCR PR's cla/google check fails.
+          git config user.name "Jochen Issing"
+          git config user.email "github@nesono.com"
           git add modules/fire/
           git commit -m "Add fire ${VERSION}"
           git push origin "fire-${VERSION}"
