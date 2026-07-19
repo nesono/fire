@@ -13,7 +13,7 @@ and Java.
 Add to `MODULE.bazel`:
 
 ```starlark
-bazel_dep(name = "fire", version = "0.6.0")
+bazel_dep(name = "fire", version = "0.6.1")
 
 # Add language rules for the languages you intend to use
 bazel_dep(name = "rules_cc", version = "0.2.16")
