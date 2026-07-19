@@ -192,7 +192,11 @@ class TestRegreqEquivalence:
 
 class TestNewSilValues:
     def test_pl_values_accepted(self, models):
-        for pl in ("PL-a", "PL-b", "PL-c", "PL-d"):
+        for pl in ("PL-a", "PL-b", "PL-c", "PL-d", "PL-e"):
             data = {**_VALID_SYSREQ, "sil": pl}
             result = models["sysreq"].model_validate(data)
             assert result.sil == pl
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__, "-v"]))
