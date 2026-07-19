@@ -52,3 +52,17 @@ repos:
     rev: "v0.13.3"
     hooks:
       - id: ruff
+  - repo: local
+    hooks:
+      - id: require-pytest-main
+        name: require pytest.main() in fire test files
+        description:
+          Bazel runs each *_test.py as __main__; without a pytest.main() call no
+          assertions execute and the test silently passes.
+        entry: |
+          bash -c 'rc=0; for f in "$@"; do
+            grep -q "pytest.main(" "$f" ||
+              { echo "Missing pytest.main() call: $f"; rc=1; }
+          done; exit $rc' --
+        language: system
+        files: '^fire/.*_test\.py$'
