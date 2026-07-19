@@ -24,6 +24,7 @@ field_definitions:
       - "PL-b"
       - "PL-c"
       - "PL-d"
+      - "PL-e"
       - "QM"
     allow_todo: true
     description: "Safety Integrity Level (ISO 26262, IEC 61508, DO-178C/DO-254, ISO 13849, QM)"

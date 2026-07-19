@@ -71,6 +71,7 @@ Fields must be separated by `|` (space-pipe-space).
 - **ISO 26262 (Automotive):** `ASIL-A`, `ASIL-B`, `ASIL-C`, `ASIL-D`
 - **IEC 61508 (General):** `SIL-1`, `SIL-2`, `SIL-3`, `SIL-4`
 - **DO-178C/DO-254 (Aviation):** `DAL-A`, `DAL-B`, `DAL-C`, `DAL-D`, `DAL-E`
+- **ISO 13849 (Machinery):** `PL-a`, `PL-b`, `PL-c`, `PL-d`, `PL-e`
 - **Quality Management:** `QM`
 - **TODO Placeholder:** `TODO(TICKET-ID)` where TICKET-ID matches `[A-Z]+-[0-9]+`
 

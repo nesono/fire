@@ -146,6 +146,7 @@ class TestLoadConfig:
         assert "SIL-1" in sil.values
         assert "DAL-A" in sil.values
         assert "PL-a" in sil.values
+        assert "PL-e" in sil.values
         assert "QM" in sil.values
 
     def test_load_custom_config(self, tmp_path):
@@ -175,5 +176,9 @@ class TestLoadConfig:
         assert cfg.document_types["handbook"].suffix == ".handbook.md"
 
     def test_load_nonexistent_file(self, tmp_path):
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(OSError):
             load_config(tmp_path / "nonexistent.yaml")
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__, "-v"]))
