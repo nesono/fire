@@ -3,6 +3,8 @@
 
 import textwrap
 
+import pytest
+
 from fire.starlark import validate_cross_references as vcr
 from fire.starlark.dynamic_requirement_model import build_models_from_config
 from fire.starlark.requirement_models import (
@@ -202,3 +204,7 @@ class TestExtractMarkdownReferences:
         param_refs, req_refs = vcr.extract_markdown_references(body)
         assert param_refs == []
         assert req_refs == []
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__, "-v"]))

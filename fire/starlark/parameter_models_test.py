@@ -102,9 +102,12 @@ class TestF64Parameter:
         p = F64Parameter(type="f64", value=1.5, unit="m/s", description="speed")
         assert p.value == 1.5
 
-    def test_int_rejected_due_to_strict(self):
-        with pytest.raises(ValidationError):
-            F64Parameter(type="f64", value=1, unit="m/s", description="speed")
+    def test_int_accepted_and_coerced(self):
+        # pydantic strict mode accepts int for a float field, coercing to float
+        # (unlike strict int, which rejects float — see test_float_rejected).
+        p = F64Parameter(type="f64", value=1, unit="m/s", description="speed")
+        assert p.value == 1.0
+        assert isinstance(p.value, float)
 
 
 class TestStringParameter:
@@ -317,3 +320,7 @@ class TestParameterFile:
         assert isinstance(table, TableParameter)
         assert table.columns[0].type == "i64"
         assert table.columns[1].type == "f64"
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__, "-v"]))

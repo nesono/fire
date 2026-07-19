@@ -89,3 +89,7 @@ class TestMergeParamVersions:
         b = {"x": 2}
         assert merge_param_versions([a, b]) == {"x": 5}
         assert merge_param_versions([b, a]) == {"x": 5}
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__, "-v"]))
