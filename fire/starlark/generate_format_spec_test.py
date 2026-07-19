@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Tests for the format specification generator."""
 
+import pytest
+
 from fire.starlark.config_models import FireConfig
 from fire.starlark.generate_format_spec import generate_format_spec
 
@@ -52,17 +54,17 @@ class TestGenerateFormatSpec:
 
     def test_sysreq_shows_required_sil(self, default_config):
         output = generate_format_spec(default_config)
-        # sysreq section should show SIL as required
-        sysreq_start = output.index("System Requirement")
-        # Find the next document type section to bound our search
-        swreq_start = output.index("Software Requirement")
+        # sysreq section should show SIL as required. Anchor on the "## "
+        # section heading, not the Table of Contents entry.
+        sysreq_start = output.index("## System Requirement")
+        swreq_start = output.index("## Software Requirement")
         sysreq_section = output[sysreq_start:swreq_start]
         assert "**Required:** Yes" in sysreq_section
 
     def test_regreq_shows_optional_sil(self, default_config):
         output = generate_format_spec(default_config)
         # regreq section should show SIL as optional
-        regreq_start = output.index("Regulatory Requirement")
+        regreq_start = output.index("## Regulatory Requirement")
         regreq_section = output[regreq_start:]
         # Find the SIL field in the regreq section
         sil_pos = regreq_section.index("`SIL` Field")
@@ -97,3 +99,7 @@ class TestGenerateFormatSpec:
         assert "Handbook Entry" in output
         assert ".handbook.md" in output
         assert "Product handbook entries" in output
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__, "-v"]))

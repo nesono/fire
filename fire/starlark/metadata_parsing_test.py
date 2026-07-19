@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Tests for inline metadata parsing."""
 
+import pytest
+
 from fire.starlark.metadata_parsing import (
     extract_next_metadata_line,
     is_metadata_line,
@@ -95,3 +97,7 @@ class TestParseMetadataFields:
     def test_int_string_remains_string_if_not_pure_digits(self):
         result = parse_metadata_fields("Sil: ASIL-1", "REQ-1")
         assert result == {"id": "REQ-1", "sil": "ASIL-1"}
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__, "-v"]))
