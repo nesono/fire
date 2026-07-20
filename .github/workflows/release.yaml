@@ -115,6 +115,20 @@ jobs:
               f.write(content)
           "
 
+      - name: Sync fork main with upstream
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.BCR_PUBLISH_TOKEN }}
+        run: |
+          # Base the BCR branch on a fresh upstream main so the check-file-sync
+          # check passes (it requires the branch to contain the latest
+          # tools/bcr_validation.py). This needs BCR_PUBLISH_TOKEN to have
+          # workflow scope, since upstream commits modify .github/workflows/;
+          # continue-on-error keeps the release working (with a possibly stale
+          # base that a maintainer then rebases) if that scope is missing.
+          gh repo sync nesono/bazel-central-registry \
+            --source bazelbuild/bazel-central-registry --branch main
+
       - name: Clone BCR fork and create branch
         env:
           BCR_PUBLISH_TOKEN: ${{ secrets.BCR_PUBLISH_TOKEN }}
