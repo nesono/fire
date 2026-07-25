@@ -191,14 +191,17 @@ jobs:
           git commit -m "Add fire ${VERSION}"
           git push origin "fire-${VERSION}"
 
-      - name: Create pull request on BCR fork
+      - name: Create pull request on the Bazel Central Registry
         env:
           GH_TOKEN: ${{ secrets.BCR_PUBLISH_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
+          # The branch lives in the fork, so --head must be namespaced as
+          # owner:branch — an unqualified name is looked up in --repo itself,
+          # which has no such branch.
           gh pr create \
             --repo bazelbuild/bazel-central-registry \
             --base main \
-            --head "fire-${VERSION}" \
+            --head "nesono:fire-${VERSION}" \
             --title "Add fire ${VERSION}" \
-            --body "Automated BCR entry for [fire ${VERSION}](https://github.com/nesono/fire/releases/tag/v${VERSION})."
+            --body "Automated BCR entry for [fire ${VERSION}](https://github.com/nesono/fire/releases/tag/${VERSION})."
