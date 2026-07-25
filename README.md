@@ -16,8 +16,8 @@ Add to `MODULE.bazel`:
 bazel_dep(name = "fire", version = "0.6.1")
 
 # Add language rules for the languages you intend to use
-bazel_dep(name = "rules_cc", version = "0.2.16")
-bazel_dep(name = "rules_python", version = "1.8.3")
+bazel_dep(name = "rules_cc", version = "0.2.17")
+bazel_dep(name = "rules_python", version = "1.8.5")
 ```
 
 ## System Requirements
@@ -28,7 +28,8 @@ H2 heading followed by a metadata line and free-form Markdown text.
 **Metadata fields:**
 
 - `SIL`: Safety Integrity Level — `ASIL-A/B/C/D` (ISO 26262), `SIL-1/2/3/4`
-  (IEC 61508), `DAL-A/B/C/D/E` (DO-178C), `QM`, or `TODO(KEY-1234)`
+  (IEC 61508), `DAL-A/B/C/D/E` (DO-178C/DO-254), `PL-a/b/c/d/e` (ISO 13849),
+  `QM`, or `TODO(KEY-1234)`
 - `Sec`: Security flag — `true`, `false`, or `TODO(KEY-1234)`
 - `Version`: Positive integer, incremented when the requirement changes
   semantically
@@ -84,6 +85,22 @@ Multiple parents use multi-line continuation with a trailing `|`:
 SIL: ASIL-D | Sec: false | Version: 1 |
 Parent: [REQ-BRK-001](/requirements/braking.sysreq.md?version=4#REQ-BRK-001) |
 Parent: [REQ-SENS-003](/requirements/sensing.sysreq.md?version=2#REQ-SENS-003)
+```
+
+## Regulatory Requirements
+
+Regulatory requirements are stored in `.regreq.md` files. They capture
+regulatory obligations where safety integrity and security relevance may not
+apply, so only `Version` is required — `SIL`, `Sec`, and `Parent` are all
+optional:
+
+```markdown
+## REQ-GDPR-DATA-RETENTION
+
+Version: 1
+
+The system SHALL delete personal data after the retention period defined by the
+applicable data protection regulation has expired.
 ```
 
 ## Parameters YAML
@@ -142,10 +159,30 @@ parameter_library(
 
 ## Code Generation
 
-FIRE generates one source file per parameter version into a directory artifact.
-Wrap this artifact in a language library target to use it in your code. Unit
-suffixes are embedded in generated names (e.g., `m/s` → `_MPS` in
-C++/Python/Rust, `Mps` in Go/Java).
+FIRE generates one source file per parameter version. Wrap the generated output
+in a language library target to use it in your code — FIRE never depends on the
+language rules itself, so you control which ones you use.
+
+**Output shape** differs by language: C++, Python, and Go produce a directory
+artifact of per-version files; Java produces a `.srcjar`; Rust produces a single
+`lib.rs`.
+
+**Unit suffixes** are embedded in generated names — `m/s` → `_MPS` in
+C++/Python/Rust, `Mps` in Go/Java. Dimensionless units (`1` or `dimensionless`)
+add no suffix at all, so `wheel_count_v1` with `unit: "1"` becomes
+`WHEEL_COUNT`.
+
+**Version suffixes** depend on the output shape. C++ and Python put each version
+in its own file, so the version appears in the file name only and the constant
+is unversioned (`max_speed_v1.h` → `MAX_SPEED_MPS`). Go, Rust, and Java put all
+versions in one package or file, so the version is part of the identifier
+(`MaxSpeedMpsV1`, `MAX_SPEED_MPS_V1`).
+
+**`base_name`** sets the name of the generated directory (defaulting to the
+target name), and that name — not the C++ namespace or Java package — is what
+appears in include and import paths.
+
+The examples below assume a BUILD file in `//vehicle/dynamics`.
 
 ### C++
 
@@ -155,6 +192,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 generate_cc_parameters(
     name = "vehicle_params_h",
+    base_name = "vehicle_params_cc",  # output directory name
     parameter_library = ":vehicle_params",
     namespace = "vehicle::dynamics",  # optional
 )
@@ -165,10 +203,13 @@ cc_library(
 )
 ```
 
-```cpp
-#include "vehicle/dynamics/vehicle_params/max_speed_v1.h"
+Headers are included as `<bazel-package>/<base_name>/<param>_v<N>.h`. The
+`namespace` attribute only wraps the declarations; it does not affect the path:
 
-double limit = MAX_SPEED_MPS_V1;
+```cpp
+#include "vehicle/dynamics/vehicle_params_cc/max_speed_v1.h"
+
+double limit = vehicle::dynamics::MAX_SPEED_MPS;
 ```
 
 ### Python
@@ -179,6 +220,7 @@ load("@rules_python//python:defs.bzl", "py_library")
 
 generate_python_parameters(
     name = "vehicle_params_py_src",
+    base_name = "vehicle_params_py",
     parameter_library = ":vehicle_params",
 )
 
@@ -189,13 +231,12 @@ py_library(
 ```
 
 ```python
-from vehicle.dynamics.vehicle_params.max_speed_v1 import MAX_SPEED_MPS_V1
+from vehicle.dynamics.vehicle_params_py.max_speed_v1 import MAX_SPEED_MPS
 ```
 
 ### Go
 
-Go generates one sub-package per parameter version (Go packages map to
-directories):
+All parameter versions land in a single Go package named after `base_name`:
 
 ```starlark
 load("@fire//fire/starlark:codegen.bzl", "generate_go_parameters")
@@ -203,30 +244,39 @@ load("@rules_go//go:def.bzl", "go_library")
 
 generate_go_parameters(
     name = "vehicle_params_go_src",
+    base_name = "vehicle_params_go",
     parameter_library = ":vehicle_params",
 )
 
 go_library(
-    name = "max_speed_v1_go",
+    name = "vehicle_params_go",
     srcs = [":vehicle_params_go_src"],
-    importpath = "vehicle/dynamics/vehicle_params/max_speed_v1",
 )
 ```
 
 ```go
-import speed "vehicle/dynamics/vehicle_params/max_speed_v1"
+import params "vehicle/dynamics/vehicle_params_go"
 
-limit := speed.MaxSpeedMpsV1
+limit := params.MaxSpeedMpsV1
 ```
 
 ### Rust
 
+Rust generates one `lib.rs` holding every parameter version. Wrap it in a
+`rust_library` to depend on it:
+
 ```starlark
 load("@fire//fire/starlark:codegen.bzl", "generate_rust_parameters")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
 generate_rust_parameters(
-    name = "vehicle_params_rs",
+    name = "vehicle_params_rs_src",
     parameter_library = ":vehicle_params",
+)
+
+rust_library(
+    name = "vehicle_params_rs",
+    srcs = [":vehicle_params_rs_src"],
 )
 ```
 
@@ -236,12 +286,17 @@ use vehicle_params_rs::MAX_SPEED_MPS_V1;
 
 ### Java
 
+All parameters become static members of a single class. The class name defaults
+to the PascalCase of the target name — pass `class_name` to override it, since
+the target name usually carries a `_src` suffix you do not want in the class:
+
 ```starlark
 load("@fire//fire/starlark:codegen.bzl", "generate_java_parameters")
 load("@rules_java//java:defs.bzl", "java_library")
 
 generate_java_parameters(
     name = "vehicle_params_java_src",
+    class_name = "VehicleParams",  # else: VehicleParamsJavaSrc
     package_prefix = "com.example",
     parameter_library = ":vehicle_params",
 )
@@ -257,6 +312,45 @@ import static com.example.VehicleParams.*;
 
 double limit = MaxSpeedMpsV1;
 ```
+
+## Source Traceability
+
+`source_traceability` records which source files implement a requirement and
+which test files verify it, pinned to a specific requirement version. It
+validates that every referenced requirement ID exists in `deps` and emits a
+`<name>.trace.json` that the release readiness report consumes as its coverage
+input.
+
+```starlark
+load("@fire//fire/starlark:traceability.bzl", "source_traceability")
+
+source_traceability(
+    name = "brake_controller_trace",
+    implements = {
+        "brake_controller.cc": [
+            "REQ_BC_CALCULATE_FORCE?version=1",
+            "REQ_BC_EMERGENCY_BRAKE?version=1",
+        ],
+        "brake_controller.h": ["REQ_BC_CALCULATE_FORCE?version=1"],
+    },
+    verifies = {
+        "brake_controller_test.cc": [
+            "REQ_BC_CALCULATE_FORCE?version=1",
+            "REQ_BC_EMERGENCY_BRAKE?version=1",
+        ],
+    },
+    deps = [":brake_controller_requirements"],
+)
+```
+
+Each entry uses `REQ_ID?version=N`; the suffix is mandatory. Unknown requirement
+IDs and versions ahead of the requirement fail the build. When a requirement is
+incremented past the version a trace declares, the build prints an `OUTDATED`
+warning so the source can be reviewed and re-pinned.
+
+The release report itself checks trace coverage — that each requirement has at
+least one implementing and one verifying source — and reports the rest as
+missing implementation or verification traces.
 
 ## Release Readiness Report
 
@@ -311,6 +405,8 @@ field_definitions:
   sil:
     display_name: "SIL"
     type: enum
+    # Narrowed to ISO 26262 here; the built-in field also allows the
+    # IEC 61508, DO-178C/DO-254, and ISO 13849 values.
     values: ["ASIL-A", "ASIL-B", "ASIL-C", "ASIL-D", "QM"]
     allow_todo: true
 
