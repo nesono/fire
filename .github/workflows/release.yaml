@@ -197,7 +197,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           gh pr create \
-            --repo nesono/bazel-central-registry \
+            --repo bazelbuild/bazel-central-registry \
             --base main \
             --head "fire-${VERSION}" \
             --title "Add fire ${VERSION}" \
