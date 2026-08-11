@@ -40,7 +40,9 @@ System requirements are stored in Markdown files with the `.sysreq.md` extension
 
 Each requirement consists of:
 
-1. **Requirement ID** (H2 heading): `## REQ-ID`
+1. **Requirement ID** (heading): `## REQ-ID`. Recognized at any heading
+   level (`#` .. `######`), so ID-bearing entries may be nested under informal
+   section headers (e.g. `### HARA-H-001` under `## Hazards`).
 2. **Metadata line**: `SIL: <value> | Sec: <value> | Version: <value>`
 3. **Requirement text**: One or more paragraphs describing the requirement
 4. **Optional subsections**: Rationale, Acceptance Criteria, Verification, etc.
@@ -715,9 +717,10 @@ SIL: ASIL-D | Sec: true | Version: 1 | Parent: TODO(LINK-456)
 ### Requirement Files (`.sysreq.md`, `.swreq.md`)
 
 1. **Requirement ID:**
-   - Must match pattern `^[A-Z][A-Z0-9_-]+$`
+   - Must match pattern `^[A-Z][A-Z0-9_-]+$` by default (or the document
+     type's `id_pattern` when configured)
    - Must be unique within the file
-   - Used as H2 heading (`## REQ-ID`)
+   - Used as a heading (`## REQ-ID`), recognized at any level `#` .. `######`
 
 2. **Metadata Line:**
    - Must be the first line(s) after the requirement ID heading

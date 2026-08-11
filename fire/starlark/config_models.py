@@ -8,6 +8,7 @@ Consumers supply a fire_config.yaml; when absent, the built-in default
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import List, Literal, Optional
 
@@ -49,7 +50,13 @@ class FieldDefinition(BaseModel):
 
 
 class DocumentTypeDefinition(BaseModel):
-    """A document type with its file suffix and field requirements."""
+    """A document type with its file suffix, field requirements and entry-ID pattern.
+
+    ``id_pattern`` is an optional regex a heading's bare token must fully match
+    to be treated as a requirement entry, rather than relying on the default
+    "all-caps ID != mixed-case section header" heuristic. Set it to guard
+    against an all-caps section header being misparsed as an entry.
+    """
 
     suffix: str
     display_name: str
@@ -57,11 +64,23 @@ class DocumentTypeDefinition(BaseModel):
     required_fields: List[str] = Field(default_factory=list)
     optional_fields: List[str] = Field(default_factory=list)
 
+    id_pattern: Optional[str] = None
+
     @field_validator("suffix")
     @classmethod
     def validate_suffix(cls, v: str) -> str:
         if not v.endswith(".md"):
             raise ValueError("suffix must end with '.md'")
+        return v
+
+    @field_validator("id_pattern")
+    @classmethod
+    def validate_id_pattern(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            try:
+                re.compile(v)
+            except re.error as exc:
+                raise ValueError(f"id_pattern is not a valid regex: {exc}") from exc
         return v
 
 
@@ -87,6 +106,15 @@ class FireConfig(BaseModel):
     def suffix_to_document_type(self) -> dict[str, DocumentTypeDefinition]:
         """Return a mapping from file suffix to document type definition."""
         return {dt.suffix: dt for dt in self.document_types.values()}
+
+    def document_type_for_file(
+        self, file_path: str
+    ) -> Optional[DocumentTypeDefinition]:
+        """Return the document type whose suffix matches *file_path*, or None."""
+        for dt in self.document_types.values():
+            if file_path.endswith(dt.suffix):
+                return dt
+        return None
 
     def known_fields(self) -> list[str]:
         """Return all known field display names (lowercased) for metadata parsing."""
