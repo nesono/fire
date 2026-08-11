@@ -114,7 +114,7 @@ hara:
   suffix: ".hara.md"
   display_name: "Hazard Analysis"
   required_fields: [version]
-  id_pattern: "HARA-H-\\d+"   # regex the bare ID token must fully match
+  id_pattern: "HARA-H-\\d+" # regex the bare ID token must fully match
 ```
 
 When unset, the default all-caps ID shape (`[A-Z][A-Z0-9_-]+`) applies.
