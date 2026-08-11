@@ -105,14 +105,14 @@ def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None
     """Find the line index of the requirement heading.
 
     Matches a heading at any depth (``#`` .. ``######``) whose token is exactly
-    ``req_id``, optionally followed by trailing text. Entries can therefore be
-    nested under informal section headers at any level. The trailing-space
-    check prevents prefix collisions: searching for ``REQ-1`` must not match a
-    heading like ``## REQ-12``.
+    ``req_id`` (trailing whitespace allowed, but no trailing title). Entries can
+    therefore be nested under informal section headers at any level. Requiring a
+    bare-ID heading keeps ``#<ID>`` anchors reliable and prevents prefix
+    collisions: searching for ``REQ-1`` must not match ``## REQ-12``.
 
     Returns the index of the matching line, or None if not found.
     """
-    pattern = re.compile(rf"^#{{1,6}} {re.escape(req_id)}(?: .*)?$")
+    pattern = re.compile(rf"^#{{1,6}} {re.escape(req_id)}$")
     for i, line in enumerate(lines):
         if pattern.match(line.rstrip()):
             return i

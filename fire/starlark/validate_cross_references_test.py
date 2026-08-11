@@ -79,11 +79,11 @@ class TestFindRequirementHeadingIndex:
         lines = ["## REQ-12", "body", "## REQ-1", "more"]
         assert vcr._find_requirement_heading_index(lines, "REQ-1") == 2
 
-    def test_matches_heading_with_trailing_text(self):
-        # Headings may have a trailing space and additional text;
-        # they should still match.
+    def test_trailing_text_after_id_does_not_match(self):
+        # Anchor resolution requires a bare-ID heading so `#<ID>` anchors stay
+        # reliable; a trailing title changes the rendered slug and must not match.
         lines = ["## REQ-1 Some description"]
-        assert vcr._find_requirement_heading_index(lines, "REQ-1") == 0
+        assert vcr._find_requirement_heading_index(lines, "REQ-1") is None
 
     def test_matches_heading_with_trailing_whitespace(self):
         lines = ["## REQ-1   "]
@@ -94,9 +94,9 @@ class TestFindRequirementHeadingIndex:
         lines = ["## Hazards", "", "### HARA-H-001", "body"]
         assert vcr._find_requirement_heading_index(lines, "HARA-H-001") == 2
 
-    def test_matches_h3_heading_with_trailing_text(self):
+    def test_h3_heading_with_trailing_text_does_not_match(self):
         lines = ["### HARA-H-001 Some description"]
-        assert vcr._find_requirement_heading_index(lines, "HARA-H-001") == 0
+        assert vcr._find_requirement_heading_index(lines, "HARA-H-001") is None
 
     def test_h3_prefix_id_does_not_match_longer_id(self):
         lines = ["### HARA-H-0012", "body"]
