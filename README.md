@@ -22,8 +22,10 @@ bazel_dep(name = "rules_python", version = "1.8.5")
 
 ## System Requirements
 
-System requirements are stored in `.sysreq.md` files. Each requirement is an
-H2 heading followed by a metadata line and free-form Markdown text.
+System requirements are stored in `.sysreq.md` files. Each requirement is a
+heading followed by a metadata line and free-form Markdown text. Entries are
+recognized at any heading level (`#` .. `######`), so ID-bearing entries may be
+nested under informal section headers.
 
 **Metadata fields:**
 
@@ -425,6 +427,15 @@ document_types:
     description: "Product handbook entries"
     required_fields: [version]
     optional_fields: [sil]
+
+  # Analysis type with entries nested under informal section headers
+  # (e.g. `### HARA-H-001` under `## Hazards`). Set id_pattern to make entry
+  # recognition explicit.
+  hara:
+    suffix: ".hara.md"
+    display_name: "Hazard Analysis"
+    required_fields: [version]
+    id_pattern: "HARA-H-\\d+"
 ```
 
 Pass the config to FIRE rules:

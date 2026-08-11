@@ -98,6 +98,27 @@ handbook:
   optional_fields: []
 ```
 
+### Explicit entry-ID recognition (optional)
+
+Entries are detected by an all-caps ID token in a heading at any level
+(`#` .. `######`), so ID-bearing entries can be nested under informal section
+headers (e.g. `### HARA-H-001` under `## Hazards`). Mixed-case/numeric section
+headers are ignored automatically.
+
+To make recognition explicit per document type — and guard against an all-caps
+section header being misparsed as an entry — set `id_pattern` (a regex the bare
+ID token must fully match):
+
+```yaml
+hara:
+  suffix: ".hara.md"
+  display_name: "Hazard Analysis"
+  required_fields: [version]
+  id_pattern: "HARA-H-\\d+"   # regex the bare ID token must fully match
+```
+
+When unset, the default all-caps ID shape (`[A-Z][A-Z0-9_-]+`) applies.
+
 ## Key Architectural Decisions
 
 - **`field_definitions`** are reusable across document types (sil is identical for sysreq and swreq)

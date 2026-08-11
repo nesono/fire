@@ -44,6 +44,25 @@ _REQUIREMENT_SUFFIXES: Final = (".sysreq.md", ".swreq.md", ".regreq.md")
 
 _BARE_TODO_RE: Final = re.compile(r"TODO(?!\([A-Z]+-[0-9]+\))")
 
+# Default bare-ID shape used when a document type does not define an explicit
+# id_pattern: an all-caps token (letters, digits, '_' and '-').
+_DEFAULT_ID_RE: Final = re.compile(r"[A-Z][A-Z0-9_-]+")
+
+
+def _entry_id_regex(
+    file_path: str, config: FireConfig | None = None
+) -> re.Pattern[str]:
+    """Return the regex a heading token must fully match to be an entry ID.
+
+    When the file's document type defines ``id_pattern``, that explicit rule is
+    used; otherwise the default all-caps ID shape applies.
+    """
+    if config is not None:
+        doc_type = config.document_type_for_file(file_path)
+        if doc_type is not None and doc_type.id_pattern is not None:
+            return re.compile(doc_type.id_pattern)
+    return _DEFAULT_ID_RE
+
 
 def _metadata_model_for_file(
     file_path: str,
@@ -85,16 +104,17 @@ def validate_no_bare_todos(content: str, file_path: str) -> list[str]:
 def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None:
     """Find the line index of the requirement heading.
 
-    Matches a line that is exactly ``## <req_id>`` or ``## <req_id> ...``.
-    The trailing-space check prevents prefix collisions: searching for
-    ``REQ-1`` must not match a heading like ``## REQ-12``.
+    Matches a heading at any depth (``#`` .. ``######``) whose token is exactly
+    ``req_id``, optionally followed by trailing text. Entries can therefore be
+    nested under informal section headers at any level. The trailing-space
+    check prevents prefix collisions: searching for ``REQ-1`` must not match a
+    heading like ``## REQ-12``.
 
     Returns the index of the matching line, or None if not found.
     """
-    target = f"## {req_id}"
+    pattern = re.compile(rf"^#{{1,6}} {re.escape(req_id)}(?: .*)?$")
     for i, line in enumerate(lines):
-        stripped = line.rstrip()
-        if stripped == target or stripped.startswith(target + " "):
+        if pattern.match(line.rstrip()):
             return i
     return None
 
@@ -114,7 +134,8 @@ def parse_inline_metadata_for_requirement(
 ):
     """Parse inline metadata for a specific requirement ID.
 
-    Looks for ## REQ-ID heading followed by a line with pipe-separated fields.
+    Looks for a heading (any depth) whose token is REQ-ID, followed by a line
+    with pipe-separated fields.
     Format: Key1: value1 | Key2: value2 | Key3: [link](url)
     Returns tuple of (RequirementMetadata | None, ValidationError | None).
     """
@@ -355,10 +376,18 @@ def validate_requirement_file(
     known_fields = config.known_fields() if config else None
 
     # Validate the requirement file's own metadata
-    # Find all requirement IDs in the file and validate each one
-    req_id_pattern = r"^## ([A-Z][A-Z0-9_-]+)\s*$"
-    for match in re.finditer(req_id_pattern, content, re.MULTILINE):
-        req_id = match.group(1)
+    # Find all requirement IDs in the file and validate each one. Entries are
+    # recognized at any heading depth (# .. ######) so that ID-bearing entries
+    # can be nested under informal section headers. Whether a heading token is
+    # an entry ID (vs a section header) is decided by the document type's
+    # id_pattern when configured, else the default all-caps ID shape.
+    id_re = _entry_id_regex(file_path, config)
+    heading_pattern = r"^#{1,6} (\S.*?)\s*$"
+    for match in re.finditer(heading_pattern, content, re.MULTILINE):
+        token = match.group(1)
+        if not id_re.fullmatch(token):
+            continue
+        req_id = token
         model_class = _metadata_model_for_file(file_path, config, models)
         metadata, validation_error = parse_inline_metadata_for_requirement(
             content, req_id, model_class, known_fields

@@ -69,6 +69,18 @@ class TestDocumentTypeDefinition:
         with pytest.raises(ValueError, match="must end with '.md'"):
             DocumentTypeDefinition(suffix=".sysreq.yaml", display_name="Bad")
 
+    def test_id_pattern_accepts_valid_regex(self):
+        dt = DocumentTypeDefinition(
+            suffix=".hara.md", display_name="HARA", id_pattern=r"HARA-H-\d+"
+        )
+        assert dt.id_pattern == r"HARA-H-\d+"
+
+    def test_id_pattern_rejects_invalid_regex(self):
+        with pytest.raises(ValueError, match="not a valid regex"):
+            DocumentTypeDefinition(
+                suffix=".hara.md", display_name="HARA", id_pattern="[unclosed"
+            )
+
 
 class TestFireConfig:
     def _minimal_config(self, **overrides):
@@ -109,6 +121,13 @@ class TestFireConfig:
         mapping = cfg.suffix_to_document_type()
         assert ".sysreq.md" in mapping
         assert mapping[".sysreq.md"].display_name == "System Requirement"
+
+    def test_document_type_for_file(self):
+        cfg = FireConfig.model_validate(self._minimal_config())
+        dt = cfg.document_type_for_file("some/dir/foo.sysreq.md")
+        assert dt is not None
+        assert dt.suffix == ".sysreq.md"
+        assert cfg.document_type_for_file("foo.unknown.md") is None
 
     def test_known_fields(self):
         cfg = FireConfig.model_validate(self._minimal_config())
