@@ -4,16 +4,17 @@ module(
     compatibility_level = 3,
 )
 
-bazel_dep(name = "rules_python", version = "1.8.5")
+bazel_dep(name = "rules_python", version = "2.5.1")
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
 
 bazel_dep(name = "aspect_rules_lint", version = "2.2.0", dev_dependency = True)
 
 PYTHON_VERSIONS = [
-    "3.10",
     "3.11",
     "3.12",
     "3.13",
+    "3.14",
+    "3.15",
 ]
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
@@ -29,6 +30,7 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
 [
     pip.parse(
+        experimental_index_url = "https://pypi.org/simple",
         hub_name = "pip",
         python_version = PY_VER,
         requirements_lock = "//:requirements.txt",

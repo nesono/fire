@@ -17,7 +17,7 @@ bazel_dep(name = "fire", version = "0.6.1")
 
 # Add language rules for the languages you intend to use
 bazel_dep(name = "rules_cc", version = "0.2.17")
-bazel_dep(name = "rules_python", version = "1.8.5")
+bazel_dep(name = "rules_python", version = "2.5.1")
 ```
 
 ## System Requirements

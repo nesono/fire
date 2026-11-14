@@ -10,7 +10,7 @@ import sys
 import pytest
 import yaml
 
-from validate_parameters import validate_parameters  # type: ignore
+from fire.starlark.validate_parameters import validate_parameters
 
 
 def _create_temp_yaml(data):

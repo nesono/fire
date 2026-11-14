@@ -6,9 +6,13 @@ Thank you for your interest in contributing to Fire! This document provides guid
 
 ### Prerequisites
 
-- Python 3.11 or later
+- Python 3.11, 3.12, 3.13, 3.14, or 3.15
 - Bazel 7.0 or later
 - Git
+
+FIRE supports the released Python versions receiving bug fixes or security
+updates in the [official Python support list](https://devguide.python.org/versions/).
+The Bazel toolchains and CI integration matrix cover the same versions.
 
 ### Initial Setup
 
