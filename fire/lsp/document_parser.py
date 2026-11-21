@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+"""Position-aware parser for FIRE requirement documents.
+
+Unlike ``fire.starlark.metadata_parsing``, which joins lines and drops offsets,
+this parser keeps the line/character range of every node so editor tooling can
+point at the exact text that a diagnostic or completion refers to.
+
+Characters are counted in Python code points, not UTF-16 code units.
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+from typing import Final
+
+from fire.starlark import metadata_parsing
+
+_HEADING_RE: Final = re.compile(r"^## (\S.*?)\s*$")
+_FIELD_SEPARATOR: Final = "|"
+_FIELD_KEYS: Final = ["sil", "sec", "version", "parent"]
+
+
+@dataclass(frozen=True)
+class Position:
+    line: int
+    character: int
+
+
+@dataclass(frozen=True)
+class Range:
+    start: Position
+    end: Position
+
+
+@dataclass(frozen=True)
+class MetadataField:
+    key: str
+    key_range: Range
+    value: str
+    value_range: Range
+
+
+@dataclass(frozen=True)
+class Requirement:
+    id: str
+    id_range: Range
+    fields: list[MetadataField] = field(default_factory=list)
+
+
+def _range(line: int, start: int, end: int) -> Range:
+    return Range(Position(line, start), Position(line, end))
+
+
+def _parse_segment(line_no: int, text: str, offset: int) -> MetadataField | None:
+    key, sep, rest = text.partition(":")
+    if not sep or not key.strip():
+        return None
+    key_start = offset + len(key) - len(key.lstrip())
+    value = rest.strip()
+    value_start = offset + len(key) + 1 + len(rest) - len(rest.lstrip())
+    return MetadataField(
+        key=key.strip(),
+        key_range=_range(line_no, key_start, key_start + len(key.strip())),
+        value=value,
+        value_range=_range(line_no, value_start, value_start + len(value)),
+    )
+
+
+def _parse_line_fields(line_no: int, line: str) -> list[MetadataField]:
+    fields: list[MetadataField] = []
+    offset = 0
+    for segment in line.split(_FIELD_SEPARATOR):
+        parsed = _parse_segment(line_no, segment, offset)
+        if parsed:
+            fields.append(parsed)
+        offset += len(segment) + 1
+    return fields
+
+
+def _parse_metadata(lines: list[str], heading_index: int) -> list[MetadataField]:
+    fields: list[MetadataField] = []
+    previous = ""
+    for i in range(heading_index + 1, len(lines)):
+        stripped = lines[i].strip()
+        if not stripped and not fields:
+            continue
+        if not stripped or (fields and not previous.endswith(_FIELD_SEPARATOR)):
+            break
+        if not metadata_parsing.is_metadata_line(stripped, _FIELD_KEYS):
+            break
+        fields.extend(_parse_line_fields(i, lines[i]))
+        previous = stripped
+        if not stripped.endswith(_FIELD_SEPARATOR):
+            break
+    return fields
+
+
+def parse_requirements(text: str) -> list[Requirement]:
+    """Return every ``## ID`` requirement heading with its metadata fields."""
+    lines = text.split("\n")
+    requirements: list[Requirement] = []
+    for index, line in enumerate(lines):
+        match = _HEADING_RE.match(line)
+        if match:
+            id_range = _range(index, match.start(1), match.end(1))
+            fields = _parse_metadata(lines, index)
+            requirements.append(Requirement(match.group(1), id_range, fields))
+    return requirements
