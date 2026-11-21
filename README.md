@@ -8,6 +8,8 @@ and parameters in YAML, with cross-references validated at build time. Parameter
 can be consumed from generated source code libraries in C++, Python, Go, Rust,
 and Java.
 
+For use in safety-related projects, see the [Safety Manual](docs/SAFETY_MANUAL.md).
+
 ## Integration
 
 Add to `MODULE.bazel`:
