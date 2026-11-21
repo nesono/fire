@@ -206,5 +206,69 @@ class TestExtractMarkdownReferences:
         assert req_refs == []
 
 
+# ---------------------------------------------------------------------------
+# validate_requirement_headings
+# ---------------------------------------------------------------------------
+
+
+class TestValidateRequirementHeadings:
+    def test_conformant_headings_accepted(self):
+        content = "## REQ-1\nbody\n## REQ_SW_2\nbody\n"
+        assert vcr.validate_requirement_headings(content, "f.md") == []
+
+    def test_lowercase_heading_rejected(self):
+        errors = vcr.validate_requirement_headings("## req-lower-002\n", "f.md")
+        assert len(errors) == 1
+        assert "f.md:1" in errors[0]
+        assert "req-lower-002" in errors[0]
+
+    def test_heading_with_trailing_title_rejected(self):
+        content = "## REQ-OK-001\n## REQ-TITLE-003 Braking distance\n"
+        errors = vcr.validate_requirement_headings(content, "f.md")
+        assert len(errors) == 1
+        assert "f.md:2" in errors[0]
+
+    def test_trailing_whitespace_accepted(self):
+        assert vcr.validate_requirement_headings("## REQ-1   \n", "f.md") == []
+
+    def test_other_heading_levels_ignored(self):
+        content = "# Title\n### Details\n#### More\n"
+        assert vcr.validate_requirement_headings(content, "f.md") == []
+
+    def test_headings_in_fenced_code_blocks_ignored(self):
+        content = "## REQ-1\n```markdown\n## not a requirement\n```\n"
+        assert vcr.validate_requirement_headings(content, "f.md") == []
+
+    def test_heading_after_fenced_code_block_checked(self):
+        content = "```\n## ignored\n```\n## bad heading\n"
+        errors = vcr.validate_requirement_headings(content, "f.md")
+        assert len(errors) == 1
+        assert "f.md:4" in errors[0]
+
+
+class TestValidateRequirementFileHeadings:
+    def test_non_conformant_heading_fails_validation(self, tmp_path):
+        path = tmp_path / "bad.sysreq.md"
+        path.write_text(
+            textwrap.dedent(
+                """\
+                ## REQ-OK-001
+
+                SIL: QM | Sec: false | Version: 1
+
+                Conformant.
+
+                ## req-lower-002
+
+                SIL: BOGUS | Sec: maybe | Version: 0
+
+                Invalid metadata that must not be silently skipped.
+                """
+            )
+        )
+        errors = vcr.validate_requirement_file(str(path), str(tmp_path))
+        assert any("req-lower-002" in error for error in errors)
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
