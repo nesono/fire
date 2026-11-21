@@ -33,6 +33,7 @@ from fire.starlark.dynamic_requirement_model import (
     build_models_from_config,
     model_for_suffix,
 )
+from fire.starlark.patterns import REQ_ID_PATTERN
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
 from fire.starlark.requirement_models import (
     RequirementMetadata,
@@ -80,6 +81,33 @@ def validate_no_bare_todos(content: str, file_path: str) -> list[str]:
                 f"'{snippet}'. Must use format TODO(KEY-1234)"
             )
     return errors
+
+
+def _heading_lines_outside_code(content: str) -> list[tuple[int, str]]:
+    """Return (line number, text) of H2 headings that are not in fenced code."""
+    headings: list[tuple[int, str]] = []
+    fence: str | None = None
+    for line_num, line in enumerate(content.split("\n"), start=1):
+        marker = line.lstrip()[:3]
+        if marker in ("```", "~~~"):
+            fence = None if fence == marker else (fence or marker)
+        elif fence is None and line.startswith("## "):
+            headings.append((line_num, line[3:].strip()))
+    return headings
+
+
+def validate_requirement_headings(content: str, file_path: str) -> list[str]:
+    """Reject H2 headings that are not valid requirement IDs.
+
+    Such headings are skipped by metadata validation and the release report,
+    so a requirement with a malformed heading would otherwise go unnoticed.
+    """
+    return [
+        f"{file_path}:{line_num}: Heading '## {text}' is not a valid "
+        f"requirement ID (expected [A-Z][A-Z0-9_-]+)"
+        for line_num, text in _heading_lines_outside_code(content)
+        if not REQ_ID_PATTERN.match(text)
+    ]
 
 
 def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None:
@@ -351,6 +379,7 @@ def validate_requirement_file(
 
     # Validate no bare/malformed TODOs in the entire file
     errors.extend(validate_no_bare_todos(content, file_path))
+    errors.extend(validate_requirement_headings(content, file_path))
 
     known_fields = config.known_fields() if config else None
 

@@ -281,6 +281,10 @@ for target in $FAILURE_TARGETS; do
         elif echo "$output" | grep -q "Bare or malformed TODO"; then
             echo "✅ PASS: Build failed with bare/malformed TODO error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for headings that are not valid requirement IDs (should FAIL)
+        elif echo "$output" | grep -q "is not a valid requirement ID"; then
+            echo "✅ PASS: Build failed with invalid requirement heading error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Check for Pydantic validation errors (should FAIL)
         elif echo "$output" | grep -qE "not a valid boolean|not a valid enumeration member|Input should be one of|not a valid integer|greater than or equal"; then
             echo "✅ PASS: Build failed with Pydantic validation error"

@@ -1,0 +1,28 @@
+"""Tests for requirement headings that are not valid requirement IDs.
+
+These tests verify that validation fails when a requirement file contains an
+H2 heading that would otherwise be skipped silently.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+# Lowercase heading - should FAIL
+requirement_library(
+    name = "test_lowercase_heading",
+    srcs = ["lowercase_heading.sysreq.md"],
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)
+
+# Heading with trailing title - should FAIL
+requirement_library(
+    name = "test_heading_with_title",
+    srcs = ["heading_with_title.sysreq.md"],
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)

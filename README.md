@@ -23,7 +23,9 @@ bazel_dep(name = "rules_python", version = "2.5.1")
 ## System Requirements
 
 System requirements are stored in `.sysreq.md` files. Each requirement is an
-H2 heading followed by a metadata line and free-form Markdown text.
+H2 heading followed by a metadata line and free-form Markdown text. Every H2
+heading must be exactly a requirement ID (`[A-Z][A-Z0-9_-]+`); other H2
+headings fail validation. Use H3 or deeper for structure inside a requirement.
 
 **Metadata fields:**
 
