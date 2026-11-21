@@ -1,0 +1,18 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+py_library(
+    name = "document_parser",
+    srcs = ["document_parser.py"],
+    visibility = ["//visibility:public"],
+    deps = ["//fire/starlark:metadata_parsing"],
+)
+
+py_test(
+    name = "document_parser_test",
+    size = "small",
+    srcs = ["document_parser_test.py"],
+    deps = [
+        ":document_parser",
+        "@pip//pytest",
+    ],
+)
