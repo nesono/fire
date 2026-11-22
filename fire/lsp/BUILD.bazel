@@ -174,3 +174,35 @@ py_test(
         "@pip//pytest",
     ],
 )
+
+py_library(
+    name = "index",
+    srcs = ["index.py"],
+    deps = [":document_parser"],
+)
+
+py_library(
+    name = "workspace",
+    srcs = ["workspace.py"],
+)
+
+py_test(
+    name = "index_test",
+    size = "small",
+    srcs = ["index_test.py"],
+    deps = [
+        ":document_parser",
+        ":index",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "workspace_test",
+    size = "small",
+    srcs = ["workspace_test.py"],
+    deps = [
+        ":workspace",
+        "@pip//pytest",
+    ],
+)
