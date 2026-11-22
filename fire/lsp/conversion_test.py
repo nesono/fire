@@ -4,7 +4,7 @@
 import pytest
 from lsprotocol import types as lsp
 
-from fire.lsp.conversion import to_lsp_diagnostic
+from fire.lsp.conversion import from_lsp_position, to_lsp_diagnostic, to_lsp_range
 from fire.lsp.diagnostic import Diagnostic, Severity
 from fire.lsp.document_parser import Position, Range
 
@@ -39,6 +39,31 @@ class TestToLspDiagnostic:
     def test_range_past_known_lines_is_kept(self):
         result = to_lsp_diagnostic(_diag(3, 0, 1), ["only"])
         assert result.range.start == lsp.Position(3, 0)
+
+
+class TestToLspRange:
+    def test_converts_both_ends(self):
+        rng = Range(Position(0, 2), Position(0, 5))
+        assert to_lsp_range(rng, ["😀 abc"]) == lsp.Range(
+            lsp.Position(0, 3), lsp.Position(0, 6)
+        )
+
+
+class TestFromLspPosition:
+    def test_ascii_is_unchanged(self):
+        assert from_lsp_position(lsp.Position(0, 3), ["abcdef"]) == Position(0, 3)
+
+    def test_utf16_columns_become_code_points(self):
+        assert from_lsp_position(lsp.Position(0, 3), ["😀 abc"]) == Position(0, 2)
+
+    def test_column_inside_a_surrogate_pair_rounds_down(self):
+        assert from_lsp_position(lsp.Position(0, 1), ["😀 abc"]) == Position(0, 0)
+
+    def test_column_past_the_end_is_clamped(self):
+        assert from_lsp_position(lsp.Position(0, 99), ["abc"]) == Position(0, 3)
+
+    def test_unknown_line_is_kept(self):
+        assert from_lsp_position(lsp.Position(5, 2), ["abc"]) == Position(5, 2)
 
 
 if __name__ == "__main__":

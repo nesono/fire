@@ -10,6 +10,7 @@ from pygls.lsp.server import LanguageServer
 
 from fire.lsp.analysis import Analyzer
 from fire.lsp.publisher import DiagnosticsPublisher
+from fire.lsp.uris import document_overlay
 from fire.starlark.config_models import FireConfig, load_config
 
 _NAME: Final = "fire-ls"
@@ -49,14 +50,17 @@ def _register_watching(server: LanguageServer) -> None:
 def create_server(config: FireConfig | None = None) -> LanguageServer:
     """Create a server using *config*, or the built-in default configuration."""
     server = LanguageServer(_NAME, _VERSION)
+    analyzer = Analyzer(config or load_config())
     publisher = DiagnosticsPublisher(
-        Analyzer(config or load_config()),
-        lambda uri, diagnostics: _publish(server, uri, diagnostics),
+        analyzer, lambda uri, diagnostics: _publish(server, uri, diagnostics)
     )
 
-    def refresh(*_: object) -> None:
+    def open_documents() -> dict[str, str]:
         documents = server.workspace.text_documents
-        publisher.refresh({uri: doc.source for uri, doc in documents.items()})
+        return {uri: doc.source for uri, doc in documents.items()}
+
+    def refresh(*_: object) -> None:
+        publisher.refresh(open_documents())
 
     for method in (
         lsp.TEXT_DOCUMENT_DID_OPEN,
@@ -65,6 +69,13 @@ def create_server(config: FireConfig | None = None) -> LanguageServer:
         lsp.WORKSPACE_DID_CHANGE_WATCHED_FILES,
     ):
         server.feature(method)(refresh)
+
+    @server.feature(lsp.TEXT_DOCUMENT_DEFINITION)
+    def definition(params: lsp.DefinitionParams) -> lsp.Location | None:
+        documents = open_documents()
+        uri = params.text_document.uri
+        overlay = document_overlay(documents)
+        return analyzer.definition(uri, documents[uri], params.position, overlay)
 
     @server.feature(lsp.INITIALIZED)
     def initialized(params: lsp.InitializedParams) -> None:

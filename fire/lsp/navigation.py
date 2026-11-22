@@ -18,6 +18,7 @@ _FILE_START = Range(Position(0, 0), Position(0, 0))
 class Target:
     path: Path
     range: Range
+    text: str
 
 
 def _contains(link: Link, position: Position) -> bool:
@@ -69,4 +70,4 @@ def definition_at(
         found = _parameter_range(link, content)
     else:
         found = _requirement_range(link, content, suffixes)
-    return Target(path, found or _FILE_START)
+    return Target(path, found or _FILE_START, content)
