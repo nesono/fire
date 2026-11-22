@@ -199,6 +199,17 @@ py_library(
 )
 
 py_library(
+    name = "navigation",
+    srcs = ["navigation.py"],
+    deps = [
+        ":document_parser",
+        ":index",
+        ":link_diagnostics",
+        ":workspace",
+    ],
+)
+
+py_library(
     name = "workspace",
     srcs = ["workspace.py"],
 )
@@ -268,6 +279,18 @@ py_test(
     deps = [
         ":publisher",
         "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "navigation_test",
+    size = "small",
+    srcs = ["navigation_test.py"],
+    deps = [
+        ":document_parser",
+        ":navigation",
+        ":workspace",
         "@pip//pytest",
     ],
 )

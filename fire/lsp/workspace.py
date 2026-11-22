@@ -32,13 +32,18 @@ class Workspace:
 
     def read(self, link_path: str) -> str | None:
         """Return the target's text, or ``None`` if it is missing or outside the root."""
+        located = self.locate(link_path)
+        return located[1] if located else None
+
+    def locate(self, link_path: str) -> tuple[Path, str] | None:
+        """Return the file actually read for *link_path* together with its text."""
         path = self._resolve(link_path)
         if path is None:
             return None
         for candidate in self._candidates(path):
             text = self._read_file(candidate)
             if text is not None:
-                return text
+                return candidate, text
         return None
 
     def _resolve(self, link_path: str) -> Path | None:
