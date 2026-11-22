@@ -28,3 +28,7 @@ pillow==13.0.0
 fonttools==4.68.0
 brotli==1.2.1
 zopfli==0.4.3
+pygls==2.1.1
+lsprotocol==2025.0.0
+cattrs==26.2.1
+attrs==26.1.0

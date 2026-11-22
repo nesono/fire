@@ -1,4 +1,4 @@
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 
 py_library(
     name = "document_parser",
@@ -74,6 +74,80 @@ py_test(
     srcs = ["document_parser_test.py"],
     deps = [
         ":document_parser",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "conversion",
+    srcs = ["conversion.py"],
+    deps = [
+        ":diagnostic",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_library(
+    name = "analysis",
+    srcs = ["analysis.py"],
+    deps = [
+        ":conversion",
+        ":diagnostics",
+        "//fire/starlark:config_models",
+        "//fire/starlark:dynamic_requirement_model",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_library(
+    name = "server",
+    srcs = ["server.py"],
+    deps = [
+        ":analysis",
+        "//fire/starlark:config_models",
+        "@pip//lsprotocol",
+        "@pip//pygls",
+    ],
+)
+
+py_binary(
+    name = "fire_ls",
+    srcs = ["__main__.py"],
+    main = "__main__.py",
+    visibility = ["//visibility:public"],
+    deps = [":server"],
+)
+
+py_test(
+    name = "conversion_test",
+    size = "small",
+    srcs = ["conversion_test.py"],
+    deps = [
+        ":conversion",
+        ":diagnostic",
+        ":document_parser",
+        "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "analysis_test",
+    size = "small",
+    srcs = ["analysis_test.py"],
+    deps = [
+        ":analysis",
+        "//fire/starlark:config_models",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "server_test",
+    size = "small",
+    srcs = ["server_test.py"],
+    deps = [
+        ":server",
         "@pip//pytest",
     ],
 )
