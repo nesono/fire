@@ -1,9 +1,12 @@
 """Jinja2 template environment setup for code generation."""
 
+from functools import partial
 from pathlib import Path
 from typing import Callable
 
 from jinja2 import Environment, FileSystemLoader
+
+from fire.starlark.generators.escaping import escape_string, sanitize_comment
 
 
 def pascal_case(name: str) -> str:
@@ -66,7 +69,7 @@ def format_value(language: str) -> Callable:
 
     def value_filter(value, param_type: str) -> str:
         if param_type == "string":
-            return f'"{value}"'
+            return f'"{escape_string(language, value)}"'
         elif param_type == "bool":
             if language in ["cpp", "go", "rust", "java"]:
                 return "true" if value else "false"
@@ -100,6 +103,8 @@ def create_environment() -> Environment:
     for lang in TYPE_MAPS:
         env.filters[f"{lang}_type"] = get_type(lang)
         env.filters[f"{lang}_value"] = format_value(lang)
+        env.filters[f"{lang}_str"] = partial(escape_string, lang)
+        env.filters[f"{lang}_comment"] = partial(sanitize_comment, lang)
 
     return env
 

@@ -20,7 +20,7 @@ public final class {{ class_name }} {
 {% set param_name = item.base_name | pascal_case + "V" + item.version | string %}
 {% endif %}
 {% if item.type == "table" %}
-    // {{ item.description | default("") }}
+    // {{ item.description | default("") | java_comment }}
     public static final class {{ param_name }} {
         private {{ param_name }}() {}
 
@@ -40,7 +40,7 @@ public final class {{ class_name }} {
             new {{ item.base_name | pascal_case }}Row(
 {%- for i in range(item.columns | length) -%}
 {%- if item.columns[i].type == "string" -%}
-"{{ row[i] }}"
+"{{ row[i] | java_str }}"
 {%- elif item.columns[i].type == "bool" -%}
 {{ "true" if row[i] else "false" }}
 {%- else -%}
@@ -59,13 +59,13 @@ public final class {{ class_name }} {
     }
 {% else %}
     /**
-     * {{ item.description | default("") }} - Unit: {{ item.unit }}
+     * {{ item.description | default("") | java_comment }} - Unit: {{ item.unit | java_comment }}
      */
 {% if not item.is_latest %}
     @Deprecated
 {% endif %}
 {% if item.type == "string" %}
-    public static final String {{ param_name }} = "{{ item.value }}";
+    public static final String {{ param_name }} = "{{ item.value | java_str }}";
 {% elif item.type == "bool" %}
     public static final boolean {{ param_name }} = {{ "true" if item.value else "false" }};
 {% elif item.type == "f32" %}

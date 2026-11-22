@@ -168,6 +168,9 @@ FIRE generates one source file per parameter version. Wrap the generated output
 in a language library target to use it in your code — FIRE never depends on the
 language rules itself, so you control which ones you use.
 
+String values are escaped for the target language, and descriptions and units
+are flattened to a single line in generated comments.
+
 **Output shape** differs by language: C++, Python, and Go produce a directory
 artifact of per-version files; Java produces a `.srcjar`; Rust produces a single
 `lib.rs`.

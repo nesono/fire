@@ -21,7 +21,7 @@ struct {{ struct_name }} {
 {% else %}
 {% set field_name = col.name %}
 {% endif %}
-    {{ col.type | cpp_type }} {{ field_name }};  ///< Unit: {{ col.unit }}
+    {{ col.type | cpp_type }} {{ field_name }};  ///< Unit: {{ col.unit | cpp_comment }}
 
 {% endfor %}
 };
@@ -32,10 +32,10 @@ struct {{ struct_name }} {
 {% else %}
 {% set const_name = item.base_name | upper %}
 {% endif %}
-/// {{ item.description | default("") }}
+/// {{ item.description | default("") | cpp_comment }}
 constexpr std::array<{{ struct_name }}, {{ size }}> {{ const_name }} = {{ "{" }}{
 {% for row in item.rows %}
-    {{ "{" }}{% for i in range(item.columns | length) %}{% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
+    {{ "{" }}{% for i in range(item.columns | length) %}{% if item.columns[i].type == "string" %}"{{ row[i] | cpp_str }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
 {% endfor %}
 }};
 
@@ -46,8 +46,8 @@ constexpr std::array<{{ struct_name }}, {{ size }}> {{ const_name }} = {{ "{" }}
 {% else %}
 {% set const_name = item.base_name | upper %}
 {% endif %}
-/// {{ item.description | default("") }} - Unit: {{ item.unit }}
-constexpr {{ cpp_type }} {{ const_name }} = {% if item.type == "string" %}"{{ item.value }}"{% elif item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
+/// {{ item.description | default("") | cpp_comment }} - Unit: {{ item.unit | cpp_comment }}
+constexpr {{ cpp_type }} {{ const_name }} = {% if item.type == "string" %}"{{ item.value | cpp_str }}"{% elif item.type == "bool" %}{% if item.value %}true{% else %}false{% endif %}{% else %}{{ item.value }}{% endif %};
 
 {% endif %}
 {% if namespace %}

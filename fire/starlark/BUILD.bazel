@@ -20,6 +20,7 @@ py_binary(
     srcs = [
         "generate_code.py",
         "generators/cpp.py",
+        "generators/escaping.py",
         "generators/generator_common.py",
         "generators/go.py",
         "generators/java.py",
@@ -486,6 +487,7 @@ py_library(
     srcs = [
         "generate_code.py",
         "generators/cpp.py",
+        "generators/escaping.py",
         "generators/generator_common.py",
         "generators/go.py",
         "generators/java.py",
@@ -497,6 +499,17 @@ py_library(
     deps = [
         ":file_io_common",
         "@pip//jinja2",
+    ],
+)
+
+py_test(
+    name = "generator_escaping_test",
+    size = "small",
+    srcs = ["generators/escaping_test.py"],
+    main = "generators/escaping_test.py",
+    deps = [
+        ":generate_code_lib",
+        "@pip//pytest",
     ],
 )
 
