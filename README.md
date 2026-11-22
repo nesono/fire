@@ -128,7 +128,8 @@ wheel_count_v1:
 ```
 
 **Table parameters** require `type: table`. Column types are inferred from the
-first row — do not specify them explicitly:
+first row — do not specify them explicitly. Every row must have exactly one
+value per column:
 
 ```yaml
 braking_distance_table_v1:

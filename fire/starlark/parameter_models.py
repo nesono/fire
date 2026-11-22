@@ -166,6 +166,17 @@ def _reject_explicit_type_fieds_in_columns(param_name: str, columns: List[Any]):
             )
 
 
+def _reject_misshaped_rows(param_name: str, rows: List[Any], columns: List[Any]):
+    """Assert every row is a list with exactly one value per column."""
+    for row_idx, row in enumerate(rows):
+        if not isinstance(row, list) or len(row) != len(columns):
+            got = len(row) if isinstance(row, list) else "a non-list value"
+            raise ValueError(
+                f"Parameter '{param_name}': Row {row_idx}: expected "
+                f"{len(columns)} values (one per column), got {got}."
+            )
+
+
 def _reject_inconsistent_types_in_table(
     param_name: str, rows: List[Any], columns: List[Any]
 ):
@@ -221,6 +232,7 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
 
                 # Infer and inject column types, then validate row consistency
                 if rows and columns:
+                    _reject_misshaped_rows(param_name, rows, columns)
                     _reject_inconsistent_types_in_table(param_name, rows, columns)
             try:
                 param_data["type"] = infer_parameter_type(param_data)

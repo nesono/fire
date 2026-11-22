@@ -1,0 +1,11 @@
+lookup_v1:
+  type: table
+  description: Second row has a surplus value
+  columns:
+    - name: velocity
+      unit: m/s
+    - name: braking_distance
+      unit: m
+  rows:
+    - [10.0, 7.1]
+    - [20.0, 28.6, 99.0]

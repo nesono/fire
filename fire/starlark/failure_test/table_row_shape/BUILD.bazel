@@ -1,0 +1,28 @@
+"""Tests for table parameters whose rows do not match the column list.
+
+These tests verify that validation fails when a table row has fewer or more
+values than there are columns.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:parameters.bzl", "parameter_library")
+
+# Row with fewer values than columns - should FAIL
+parameter_library(
+    name = "test_short_row",
+    src = "short_row.yaml",
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)
+
+# Row with more values than the first row - should FAIL
+parameter_library(
+    name = "test_long_row",
+    src = "long_row.yaml",
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)
