@@ -77,6 +77,9 @@ has_tag() {
     [[ " $tags " == *" $tag "* ]]
 }
 
+# Output is matched with here-strings, not `echo | grep -q`: under pipefail, grep
+# exiting on the first match kills echo with SIGPIPE once the output exceeds the
+# pipe buffer, which makes a matching pattern look like a mismatch.
 # Run each failure test
 for target in $FAILURE_TARGETS; do
     echo "Testing: $target ..."
@@ -91,7 +94,7 @@ for target in $FAILURE_TARGETS; do
 
         if [ $build_exit_code -ne 0 ]; then
             # Check for expected error patterns
-            if echo "$output" | grep -qE "static_assert|older than expected|assertion.*failed"; then
+            if grep -qE "static_assert|older than expected|assertion.*failed" <<< "$output"; then
                 echo "✅ PASS: Build failed with version too old error"
                 SUCCESSES=$((SUCCESSES + 1))
             else
@@ -106,7 +109,7 @@ for target in $FAILURE_TARGETS; do
             set -e
 
             if [ $run_exit_code -ne 0 ]; then
-                if echo "$run_output" | grep -qE "older than expected|RuntimeError|IllegalArgumentException|panic|ModuleNotFoundError|ImportError|No module named"; then
+                if grep -qE "older than expected|RuntimeError|IllegalArgumentException|panic|ModuleNotFoundError|ImportError|No module named" <<< "$run_output"; then
                     echo "✅ PASS: Runtime failed with version too old error"
                     SUCCESSES=$((SUCCESSES + 1))
                 else
@@ -133,11 +136,11 @@ for target in $FAILURE_TARGETS; do
             echo "❌ FAIL: Build should not fail for version upgraded test"
             echo "Exit code: $build_exit_code"
             echo "Output excerpt:"
-            echo "$output" | head -20
+            head -20 <<< "$output"
             FAILURES=$((FAILURES + 1))
         else
             # Check for compile-time deprecation warning (C++)
-            if echo "$output" | grep -qiE "warning.*deprecated|has been updated to version"; then
+            if grep -qiE "warning.*deprecated|has been updated to version" <<< "$output"; then
                 echo "✅ PASS: Build produced deprecation warning"
                 SUCCESSES=$((SUCCESSES + 1))
             else
@@ -147,13 +150,13 @@ for target in $FAILURE_TARGETS; do
                 run_exit_code=$?
                 set -e
 
-                if echo "$run_output" | grep -qiE "warning.*updated to version|DeprecationWarning|has been updated"; then
+                if grep -qiE "warning.*updated to version|DeprecationWarning|has been updated" <<< "$run_output"; then
                     echo "✅ PASS: Runtime produced version upgrade warning"
                     SUCCESSES=$((SUCCESSES + 1))
                 elif [ $run_exit_code -eq 0 ]; then
                     echo "❌ FAIL: Should have produced version upgrade warning"
                     echo "Output excerpt:"
-                    echo "$run_output" | head -20
+                    head -20 <<< "$run_output"
                     FAILURES=$((FAILURES + 1))
                 else
                     echo "❌ FAIL: Runtime should not fail for version upgraded test"
@@ -173,11 +176,11 @@ for target in $FAILURE_TARGETS; do
             echo "❌ FAIL: Build should fail for too many versions test"
             echo "Exit code: $build_exit_code"
             echo "Output excerpt:"
-            echo "$output" | head -20
+            head -20 <<< "$output"
             FAILURES=$((FAILURES + 1))
         else
             # Check for compile-time deprecation warning (C++)
-            if echo "$output" | grep -qiE "exceed two entries"; then
+            if grep -qiE "exceed two entries" <<< "$output"; then
                 echo "✅ PASS: Build produced too many versions error"
                 SUCCESSES=$((SUCCESSES + 1))
             fi
@@ -192,7 +195,7 @@ for target in $FAILURE_TARGETS; do
 
         if [ $build_exit_code -ne 0 ]; then
             # Check for expected error pattern
-            if echo "$output" | grep -qE "is missing \?version= suffix"; then
+            if grep -qE "is missing \?version= suffix" <<< "$output"; then
                 echo "✅ PASS: Build failed with missing version suffix error"
                 SUCCESSES=$((SUCCESSES + 1))
             else
@@ -216,17 +219,17 @@ for target in $FAILURE_TARGETS; do
             echo "❌ FAIL: Build should not fail for outdated version test"
             echo "Exit code: $build_exit_code"
             echo "Output excerpt:"
-            echo "$output" | head -20
+            head -20 <<< "$output"
             FAILURES=$((FAILURES + 1))
         else
             # Check for outdated version warning
-            if echo "$output" | grep -qE "WARNING.*OUTDATED|but requirement is at version"; then
+            if grep -qE "WARNING.*OUTDATED|but requirement is at version" <<< "$output"; then
                 echo "✅ PASS: Build produced outdated version warning"
                 SUCCESSES=$((SUCCESSES + 1))
             else
                 echo "❌ FAIL: Should have produced outdated version warning"
                 echo "Output excerpt:"
-                echo "$output" | head -20
+                head -20 <<< "$output"
                 FAILURES=$((FAILURES + 1))
             fi
         fi
@@ -240,7 +243,7 @@ for target in $FAILURE_TARGETS; do
 
         if [ $build_exit_code -ne 0 ]; then
             # Check for expected error pattern
-            if echo "$output" | grep -qE "but requirement is only at version"; then
+            if grep -qE "but requirement is only at version" <<< "$output"; then
                 echo "✅ PASS: Build failed with future version error"
                 SUCCESSES=$((SUCCESSES + 1))
             else
@@ -262,47 +265,47 @@ for target in $FAILURE_TARGETS; do
         set -e
 
         # Check for dependency errors (should FAIL)
-        if echo "$output" | grep -q "not in declared dependencies"; then
+        if grep -q "not in declared dependencies" <<< "$output"; then
             echo "✅ PASS: Build failed with dependency error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for version mismatch warnings (should WARN)
-        elif echo "$output" | grep -q "VERSION MISMATCH"; then
+        elif grep -q "VERSION MISMATCH" <<< "$output"; then
             echo "✅ PASS: Build produced version mismatch warning"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for missing required fields (should FAIL)
-        elif echo "$output" | grep -qE "is a required property|has no metadata|Field required"; then
+        elif grep -qE "is a required property|has no metadata|Field required" <<< "$output"; then
             echo "✅ PASS: Build failed with missing required field error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for non-repository-relative paths (should FAIL)
-        elif echo "$output" | grep -q "must be repository-relative"; then
+        elif grep -q "must be repository-relative" <<< "$output"; then
             echo "✅ PASS: Build failed with non-repository-relative path error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for bare/malformed TODO markers (should FAIL)
-        elif echo "$output" | grep -q "Bare or malformed TODO"; then
+        elif grep -q "Bare or malformed TODO" <<< "$output"; then
             echo "✅ PASS: Build failed with bare/malformed TODO error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for references to undeclared parameters or versions (should FAIL)
-        elif echo "$output" | grep -qE "Parameter .* not found in"; then
+        elif grep -qE "Parameter .* not found in" <<< "$output"; then
             echo "✅ PASS: Build failed with unknown parameter reference error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for requirement IDs defined more than once (should FAIL)
-        elif echo "$output" | grep -q "Duplicate requirement ID"; then
+        elif grep -q "Duplicate requirement ID" <<< "$output"; then
             echo "✅ PASS: Build failed with duplicate requirement ID error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for headings that are not valid requirement IDs (should FAIL)
-        elif echo "$output" | grep -q "is not a valid requirement ID"; then
+        elif grep -q "is not a valid requirement ID" <<< "$output"; then
             echo "✅ PASS: Build failed with invalid requirement heading error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for table rows that do not match the column list (should FAIL)
-        elif echo "$output" | grep -q "values (one per column)"; then
+        elif grep -q "values (one per column)" <<< "$output"; then
             echo "✅ PASS: Build failed with table row shape error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for non-finite floating point values (should FAIL)
-        elif echo "$output" | grep -q "must be finite"; then
+        elif grep -q "must be finite" <<< "$output"; then
             echo "✅ PASS: Build failed with non-finite value error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for Pydantic validation errors (should FAIL)
-        elif echo "$output" | grep -qE "not a valid boolean|not a valid enumeration member|Input should be one of|not a valid integer|greater than or equal"; then
+        elif grep -qE "not a valid boolean|not a valid enumeration member|Input should be one of|not a valid integer|greater than or equal" <<< "$output"; then
             echo "✅ PASS: Build failed with Pydantic validation error"
             SUCCESSES=$((SUCCESSES + 1))
         # Unexpected: build succeeded or failed with wrong error
@@ -310,7 +313,7 @@ for target in $FAILURE_TARGETS; do
             echo "❌ FAIL: Build should have failed or produced expected warning"
             echo "Exit code: $build_exit_code"
             echo "Output excerpt:"
-            echo "$output" | head -20
+            head -20 <<< "$output"
             FAILURES=$((FAILURES + 1))
         fi
     fi
