@@ -30,6 +30,10 @@ class TestRequirementHeadings:
     def test_subsection_headings_are_ignored(self):
         assert parse_requirements("### Rationale\n# Title\n") == []
 
+    def test_headings_in_fenced_code_are_ignored(self):
+        text = "```markdown\n## REQ-IN-FENCE\n```\n\n## REQ-REAL\n"
+        assert [r.id for r in parse_requirements(text)] == ["REQ-REAL"]
+
     def test_invalid_id_is_still_reported(self):
         (req,) = parse_requirements("## req-lower\n")
         assert req.id == "req-lower"

@@ -20,6 +20,7 @@ _HEADING_RE: Final = re.compile(r"^## (\S.*?)\s*$")
 _LINK_RE: Final = re.compile(markdown_common.MARKDOWN_LINK_PATTERN)
 _TODO_RE: Final = re.compile(r"TODO(?:\([^)\s]*\))?")
 _FIELD_SEPARATOR: Final = "|"
+_FENCE_MARKERS: Final = ("```", "~~~")
 _FIELD_KEYS: Final = ["sil", "sec", "version", "parent"]
 
 
@@ -116,13 +117,28 @@ def _parse_metadata(lines: list[str], heading_index: int) -> list[MetadataField]
     return fields
 
 
+def _fenced_lines(lines: list[str]) -> set[int]:
+    """Return indices of lines inside, or delimiting, fenced code blocks."""
+    fenced: set[int] = set()
+    fence: str | None = None
+    for index, line in enumerate(lines):
+        marker = line.lstrip()[:3]
+        is_marker = marker in _FENCE_MARKERS
+        if fence is not None or is_marker:
+            fenced.add(index)
+        if is_marker:
+            fence = None if fence == marker else (fence or marker)
+    return fenced
+
+
 def parse_requirements(text: str) -> list[Requirement]:
     """Return every ``## ID`` requirement heading with its metadata fields."""
     lines = text.split("\n")
+    fenced = _fenced_lines(lines)
     requirements: list[Requirement] = []
     for index, line in enumerate(lines):
         match = _HEADING_RE.match(line)
-        if match:
+        if match and index not in fenced:
             id_range = _range(index, match.start(1), match.end(1))
             fields = _parse_metadata(lines, index)
             requirements.append(Requirement(match.group(1), id_range, fields))

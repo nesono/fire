@@ -12,6 +12,27 @@ py_library(
     ],
 )
 
+py_library(
+    name = "diagnostics",
+    srcs = ["diagnostics.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":document_parser",
+        "//fire/starlark:patterns",
+    ],
+)
+
+py_test(
+    name = "diagnostics_test",
+    size = "small",
+    srcs = ["diagnostics_test.py"],
+    deps = [
+        ":diagnostics",
+        ":document_parser",
+        "@pip//pytest",
+    ],
+)
+
 py_test(
     name = "document_parser_test",
     size = "small",
