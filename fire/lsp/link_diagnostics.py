@@ -17,11 +17,11 @@ from fire.starlark import patterns
 _PARAM_TEXT_RE: Final = re.compile(r"@[a-zA-Z_][a-zA-Z0-9_]*")
 
 
-def _is_parameter(link: Link) -> bool:
+def is_parameter_link(link: Link) -> bool:
     return bool(_PARAM_TEXT_RE.fullmatch(link.text))
 
 
-def _is_requirement(link: Link) -> bool:
+def is_requirement_link(link: Link) -> bool:
     return bool(patterns.REQ_ID_PATTERN.match(link.text)) and ".md" in link.url
 
 
@@ -36,13 +36,13 @@ def _version_diagnostics(link: Link) -> list[Diagnostic]:
     if link.version is not None:
         return []
     message = f"Reference '{link.text}' is missing a ?version=N query parameter"
-    if _is_parameter(link):
+    if is_parameter_link(link):
         return [error(link.url_range, "FIRE010", message)]
     return [warning(link.url_range, "FIRE010", message)]
 
 
 def _anchor_diagnostics(link: Link) -> list[Diagnostic]:
-    if not _is_parameter(link) or link.anchor in (None, link.text[1:]):
+    if not is_parameter_link(link) or link.anchor in (None, link.text[1:]):
         return []
     message = f"Link text '{link.text}' does not match anchor '#{link.anchor}'"
     return [error(link.text_range, "FIRE011", message)]
@@ -62,10 +62,10 @@ def _diagnose_link(link: Link, check_path: bool) -> list[Diagnostic]:
     return diagnostics + _version_diagnostics(link) + _anchor_diagnostics(link)
 
 
-def _is_checked(link: Link) -> bool:
+def is_checked_link(link: Link) -> bool:
     if "TODO" in link.url:
         return False
-    return _is_parameter(link) or _is_requirement(link)
+    return is_parameter_link(link) or is_requirement_link(link)
 
 
 def diagnose_links(text: str, requirements: list[Requirement]) -> list[Diagnostic]:
@@ -76,7 +76,7 @@ def diagnose_links(text: str, requirements: list[Requirement]) -> list[Diagnosti
     parent_lines = _parent_lines(requirements)
     diagnostics: list[Diagnostic] = []
     for link in parse_links(text):
-        if _is_checked(link):
+        if is_checked_link(link):
             check_path = link.url_range.start.line not in parent_lines
             diagnostics.extend(_diagnose_link(link, check_path))
     return diagnostics

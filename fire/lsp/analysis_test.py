@@ -33,5 +33,17 @@ class TestAnalyzer:
         assert todo.range.start.character == 3
 
 
+class TestReferenceChecks:
+    def test_links_are_checked_inside_a_workspace(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        uri = (tmp_path / "a.sysreq.md").as_uri()
+        text = "## R-1\n\nSIL: QM | Sec: false | Version: 1\n\n[@x](/gone.yaml?version=1#x)\n"
+        assert [d.code for d in _ANALYZER.diagnose(uri, text)] == ["FIRE012"]
+
+    def test_links_are_not_resolved_without_a_workspace(self):
+        text = "## R-1\n\nSIL: QM | Sec: false | Version: 1\n\n[@x](/gone.yaml?version=1#x)\n"
+        assert _ANALYZER.diagnose("file:///nowhere/a.sysreq.md", text) == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
