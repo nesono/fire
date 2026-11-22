@@ -18,6 +18,8 @@ same feedback in the editor.
 - Bazel-dependent checks (`deps`, trace coverage, release readiness) stay in
   Bazel. The server never reports an error the build would accept.
 
+Usage and the list of diagnostics are in [language-server.md](../language-server.md).
+
 ## Phases
 
 1. Position-aware parser: headings and metadata fields, then links and TODOs
