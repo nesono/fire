@@ -33,13 +33,16 @@ ignored, so other Markdown files are unaffected.
 
 ## Diagnostics
 
-| Code      | Meaning                                    |
-| --------- | ------------------------------------------ |
-| `FIRE001` | Heading is not a valid requirement ID      |
-| `FIRE002` | Duplicate requirement ID                   |
-| `FIRE003` | Requirement has no metadata line           |
-| `FIRE004` | Bare or malformed `TODO`                   |
-| `FIRE005` | Invalid metadata field value               |
-| `FIRE006` | Missing required metadata field            |
-| `FIRE007` | Unknown metadata field                     |
-| `FIRE008` | `Parent` entry is not a link or `TODO(..)` |
+| Code      | Meaning                                       |
+| --------- | --------------------------------------------- |
+| `FIRE001` | Heading is not a valid requirement ID         |
+| `FIRE002` | Duplicate requirement ID                      |
+| `FIRE003` | Requirement has no metadata line              |
+| `FIRE004` | Bare or malformed `TODO`                      |
+| `FIRE005` | Invalid metadata field value                  |
+| `FIRE006` | Missing required metadata field               |
+| `FIRE007` | Unknown metadata field                        |
+| `FIRE008` | `Parent` entry is not a link or `TODO(..)`    |
+| `FIRE009` | Reference path is not repository-relative     |
+| `FIRE010` | Reference is missing `?version=N`             |
+| `FIRE011` | Parameter link text does not match its anchor |

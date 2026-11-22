@@ -28,3 +28,7 @@ class Diagnostic:
 
 def error(range_: Range, code: str, message: str) -> Diagnostic:
     return Diagnostic(range_, Severity.ERROR, code, message)
+
+
+def warning(range_: Range, code: str, message: str) -> Diagnostic:
+    return Diagnostic(range_, Severity.WARNING, code, message)
