@@ -289,6 +289,10 @@ for target in $FAILURE_TARGETS; do
         elif echo "$output" | grep -q "is not a valid requirement ID"; then
             echo "✅ PASS: Build failed with invalid requirement heading error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for table rows that do not match the column list (should FAIL)
+        elif echo "$output" | grep -q "values (one per column)"; then
+            echo "✅ PASS: Build failed with table row shape error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Check for Pydantic validation errors (should FAIL)
         elif echo "$output" | grep -qE "not a valid boolean|not a valid enumeration member|Input should be one of|not a valid integer|greater than or equal"; then
             echo "✅ PASS: Build failed with Pydantic validation error"

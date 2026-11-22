@@ -303,6 +303,41 @@ class TestParameterFile:
         with pytest.raises(ValidationError, match="Inconsistent type"):
             ParameterFile.model_validate(data)
 
+    def _table(self, rows, columns=2):
+        return {
+            "lookup_v1": {
+                "type": "table",
+                "description": "lookup",
+                "columns": [{"name": f"c{i}", "unit": "1"} for i in range(columns)],
+                "rows": rows,
+            }
+        }
+
+    @pytest.mark.parametrize(
+        "rows, row_index, got",
+        [
+            ([[1.0, 2.0], [3.0]], 1, 1),
+            ([[1.0, 2.0], [3.0, 4.0, 5.0]], 1, 3),
+            ([[1.0], [3.0, 4.0]], 0, 1),
+            ([[1.0, 2.0, 3.0]], 0, 3),
+        ],
+    )
+    def test_table_row_length_must_match_columns(self, rows, row_index, got):
+        pattern = (
+            rf"'lookup_v1': Row {row_index}: expected 2 values "
+            rf"\(one per column\), got {got}"
+        )
+        with pytest.raises(ValidationError, match=pattern):
+            ParameterFile.model_validate(self._table(rows))
+
+    def test_table_row_that_is_not_a_list_rejected(self):
+        with pytest.raises(ValidationError, match="Row 1: expected 2 values"):
+            ParameterFile.model_validate(self._table([[1.0, 2.0], 3.0]))
+
+    def test_table_with_matching_rows_accepted(self):
+        pf = ParameterFile.model_validate(self._table([[1.0, 2.0], [3.0, 4.0]]))
+        assert isinstance(pf.root["lookup_v1"], TableParameter)
+
     def test_table_inferred_column_types(self):
         data = {
             "lookup_v1": {
