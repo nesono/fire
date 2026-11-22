@@ -60,5 +60,27 @@ class TestWorkspaceRead:
         assert Workspace(root).read("/gen.yaml") == "g_v1:\n"
 
 
+class TestWorkspaceLocate:
+    def test_returns_resolved_path_and_text(self, root):
+        located = Workspace(root).locate("/reqs/a.sysreq.md")
+        assert located == (
+            (root / "reqs" / "a.sysreq.md").resolve(),
+            "## R-1\n",
+        )
+
+    def test_validated_fallback_reports_the_file_actually_read(self, root):
+        (root / "gen_validated.yaml").write_text("g_v1:\n")
+        located = Workspace(root).locate("/gen.yaml")
+        assert located == ((root / "gen_validated.yaml").resolve(), "g_v1:\n")
+
+    def test_overlay_path_is_reported(self, root):
+        overlay = {root / "new.md": "## N-1\n"}
+        located = Workspace(root, overlay).locate("/new.md")
+        assert located == ((root / "new.md").resolve(), "## N-1\n")
+
+    def test_missing_file_is_none(self, root):
+        assert Workspace(root).locate("/missing.md") is None
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
