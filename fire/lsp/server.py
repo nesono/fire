@@ -3,14 +3,19 @@
 
 from __future__ import annotations
 
+from typing import Final
+
 from lsprotocol import types as lsp
 from pygls.lsp.server import LanguageServer
 
 from fire.lsp.analysis import Analyzer
+from fire.lsp.publisher import DiagnosticsPublisher
 from fire.starlark.config_models import FireConfig, load_config
 
-_NAME = "fire-ls"
-_VERSION = "0.1.0"
+_NAME: Final = "fire-ls"
+_VERSION: Final = "0.1.0"
+_WATCHED_GLOBS: Final = ("**/*.md", "**/*.yaml")
+_WATCH_REGISTRATION_ID: Final = "fire-watch-linked-files"
 
 
 def _publish(
@@ -21,25 +26,49 @@ def _publish(
     )
 
 
+def _supports_watching(server: LanguageServer) -> bool:
+    workspace = server.client_capabilities.workspace
+    watching = workspace.did_change_watched_files if workspace else None
+    return bool(watching and watching.dynamic_registration)
+
+
+def _register_watching(server: LanguageServer) -> None:
+    watchers = [lsp.FileSystemWatcher(glob_pattern=g) for g in _WATCHED_GLOBS]
+    registration = lsp.Registration(
+        id=_WATCH_REGISTRATION_ID,
+        method=lsp.WORKSPACE_DID_CHANGE_WATCHED_FILES,
+        register_options=lsp.DidChangeWatchedFilesRegistrationOptions(
+            watchers=watchers
+        ),
+    )
+    server.client_register_capability(
+        lsp.RegistrationParams(registrations=[registration])
+    )
+
+
 def create_server(config: FireConfig | None = None) -> LanguageServer:
     """Create a server using *config*, or the built-in default configuration."""
-    analyzer = Analyzer(config or load_config())
     server = LanguageServer(_NAME, _VERSION)
+    publisher = DiagnosticsPublisher(
+        Analyzer(config or load_config()),
+        lambda uri, diagnostics: _publish(server, uri, diagnostics),
+    )
 
-    def analyze(uri: str) -> None:
-        text = server.workspace.get_text_document(uri).source
-        _publish(server, uri, analyzer.diagnose(uri, text))
+    def refresh(*_: object) -> None:
+        documents = server.workspace.text_documents
+        publisher.refresh({uri: doc.source for uri, doc in documents.items()})
 
-    @server.feature(lsp.TEXT_DOCUMENT_DID_OPEN)
-    def did_open(params: lsp.DidOpenTextDocumentParams) -> None:
-        analyze(params.text_document.uri)
+    for method in (
+        lsp.TEXT_DOCUMENT_DID_OPEN,
+        lsp.TEXT_DOCUMENT_DID_CHANGE,
+        lsp.TEXT_DOCUMENT_DID_CLOSE,
+        lsp.WORKSPACE_DID_CHANGE_WATCHED_FILES,
+    ):
+        server.feature(method)(refresh)
 
-    @server.feature(lsp.TEXT_DOCUMENT_DID_CHANGE)
-    def did_change(params: lsp.DidChangeTextDocumentParams) -> None:
-        analyze(params.text_document.uri)
-
-    @server.feature(lsp.TEXT_DOCUMENT_DID_CLOSE)
-    def did_close(params: lsp.DidCloseTextDocumentParams) -> None:
-        _publish(server, params.text_document.uri, [])
+    @server.feature(lsp.INITIALIZED)
+    def initialized(params: lsp.InitializedParams) -> None:
+        if _supports_watching(server):
+            _register_watching(server)
 
     return server
