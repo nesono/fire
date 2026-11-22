@@ -130,6 +130,7 @@ def parse_requirement_sections(
                 "body": body,
                 "metadata_line": metadata_line,
                 "file_path": file_path,
+                "line": start + 1,
             }
         )
 
@@ -254,6 +255,22 @@ def find_stale_trace_versions(
     return stale
 
 
+def _find_duplicate_requirement_ids(sections: list[dict]) -> dict[str, list[str]]:
+    return validate_cross_references.find_duplicate_ids(
+        [(s["id"], f"{s['file_path']}:{s['line']}") for s in sections]
+    )
+
+
+def _duplicate_id_section(duplicates: dict[str, list[str]]) -> list[str]:
+    lines = ["## Requirement ID Uniqueness", ""]
+    for req_id, locations in duplicates.items():
+        lines.append(f"- **{req_id}** is defined at: {', '.join(locations)}")
+    if not duplicates:
+        lines.append("- All requirement IDs are unique.")
+    lines.append("")
+    return lines
+
+
 def _sanitize_mermaid_id(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9_]", "_", value)
 
@@ -348,7 +365,11 @@ def generate_release_report(
         if req_id not in trace_index["verif"]:
             missing_verif.append(section)
 
+    duplicate_ids = _find_duplicate_requirement_ids(sections)
+
     readiness_issues: list[str] = []
+    if duplicate_ids:
+        readiness_issues.append("Duplicate requirement IDs")
     if missing_impl:
         readiness_issues.append("Missing implementation traces")
     if missing_verif:
@@ -377,6 +398,11 @@ def generate_release_report(
     if readiness_issues:
         lines.append("### Issues Found")
         lines.append("")
+        if duplicate_ids:
+            lines.append(
+                f"- ⚠️  Duplicate requirement IDs: **{len(duplicate_ids)}** "
+                f"([details](#requirement-id-uniqueness))"
+            )
         if len(missing_impl) > 0:
             lines.append(
                 f"- ⚠️  Missing implementation traces: **{len(missing_impl)}** "
@@ -470,6 +496,8 @@ def generate_release_report(
     if not stale_req_refs and not stale_param_refs and not stale_trace_versions:
         lines.append("- No stale versions found.")
         lines.append("")
+
+    lines.extend(_duplicate_id_section(duplicate_ids))
 
     lines.append("## TODO Inventory")
     lines.append("")

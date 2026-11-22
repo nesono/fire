@@ -18,6 +18,7 @@ import pathlib
 import re
 import sys
 
+from collections import defaultdict
 from typing import Final
 
 from pydantic import BaseModel, ValidationError
@@ -107,6 +108,33 @@ def validate_requirement_headings(content: str, file_path: str) -> list[str]:
         f"requirement ID (expected [A-Z][A-Z0-9_-]+)"
         for line_num, text in _heading_lines_outside_code(content)
         if not REQ_ID_PATTERN.match(text)
+    ]
+
+
+def find_duplicate_ids(definitions: list[tuple[str, str]]) -> dict[str, list[str]]:
+    """Map each requirement ID defined more than once to its locations.
+
+    ``definitions`` holds ``(requirement ID, location)`` pairs.
+    """
+    locations: dict[str, list[str]] = defaultdict(list)
+    for req_id, location in definitions:
+        locations[req_id].append(location)
+    return {req_id: locs for req_id, locs in locations.items() if len(locs) > 1}
+
+
+def validate_unique_requirement_ids(file_paths: list[str]) -> list[str]:
+    """Report requirement IDs defined more than once across the given files."""
+    definitions: list[tuple[str, str]] = []
+    for path in file_paths:
+        content, error = file_io_common.read_file_safe(path)
+        if error:
+            continue
+        for line_num, text in _heading_lines_outside_code(content or ""):
+            if REQ_ID_PATTERN.match(text):
+                definitions.append((text, f"{path}:{line_num}"))
+    return [
+        f"Duplicate requirement ID '{req_id}' defined at: {', '.join(locations)}"
+        for req_id, locations in find_duplicate_ids(definitions).items()
     ]
 
 
@@ -537,6 +565,7 @@ def main():
             models=models,
         )
         all_errors.extend(errors)
+    all_errors.extend(validate_unique_requirement_ids(requirement_files))
 
     if all_errors:
         print("Cross-reference validation failed:")

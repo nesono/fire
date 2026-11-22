@@ -285,6 +285,10 @@ for target in $FAILURE_TARGETS; do
         elif echo "$output" | grep -qE "Parameter .* not found in"; then
             echo "✅ PASS: Build failed with unknown parameter reference error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for requirement IDs defined more than once (should FAIL)
+        elif echo "$output" | grep -q "Duplicate requirement ID"; then
+            echo "✅ PASS: Build failed with duplicate requirement ID error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Check for headings that are not valid requirement IDs (should FAIL)
         elif echo "$output" | grep -q "is not a valid requirement ID"; then
             echo "✅ PASS: Build failed with invalid requirement heading error"

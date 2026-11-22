@@ -1,0 +1,31 @@
+"""Tests for requirement IDs that are defined more than once.
+
+These tests verify that validation fails when the same requirement ID is
+defined in two files, or twice in one file.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+# Same ID in two files - should FAIL
+requirement_library(
+    name = "test_duplicate_across_files",
+    srcs = [
+        "first.sysreq.md",
+        "second.sysreq.md",
+    ],
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)
+
+# Same ID twice in one file - should FAIL
+requirement_library(
+    name = "test_duplicate_within_file",
+    srcs = ["twice.sysreq.md"],
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)
