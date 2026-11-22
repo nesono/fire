@@ -130,6 +130,7 @@ py_library(
         ":conversion",
         ":diagnostics",
         ":reference_diagnostics",
+        ":uris",
         ":workspace",
         "//fire/starlark:config_models",
         "//fire/starlark:dynamic_requirement_model",
@@ -142,6 +143,7 @@ py_library(
     srcs = ["server.py"],
     deps = [
         ":analysis",
+        ":publisher",
         "//fire/starlark:config_models",
         "@pip//lsprotocol",
         "@pip//pygls",
@@ -231,6 +233,41 @@ py_test(
         ":document_parser",
         ":reference_diagnostics",
         ":workspace",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "uris",
+    srcs = ["uris.py"],
+)
+
+py_library(
+    name = "publisher",
+    srcs = ["publisher.py"],
+    deps = [
+        ":uris",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_test(
+    name = "uris_test",
+    size = "small",
+    srcs = ["uris_test.py"],
+    deps = [
+        ":uris",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "publisher_test",
+    size = "small",
+    srcs = ["publisher_test.py"],
+    deps = [
+        ":publisher",
+        "@pip//lsprotocol",
         "@pip//pytest",
     ],
 )

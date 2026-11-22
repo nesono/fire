@@ -3,13 +3,16 @@
 
 import json
 import os
+import queue
 import threading
+from collections.abc import Iterator
 from typing import Any, BinaryIO
 
 import pytest
 
 from fire.lsp.server import create_server
 
+_TIMEOUT_SECONDS = 5
 _BAD_SIL = "## REQ-1\n\nSIL: ASIL-Z | Sec: false | Version: 1\n"
 
 
@@ -26,18 +29,32 @@ class _Client:
             daemon=True,
         )
         self._thread.start()
+        self._messages: queue.Queue[dict[str, Any]] = queue.Queue()
+        threading.Thread(target=self._read_loop, daemon=True).start()
+
+    def close(self) -> None:
+        self._writer.close()
 
     def send(self, message: dict[str, Any]) -> None:
         body = json.dumps({"jsonrpc": "2.0", **message}).encode()
         self._writer.write(b"Content-Length: %d\r\n\r\n%s" % (len(body), body))
         self._writer.flush()
 
-    def receive(self) -> dict[str, Any]:
-        length = 0
-        while line := self._reader.readline().strip():
-            if line.lower().startswith(b"content-length"):
-                length = int(line.split(b":")[1])
-        return json.loads(self._reader.read(length))
+    def _read_loop(self) -> None:
+        while True:
+            length = 0
+            while line := self._reader.readline().strip():
+                if line.lower().startswith(b"content-length"):
+                    length = int(line.split(b":")[1])
+            if not length:
+                return
+            self._messages.put(json.loads(self._reader.read(length)))
+
+    def receive(self, timeout: float = _TIMEOUT_SECONDS) -> dict[str, Any]:
+        try:
+            return self._messages.get(timeout=timeout)
+        except queue.Empty:
+            raise AssertionError(f"no message from server within {timeout}s") from None
 
     def receive_until(self, predicate) -> dict[str, Any]:
         while not predicate(message := self.receive()):
@@ -65,9 +82,19 @@ def _diagnostics(client: _Client) -> dict[str, Any]:
     return client.receive_until(_is_publish)["params"]
 
 
+def _diagnostics_for(client: _Client, uri: str) -> list[str]:
+    def is_for(message: dict[str, Any]) -> bool:
+        return _is_publish(message) and message["params"]["uri"] == uri
+
+    params = client.receive_until(is_for)["params"]
+    return [d["code"] for d in params["diagnostics"]]
+
+
 @pytest.fixture
-def client() -> _Client:
-    return _Client()
+def client() -> Iterator[_Client]:
+    client = _Client()
+    yield client
+    client.close()
 
 
 class TestServer:
@@ -99,6 +126,81 @@ class TestServer:
             }
         )
         assert _diagnostics(client)["diagnostics"] == []
+
+
+_LINKING = (
+    "## REQ-1\n\nSIL: QM | Sec: false | Version: 1\n\n[@x](/p.yaml?version=1#x)\n"
+)
+_PARAMS = "x_v1:\n  value: 1\n  unit: m\n  description: d\n"
+
+
+@pytest.fixture
+def workspace(tmp_path):
+    (tmp_path / "MODULE.bazel").write_text("")
+    return tmp_path
+
+
+def _open_linking_document(client: _Client, workspace) -> str:
+    _initialize(client)
+    uri = (workspace / "a.sysreq.md").as_uri()
+    _open(client, uri, _LINKING)
+    assert _diagnostics_for(client, uri) == ["FIRE012"]
+    return uri
+
+
+class TestRefresh:
+    def test_unsaved_target_buffer_satisfies_a_link(self, client, workspace):
+        uri = _open_linking_document(client, workspace)
+        _open(client, (workspace / "p.yaml").as_uri(), _PARAMS)
+        assert _diagnostics_for(client, uri) == []
+
+    def test_closing_the_target_buffer_falls_back_to_disk(self, client, workspace):
+        uri = _open_linking_document(client, workspace)
+        target = {"uri": (workspace / "p.yaml").as_uri()}
+        _open(client, target["uri"], _PARAMS)
+        assert _diagnostics_for(client, uri) == []
+        client.send(
+            {"method": "textDocument/didClose", "params": {"textDocument": target}}
+        )
+        assert _diagnostics_for(client, uri) == ["FIRE012"]
+
+    def test_watched_file_change_refreshes_open_documents(self, client, workspace):
+        uri = _open_linking_document(client, workspace)
+        target = workspace / "p.yaml"
+        target.write_text(_PARAMS)
+        change = {"uri": target.as_uri(), "type": 1}
+        client.send(
+            {
+                "method": "workspace/didChangeWatchedFiles",
+                "params": {"changes": [change]},
+            }
+        )
+        assert _diagnostics_for(client, uri) == []
+
+    def test_watching_is_registered_when_the_client_supports_it(self, client):
+        capabilities = {
+            "workspace": {"didChangeWatchedFiles": {"dynamicRegistration": True}}
+        }
+        client.send(
+            {"id": 1, "method": "initialize", "params": {"capabilities": capabilities}}
+        )
+        client.receive_until(lambda m: m.get("id") == 1)
+        client.send({"method": "initialized", "params": {}})
+        request = client.receive_until(
+            lambda m: m.get("method") == "client/registerCapability"
+        )
+        registration = request["params"]["registrations"][0]
+        assert registration["method"] == "workspace/didChangeWatchedFiles"
+        assert registration["registerOptions"]["watchers"]
+        client.send({"id": request["id"], "result": None})
+
+    def test_no_registration_without_client_support(self, client):
+        _initialize(client)
+        client.send({"id": 7, "method": "shutdown"})
+        message = client.receive_until(
+            lambda m: m.get("id") == 7 or m.get("method") == "client/registerCapability"
+        )
+        assert message.get("method") is None
 
 
 if __name__ == "__main__":

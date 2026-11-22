@@ -53,6 +53,8 @@ ignored, so other Markdown files are unaffected.
 
 Links are resolved against the nearest ancestor directory that contains a
 `MODULE.bazel` or `WORKSPACE` file; without one only the syntax checks run.
-Targets are read from disk, so unsaved changes in other files are not seen yet.
+Open documents are re-checked whenever another open document changes, using
+its unsaved content, and when a Markdown or YAML file changes on disk (the
+client must support dynamic file watching, which Neovim does).
 `FIRE014` is an error for parameters and a warning for requirements, matching
 the build. `FIRE015` is always a warning.
