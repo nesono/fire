@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for parameter_models."""
 
+import math
+
 import pytest
 from pydantic import ValidationError
 
@@ -98,6 +100,11 @@ class TestI64Parameter:
 
 
 class TestF64Parameter:
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, math.nan])
+    def test_non_finite_value_rejected(self, value):
+        with pytest.raises(ValidationError, match="finite"):
+            F64Parameter(type="f64", value=value, unit="m", description="d")
+
     def test_valid_float(self):
         p = F64Parameter(type="f64", value=1.5, unit="m/s", description="speed")
         assert p.value == 1.5
@@ -333,6 +340,20 @@ class TestParameterFile:
     def test_table_row_that_is_not_a_list_rejected(self):
         with pytest.raises(ValidationError, match="Row 1: expected 2 values"):
             ParameterFile.model_validate(self._table([[1.0, 2.0], 3.0]))
+
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, math.nan])
+    def test_table_non_finite_value_rejected(self, value):
+        data = self._table([[1.0, 2.0], [3.0, value]])
+        pattern = r"'lookup_v1': Row 1, column 'c1': value must be finite"
+        with pytest.raises(ValidationError, match=pattern):
+            ParameterFile.model_validate(data)
+
+    def test_scalar_non_finite_value_from_yaml_rejected(self):
+        data = {"limit_v1": {"value": math.inf, "unit": "m", "description": "d"}}
+        with pytest.raises(
+            ValidationError, match="'limit_v1': value must be finite, got inf"
+        ):
+            ParameterFile.model_validate(data)
 
     def test_table_with_matching_rows_accepted(self):
         pf = ParameterFile.model_validate(self._table([[1.0, 2.0], [3.0, 4.0]]))

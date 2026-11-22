@@ -297,6 +297,10 @@ for target in $FAILURE_TARGETS; do
         elif echo "$output" | grep -q "values (one per column)"; then
             echo "✅ PASS: Build failed with table row shape error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for non-finite floating point values (should FAIL)
+        elif echo "$output" | grep -q "must be finite"; then
+            echo "✅ PASS: Build failed with non-finite value error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Check for Pydantic validation errors (should FAIL)
         elif echo "$output" | grep -qE "not a valid boolean|not a valid enumeration member|Input should be one of|not a valid integer|greater than or equal"; then
             echo "✅ PASS: Build failed with Pydantic validation error"

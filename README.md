@@ -114,7 +114,8 @@ requirements and source code.
 **Naming:** `<name>_v<N>` — lowercase snake_case with a mandatory version suffix.
 
 **Scalar parameters** infer their type from the YAML value (`f64` from float,
-`i64` from integer, `bool` from boolean, `string` from string):
+`i64` from integer, `bool` from boolean, `string` from string). Floating-point
+values in scalars and tables must be finite (`.inf` and `.nan` are rejected):
 
 ```yaml
 max_speed_v1:
