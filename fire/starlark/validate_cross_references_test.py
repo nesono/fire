@@ -346,5 +346,46 @@ class TestValidateParameterReference:
         assert not valid
 
 
+class TestValidateUniqueRequirementIds:
+    def _write(self, tmp_path, name, content):
+        path = tmp_path / name
+        path.write_text(textwrap.dedent(content))
+        return str(path)
+
+    def test_unique_ids_accepted(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-A-001\n\nbody\n")
+        b = self._write(tmp_path, "b.md", "## REQ-B-001\n\nbody\n")
+        assert vcr.validate_unique_requirement_ids([a, b]) == []
+
+    def test_duplicate_across_files_reports_both_locations(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-D-001\n\nbody\n")
+        b = self._write(tmp_path, "b.md", "intro\n\n## REQ-D-001\n\nbody\n")
+        errors = vcr.validate_unique_requirement_ids([a, b])
+        assert len(errors) == 1
+        assert "REQ-D-001" in errors[0]
+        assert f"{a}:1" in errors[0]
+        assert f"{b}:3" in errors[0]
+
+    def test_duplicate_within_one_file_reported(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-D-001\n\nx\n\n## REQ-D-001\n")
+        errors = vcr.validate_unique_requirement_ids([a])
+        assert len(errors) == 1
+        assert f"{a}:1" in errors[0]
+        assert f"{a}:5" in errors[0]
+
+    def test_each_duplicated_id_reported_once(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-X-1\n## REQ-Y-1\n")
+        b = self._write(tmp_path, "b.md", "## REQ-X-1\n## REQ-Y-1\n")
+        assert len(vcr.validate_unique_requirement_ids([a, b])) == 2
+
+    def test_headings_in_fenced_code_ignored(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-D-001\n```\n## REQ-D-001\n```\n")
+        assert vcr.validate_unique_requirement_ids([a]) == []
+
+    def test_unreadable_file_is_skipped(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-A-001\n")
+        assert vcr.validate_unique_requirement_ids([a, str(tmp_path / "x.md")]) == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

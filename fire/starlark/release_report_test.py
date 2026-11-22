@@ -155,5 +155,35 @@ max_speed_v1:
     assert "```mermaid" in report
 
 
+def _write_requirement(tmp_path, name, req_id, version):
+    path = tmp_path / name
+    path.write_text(f"## {req_id}\nSIL: QM | Sec: false | Version: {version}\n")
+    return str(path)
+
+
+def test_report_flags_duplicate_requirement_ids(tmp_path):
+    first = _write_requirement(tmp_path, "first.md", "REQ-D-001", 1)
+    second = _write_requirement(tmp_path, "second.md", "REQ-D-001", 7)
+
+    report = release_report.generate_release_report([first, second], [], [], "Demo")
+
+    assert "**Status: NOT READY FOR RELEASE**" in report
+    assert "Duplicate requirement IDs: **1**" in report
+    assert "## Requirement ID Uniqueness" in report
+    assert "**REQ-D-001**" in report
+    assert f"{first}:1" in report
+    assert f"{second}:1" in report
+
+
+def test_report_states_unique_requirement_ids(tmp_path):
+    first = _write_requirement(tmp_path, "first.md", "REQ-A-001", 1)
+    second = _write_requirement(tmp_path, "second.md", "REQ-B-001", 1)
+
+    report = release_report.generate_release_report([first, second], [], [], "Demo")
+
+    assert "Duplicate requirement IDs" not in report
+    assert "- All requirement IDs are unique." in report
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

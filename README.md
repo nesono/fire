@@ -26,6 +26,7 @@ System requirements are stored in `.sysreq.md` files. Each requirement is an
 H2 heading followed by a metadata line and free-form Markdown text. Every H2
 heading must be exactly a requirement ID (`[A-Z][A-Z0-9_-]+`); other H2
 headings fail validation. Use H3 or deeper for structure inside a requirement.
+Requirement IDs must be unique; a duplicate ID fails validation.
 
 **Metadata fields:**
 
@@ -357,7 +358,8 @@ missing implementation or verification traces.
 ## Release Readiness Report
 
 The release readiness report checks version consistency across requirements and
-parameters, open TODOs, and implementation/verification trace coverage.
+parameters, requirement ID uniqueness, open TODOs, and
+implementation/verification trace coverage.
 
 ```starlark
 load("@fire//fire/starlark:reports.bzl", "release_report", "release_readiness_test")
