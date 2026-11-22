@@ -3,7 +3,13 @@
 
 import pytest
 
-from fire.lsp.document_parser import Position, Range, parse_requirements
+from fire.lsp.document_parser import (
+    Position,
+    Range,
+    parse_links,
+    parse_requirements,
+    parse_todos,
+)
 
 
 def _range(line: int, start: int, end: int) -> Range:
@@ -80,6 +86,59 @@ class TestMetadataFields:
         first, second = parse_requirements(text)
         assert first.fields == []
         assert [f.key for f in second.fields] == ["Version"]
+
+
+class TestLinks:
+    def test_requirement_link_parts(self):
+        (link,) = parse_links("See [R-1](/a/b.sysreq.md?version=2#R-1).")
+        assert link.text == "R-1"
+        assert link.url == "/a/b.sysreq.md?version=2#R-1"
+        assert link.path == "/a/b.sysreq.md"
+        assert link.version == 2
+        assert link.anchor == "R-1"
+
+    def test_link_ranges(self):
+        (link,) = parse_links("See [R-1](/a.md?version=1#R-1).")
+        assert link.text_range == _range(0, 5, 8)
+        assert link.url_range == _range(0, 10, 29)
+
+    def test_link_on_later_line_and_multiple_per_line(self):
+        first, second = parse_links(
+            "text\n[@a](/p.yaml?version=1#a) [@b](/p.yaml?version=1#b)"
+        )
+        assert (first.text, first.text_range.start.line) == ("@a", 1)
+        assert (second.text, second.text_range.start.character) == ("@b", 27)
+
+    def test_missing_version_and_anchor(self):
+        (link,) = parse_links("[R-1](/a.sysreq.md)")
+        assert link.version is None
+        assert link.anchor is None
+        assert link.path == "/a.sysreq.md"
+
+    def test_no_links(self):
+        assert parse_links("plain [text] only") == []
+
+
+class TestTodos:
+    def test_valid_todo(self):
+        (todo,) = parse_todos("Needs TODO(BRK-456) soon")
+        assert todo.text == "TODO(BRK-456)"
+        assert todo.valid
+        assert todo.range == _range(0, 6, 19)
+
+    def test_bare_todo_is_invalid(self):
+        (todo,) = parse_todos("a\nTODO fix this")
+        assert todo.text == "TODO"
+        assert not todo.valid
+        assert todo.range == _range(1, 0, 4)
+
+    def test_malformed_todo_is_invalid(self):
+        (todo,) = parse_todos("TODO(abc)")
+        assert todo.text == "TODO(abc)"
+        assert not todo.valid
+
+    def test_no_todos(self):
+        assert parse_todos("nothing here") == []
 
 
 if __name__ == "__main__":

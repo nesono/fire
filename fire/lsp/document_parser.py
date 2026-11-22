@@ -14,9 +14,11 @@ import re
 from dataclasses import dataclass, field
 from typing import Final
 
-from fire.starlark import metadata_parsing
+from fire.starlark import markdown_common, metadata_parsing, path_common, patterns
 
 _HEADING_RE: Final = re.compile(r"^## (\S.*?)\s*$")
+_LINK_RE: Final = re.compile(markdown_common.MARKDOWN_LINK_PATTERN)
+_TODO_RE: Final = re.compile(r"TODO(?:\([^)\s]*\))?")
 _FIELD_SEPARATOR: Final = "|"
 _FIELD_KEYS: Final = ["sil", "sec", "version", "parent"]
 
@@ -39,6 +41,24 @@ class MetadataField:
     key_range: Range
     value: str
     value_range: Range
+
+
+@dataclass(frozen=True)
+class Link:
+    text: str
+    text_range: Range
+    url: str
+    url_range: Range
+    path: str
+    version: int | None
+    anchor: str | None
+
+
+@dataclass(frozen=True)
+class Todo:
+    text: str
+    range: Range
+    valid: bool
 
 
 @dataclass(frozen=True)
@@ -107,3 +127,44 @@ def parse_requirements(text: str) -> list[Requirement]:
             fields = _parse_metadata(lines, index)
             requirements.append(Requirement(match.group(1), id_range, fields))
     return requirements
+
+
+def _split_url(url: str) -> tuple[str, int | None, str | None]:
+    _, version = path_common.extract_version_from_url(url)
+    path, _, anchor = url.partition("#")
+    return path.split("?")[0], version, anchor or None
+
+
+def _link_from_match(line_no: int, match: re.Match[str]) -> Link:
+    path, version, anchor = _split_url(match.group(2))
+    return Link(
+        text=match.group(1),
+        text_range=_range(line_no, match.start(1), match.end(1)),
+        url=match.group(2),
+        url_range=_range(line_no, match.start(2), match.end(2)),
+        path=path,
+        version=version,
+        anchor=anchor,
+    )
+
+
+def parse_links(text: str) -> list[Link]:
+    """Return every inline ``[text](url)`` link with its ranges."""
+    return [
+        _link_from_match(index, match)
+        for index, line in enumerate(text.split("\n"))
+        for match in _LINK_RE.finditer(line)
+    ]
+
+
+def parse_todos(text: str) -> list[Todo]:
+    """Return every ``TODO`` marker, flagging those not in ``TODO(KEY-1)`` form."""
+    return [
+        Todo(
+            text=match.group(0),
+            range=_range(index, match.start(), match.end()),
+            valid=bool(patterns.TODO_PATTERN.fullmatch(match.group(0))),
+        )
+        for index, line in enumerate(text.split("\n"))
+        for match in _TODO_RE.finditer(line)
+    ]
