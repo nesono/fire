@@ -1,0 +1,36 @@
+"""Tests for references to parameters that do not exist.
+
+These tests verify that validation fails when a requirement references a
+parameter name or version that is not declared in the parameter file.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:parameters.bzl", "parameter_library")
+load("//fire/starlark:requirements.bzl", "requirement_library")
+
+parameter_library(
+    name = "test_params",
+    src = "test_params.yaml",
+)
+
+# Name is only a suffix of a declared parameter - should FAIL
+requirement_library(
+    name = "test_suffix_of_other_parameter",
+    srcs = ["suffix_of_other_parameter.md"],
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+    deps = [":test_params"],
+)
+
+# Version is older than any declared version - should FAIL
+requirement_library(
+    name = "test_version_not_declared",
+    srcs = ["version_not_declared.md"],
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+    deps = [":test_params"],
+)
