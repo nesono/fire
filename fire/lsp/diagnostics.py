@@ -13,6 +13,7 @@ from fire.lsp import document_parser
 from fire.lsp.diagnostic import Diagnostic, Severity, error
 from fire.lsp.document_parser import Requirement
 from fire.lsp.field_diagnostics import diagnose_fields
+from fire.lsp.link_diagnostics import diagnose_links
 from fire.starlark import patterns
 
 __all__ = ["Diagnostic", "Severity", "diagnose_requirements"]
@@ -77,8 +78,9 @@ def diagnose_requirements(
     When *model* is given, each requirement's metadata is validated against it.
     """
     seen: set[str] = set()
-    diagnostics = _todo_diagnostics(text)
-    for requirement in document_parser.parse_requirements(text):
+    requirements = document_parser.parse_requirements(text)
+    diagnostics = _todo_diagnostics(text) + diagnose_links(text, requirements)
+    for requirement in requirements:
         diagnostics.extend(_requirement_diagnostics(requirement, seen, model))
     return sorted(
         diagnostics, key=lambda d: (d.range.start.line, d.range.start.character)
