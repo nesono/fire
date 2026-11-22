@@ -5,13 +5,20 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Final
 
 from lsprotocol import types as lsp
 
-from fire.lsp.conversion import from_lsp_position, to_lsp_diagnostic, to_lsp_range
+from fire.lsp.conversion import (
+    from_lsp_position,
+    to_lsp_diagnostic,
+    to_lsp_range,
+    to_lsp_symbol,
+)
 from fire.lsp.diagnostics import diagnose_requirements
 from fire.lsp.navigation import definition_at
 from fire.lsp.reference_diagnostics import ReferenceChecker
+from fire.lsp.symbols import parameter_symbols, requirement_symbols
 from fire.lsp.uris import uri_to_path
 from fire.lsp.workspace import Workspace, find_workspace_root
 from fire.starlark.config_models import FireConfig
@@ -19,6 +26,9 @@ from fire.starlark.dynamic_requirement_model import (
     build_models_from_config,
     model_for_suffix,
 )
+
+
+_YAML_SUFFIX: Final = ".yaml"
 
 
 class Analyzer:
@@ -82,3 +92,17 @@ class Analyzer:
             uri=target.path.as_uri(),
             range=to_lsp_range(target.range, target.text.split("\n")),
         )
+
+    def document_symbols(self, uri: str, text: str) -> list[lsp.DocumentSymbol]:
+        """Return the outline of a requirement or parameter file."""
+        path = uri_to_path(uri)
+        if path is None:
+            return []
+        if path.suffix == _YAML_SUFFIX:
+            symbols = parameter_symbols(text)
+        elif model_for_suffix(self._config, self._models, str(path)) is not None:
+            symbols = requirement_symbols(text)
+        else:
+            return []
+        lines = text.split("\n")
+        return [to_lsp_symbol(symbol, lines) for symbol in symbols]

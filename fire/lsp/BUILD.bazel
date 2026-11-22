@@ -120,6 +120,7 @@ py_library(
     deps = [
         ":diagnostic",
         ":document_parser",
+        ":symbols",
         "@pip//lsprotocol",
     ],
 )
@@ -132,6 +133,7 @@ py_library(
         ":diagnostics",
         ":navigation",
         ":reference_diagnostics",
+        ":symbols",
         ":uris",
         ":workspace",
         "//fire/starlark:config_models",
@@ -210,6 +212,16 @@ py_library(
         ":index",
         ":link_diagnostics",
         ":workspace",
+    ],
+)
+
+py_library(
+    name = "symbols",
+    srcs = ["symbols.py"],
+    deps = [
+        ":document_parser",
+        ":index",
+        "@pip//lsprotocol",
     ],
 )
 
@@ -295,6 +307,18 @@ py_test(
         ":document_parser",
         ":navigation",
         ":workspace",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "symbols_test",
+    size = "small",
+    srcs = ["symbols_test.py"],
+    deps = [
+        ":document_parser",
+        ":symbols",
+        "@pip//lsprotocol",
         "@pip//pytest",
     ],
 )

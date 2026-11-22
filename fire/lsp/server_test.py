@@ -241,5 +241,21 @@ def _open_linking_document_without_target(client: _Client, workspace) -> str:
     return uri
 
 
+class TestDocumentSymbols:
+    def test_outline_of_a_requirement_document(self, client):
+        _initialize(client)
+        uri = "file:///repo/a.sysreq.md"
+        _open(client, uri, "## REQ-A\n\nVersion: 1\n\n## REQ-B\n\nVersion: 2\n")
+        client.send(
+            {
+                "id": 50,
+                "method": "textDocument/documentSymbol",
+                "params": {"textDocument": {"uri": uri}},
+            }
+        )
+        result = client.receive_until(lambda m: m.get("id") == 50)["result"]
+        assert [s["name"] for s in result] == ["REQ-A", "REQ-B"]
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
