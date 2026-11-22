@@ -115,6 +115,14 @@ requirements and source code.
 
 **Naming:** `<name>_v<N>` — lowercase snake_case with a mandatory version suffix.
 
+**Units:** the unit becomes part of the generated identifiers (see Code
+Generation), so it may only contain letters, digits, `/`, `^`, `*`, `·`, `-`,
+spaces, parentheses, and the symbols `°`, `%`, `‰`, `²`, `³`, `µ`, and `Ω`.
+Symbols are spelled out in the identifier (`°C` becomes `degc`, `%` becomes
+`percent`, `m/s²` becomes `mps2`). Other characters fail validation, and so do
+two parameters whose name and unit generate the same identifier (`speed` in `m`
+and `speed_m` without unit).
+
 **Scalar parameters** infer their type from the YAML value (`f64` from float,
 `i64` from integer, `bool` from boolean, `string` from string). Floating-point
 values in scalars and tables must be finite (`.inf` and `.nan` are rejected):

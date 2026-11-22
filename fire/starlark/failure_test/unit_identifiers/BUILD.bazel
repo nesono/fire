@@ -1,0 +1,28 @@
+"""Tests for parameter units that cannot be used in generated identifiers.
+
+These tests verify that validation fails for units with unsupported characters
+and for distinct parameters that generate the same identifier.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:parameters.bzl", "parameter_library")
+
+# Unit with a character that is invalid in identifiers - should FAIL
+parameter_library(
+    name = "test_unsupported_unit",
+    src = "unsupported_unit.yaml",
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)
+
+# Two parameters whose name and unit generate the same identifier - should FAIL
+parameter_library(
+    name = "test_identifier_collision",
+    src = "identifier_collision.yaml",
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)

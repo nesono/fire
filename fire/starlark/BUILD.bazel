@@ -33,6 +33,7 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":file_io_common",
+        ":unit_suffix",
         "@pip//jinja2",
     ],
 )
@@ -46,7 +47,24 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":patterns",
+        ":unit_suffix",
         "@pip//pydantic",
+    ],
+)
+
+py_library(
+    name = "unit_suffix",
+    srcs = ["unit_suffix.py"],
+    visibility = ["//visibility:public"],
+)
+
+py_test(
+    name = "unit_suffix_test",
+    size = "small",
+    srcs = ["unit_suffix_test.py"],
+    deps = [
+        ":unit_suffix",
+        "@pip//pytest",
     ],
 )
 
@@ -498,6 +516,7 @@ py_library(
     data = glob(["templates/*.j2"]),
     deps = [
         ":file_io_common",
+        ":unit_suffix",
         "@pip//jinja2",
     ],
 )

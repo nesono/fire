@@ -17,6 +17,7 @@ from pydantic import (
 )
 
 from fire.starlark.patterns import PARAM_VERSION_SUFFIX_RE
+from fire.starlark.unit_suffix import normalize_unit_suffix, unsupported_characters
 
 
 def infer_type_from_value(value: Any) -> str:
@@ -167,6 +168,50 @@ def _reject_explicit_type_fieds_in_columns(param_name: str, columns: List[Any]):
             )
 
 
+_UNIT_HELP = (
+    "Use letters, digits, '/', '^', '*', '·', '-', spaces, parentheses, or one "
+    "of the symbols °, %, ‰, ², ³, µ, Ω."
+)
+
+
+def _reject_unsupported_unit(context: str, unit: Any):
+    """Assert a unit only has characters that map into identifiers."""
+    bad = unsupported_characters(unit) if isinstance(unit, str) else []
+    if bad:
+        raise ValueError(
+            f"{context}: Unit {unit!r} contains unsupported character(s) "
+            f"{bad!r}; units become part of generated identifiers. {_UNIT_HELP}"
+        )
+
+
+def _reject_unsupported_units(param_name: str, param_data: Dict[str, Any]):
+    """Assert the units of a parameter and of its table columns are supported."""
+    _reject_unsupported_unit(f"Parameter '{param_name}'", param_data.get("unit"))
+    for i, col in enumerate(param_data.get("columns") or []):
+        if isinstance(col, dict):
+            col_name = col.get("name", f"column {i}")
+            context = f"Parameter '{param_name}': Column '{col_name}'"
+            _reject_unsupported_unit(context, col.get("unit"))
+
+
+def _identifier_stem(name: str, unit: str) -> str:
+    suffix = normalize_unit_suffix(unit)
+    return f"{name}_{suffix}" if suffix else name
+
+
+def _reject_duplicate_column_fields(param_name: str, table: "TableParameter"):
+    """Assert the columns of a table generate distinct field names."""
+    seen: Dict[str, str] = {}
+    for col in table.columns:
+        field = _identifier_stem(col.name, col.unit)
+        if field in seen:
+            raise ValueError(
+                f"Parameter '{param_name}': columns '{seen[field]}' and "
+                f"'{col.name}' generate the same field name '{field}'."
+            )
+        seen[field] = col.name
+
+
 def _reject_misshaped_rows(param_name: str, rows: List[Any], columns: List[Any]):
     """Assert every row is a list with exactly one value per column."""
     for row_idx, row in enumerate(rows):
@@ -243,6 +288,8 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
             if not isinstance(param_data, dict):
                 return data
 
+            _reject_unsupported_units(param_name, param_data)
+
             # For tables, validate early to give clear errors before union discrimination
             # Otherwise, this causes very cluttered error messages
             if param_data.get("type") == "table":
@@ -301,4 +348,22 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
                     f" Found: {actual}"
                 )
 
+        return self
+
+    @model_validator(mode="after")
+    def validate_unique_identifiers(self):
+        """Validate that distinct parameters do not generate the same identifier."""
+        stems: Dict[str, str] = {}
+        for key, param in self.root.items():
+            match = PARAM_VERSION_SUFFIX_RE.match(key)
+            base_name = match.group(1) if match else key
+            stem = _identifier_stem(base_name, getattr(param, "unit", ""))
+            first = stems.setdefault(stem, base_name)
+            if first != base_name:
+                raise ValueError(
+                    f"Parameters '{first}' and '{base_name}' generate the same "
+                    f"identifier '{stem}'. Rename one of them or change its unit."
+                )
+            if isinstance(param, TableParameter):
+                _reject_duplicate_column_fields(key, param)
         return self
