@@ -77,6 +77,12 @@ def create_server(config: FireConfig | None = None) -> LanguageServer:
         overlay = document_overlay(documents)
         return analyzer.definition(uri, documents[uri], params.position, overlay)
 
+    @server.feature(lsp.TEXT_DOCUMENT_DOCUMENT_SYMBOL)
+    def document_symbol(params: lsp.DocumentSymbolParams) -> list[lsp.DocumentSymbol]:
+        uri = params.text_document.uri
+        text = open_documents().get(uri)
+        return analyzer.document_symbols(uri, text) if text is not None else []
+
     @server.feature(lsp.INITIALIZED)
     def initialized(params: lsp.InitializedParams) -> None:
         if _supports_watching(server):

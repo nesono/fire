@@ -39,6 +39,13 @@ jumps to the latest one; if the file exists but the ID or parameter does not, it
 jumps to the top of the file. In Neovim use `vim.lsp.buf.definition()` or
 `<C-]>`. Unsaved buffers are preferred over files on disk.
 
+## Document symbols
+
+The outline of a requirement file lists each requirement ID with its metadata
+as detail. In a parameter YAML file it lists each `name_vN` key. In Neovim use
+`vim.lsp.buf.document_symbol()`. Parameter files are only outlined if the editor
+sends them to the server, which the Neovim example above does not do.
+
 ## Diagnostics
 
 | Code      | Meaning                                                  |

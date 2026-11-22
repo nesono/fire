@@ -9,6 +9,7 @@ from lsprotocol import types as lsp
 
 from fire.lsp.diagnostic import Diagnostic, Severity
 from fire.lsp.document_parser import Position, Range
+from fire.lsp.symbols import Symbol
 
 _SOURCE: Final = "fire"
 _SEVERITIES: Final = {
@@ -59,4 +60,14 @@ def to_lsp_diagnostic(diagnostic: Diagnostic, lines: list[str]) -> lsp.Diagnosti
         severity=_SEVERITIES[diagnostic.severity],
         code=diagnostic.code,
         source=_SOURCE,
+    )
+
+
+def to_lsp_symbol(symbol: Symbol, lines: list[str]) -> lsp.DocumentSymbol:
+    return lsp.DocumentSymbol(
+        name=symbol.name,
+        kind=symbol.kind,
+        range=to_lsp_range(symbol.range, lines),
+        selection_range=to_lsp_range(symbol.selection_range, lines),
+        detail=symbol.detail or None,
     )

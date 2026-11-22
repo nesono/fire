@@ -109,5 +109,28 @@ class TestDefinition:
         assert _ANALYZER.definition(uri, _LINK_DOC, lsp.Position(4, 3)) is None
 
 
+class TestDocumentSymbols:
+    def test_requirement_file(self):
+        text = "## REQ-1\n\nSIL: QM | Sec: false | Version: 1\n"
+        (symbol,) = _ANALYZER.document_symbols("file:///a/x.sysreq.md", text)
+        assert symbol.name == "REQ-1"
+        assert symbol.kind == lsp.SymbolKind.Key
+        assert symbol.selection_range.start == lsp.Position(0, 3)
+
+    def test_parameter_file(self):
+        names = [
+            s.name for s in _ANALYZER.document_symbols("file:///a/p.yaml", _PARAMS)
+        ]
+        assert names == ["y_v1", "x_v1"]
+
+    def test_other_documents_have_no_symbols(self):
+        assert _ANALYZER.document_symbols("file:///a/README.md", "## R-1\n") == []
+
+    def test_columns_are_utf16(self):
+        text = "## REQ-1\n\nSIL: QM | Sec: false | Version: 1\n\n😀 text\n"
+        (symbol,) = _ANALYZER.document_symbols("file:///a/x.sysreq.md", text)
+        assert symbol.range.end == lsp.Position(4, 7)
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
