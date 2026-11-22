@@ -43,7 +43,7 @@ type {{ struct_name }} struct {
 {% endif %}
 var {{ param_name_pascal }}{{ var_suffix }} = []{{ struct_name }}{
 {% for row in item.rows %}
-    {{ "{" }}{% for i in range(item.columns | length) %}{% if item.columns[i].unit_suffix %}{{ (item.columns[i].name + "_" + item.columns[i].unit_suffix) | pascal_case }}{% else %}{{ item.columns[i].name | pascal_case }}{% endif %}: {% if item.columns[i].type == "string" %}"{{ row[i] }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
+    {{ "{" }}{% for i in range(item.columns | length) %}{% if item.columns[i].unit_suffix %}{{ (item.columns[i].name + "_" + item.columns[i].unit_suffix) | pascal_case }}{% else %}{{ item.columns[i].name | pascal_case }}{% endif %}: {% if item.columns[i].type == "string" %}"{{ row[i] | go_str }}"{% elif item.columns[i].type == "bool" %}{% if row[i] %}true{% else %}false{% endif %}{% else %}{{ row[i] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{{ "}" }},
 {% endfor %}
 }
 
@@ -53,12 +53,12 @@ const {{ param_name_pascal }}{{ var_suffix }}Size = {{ item.rows | length }}
 {% else %}
 {% set go_type = item.type | go_type %}
 
-// {{ param_name_pascal }}{{ var_suffix }} is the {{ item.description | default(item.base_name) }} - Unit: {{ item.unit }}.
+// {{ param_name_pascal }}{{ var_suffix }} is the {{ item.description | default(item.base_name) | go_comment }} - Unit: {{ item.unit | go_comment }}.
 {% if not item.is_latest %}
 // Deprecated: Parameter {{ item.base_name }} v{{ item.version }} is deprecated. Use v{{ item.max_version }} instead.
 {% endif %}
 {% if item.type == "string" %}
-const {{ param_name_pascal }}{{ var_suffix }} = "{{ item.value }}"
+const {{ param_name_pascal }}{{ var_suffix }} = "{{ item.value | go_str }}"
 {% elif item.type == "bool" %}
 const {{ param_name_pascal }}{{ var_suffix }} = {% if item.value %}true{% else %}false{% endif %}
 
