@@ -1,0 +1,14 @@
+max_speed_v1:
+  value: 30.0
+  unit: m/s
+  description: Maximum speed
+
+min_speed_v2:
+  value: 2.0
+  unit: m/s
+  description: Minimum speed, first declared version is 2
+
+min_speed_v3:
+  value: 3.0
+  unit: m/s
+  description: Minimum speed

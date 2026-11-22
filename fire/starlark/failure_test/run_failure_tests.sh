@@ -281,6 +281,10 @@ for target in $FAILURE_TARGETS; do
         elif echo "$output" | grep -q "Bare or malformed TODO"; then
             echo "✅ PASS: Build failed with bare/malformed TODO error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for references to undeclared parameters or versions (should FAIL)
+        elif echo "$output" | grep -qE "Parameter .* not found in"; then
+            echo "✅ PASS: Build failed with unknown parameter reference error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Check for headings that are not valid requirement IDs (should FAIL)
         elif echo "$output" | grep -q "is not a valid requirement ID"; then
             echo "✅ PASS: Build failed with invalid requirement heading error"

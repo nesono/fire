@@ -270,5 +270,81 @@ class TestValidateRequirementFileHeadings:
         assert any("req-lower-002" in error for error in errors)
 
 
+# ---------------------------------------------------------------------------
+# validate_parameter_reference
+# ---------------------------------------------------------------------------
+
+
+class TestValidateParameterReference:
+    def _write_params(self, tmp_path, content, name="params.yaml"):
+        (tmp_path / name).write_text(textwrap.dedent(content))
+
+    def _validate(self, tmp_path, name, version, path="/params.yaml"):
+        return vcr.validate_parameter_reference(
+            name, f"{path}#{name}", str(tmp_path), version, "req.md"
+        )
+
+    def test_exact_key_and_version_accepted(self, tmp_path):
+        self._write_params(tmp_path, "max_speed_v1:\n  value: 1\n")
+        assert self._validate(tmp_path, "max_speed", 1) == (True, None)
+
+    def test_name_that_is_suffix_of_other_parameter_rejected(self, tmp_path):
+        self._write_params(tmp_path, "max_speed_v1:\n  value: 1\n")
+        valid, error = self._validate(tmp_path, "speed", 1)
+        assert not valid
+        assert "'speed' not found" in error
+
+    def test_commented_out_key_rejected(self, tmp_path):
+        self._write_params(tmp_path, "# speed_v1:\nmax_speed_v1:\n  value: 1\n")
+        valid, error = self._validate(tmp_path, "speed", 1)
+        assert not valid
+
+    def test_key_in_nested_value_rejected(self, tmp_path):
+        self._write_params(
+            tmp_path, "max_speed_v1:\n  description: 'see speed_v1: here'\n"
+        )
+        valid, _ = self._validate(tmp_path, "speed", 1)
+        assert not valid
+
+    def test_future_version_rejected(self, tmp_path):
+        self._write_params(tmp_path, "speed_v1:\n  value: 1\n")
+        valid, error = self._validate(tmp_path, "speed", 2)
+        assert not valid
+        assert "future version (2)" in error
+
+    def test_version_older_than_oldest_present_rejected(self, tmp_path):
+        self._write_params(tmp_path, "speed_v2:\n  value: 1\nspeed_v3:\n  value: 2\n")
+        valid, error = self._validate(tmp_path, "speed", 1)
+        assert not valid
+        assert "version 1" in error
+
+    def test_older_present_version_warns_but_accepted(self, tmp_path, capsys):
+        self._write_params(tmp_path, "speed_v1:\n  value: 1\nspeed_v2:\n  value: 2\n")
+        assert self._validate(tmp_path, "speed", 1) == (True, None)
+        assert "PARAMETER VERSION MISMATCH" in capsys.readouterr().out
+
+    def test_missing_version_rejected(self, tmp_path):
+        self._write_params(tmp_path, "speed_v1:\n  value: 1\n")
+        valid, error = self._validate(tmp_path, "speed", None)
+        assert not valid
+        assert "misses version" in error
+
+    def test_validated_yaml_fallback_used(self, tmp_path):
+        self._write_params(
+            tmp_path, "speed_v1:\n  value: 1\n", name="params_validated.yaml"
+        )
+        assert self._validate(tmp_path, "speed", 1) == (True, None)
+
+    def test_missing_file_rejected(self, tmp_path):
+        valid, error = self._validate(tmp_path, "speed", 1)
+        assert not valid
+        assert "does not exist" in error
+
+    def test_malformed_yaml_rejected(self, tmp_path):
+        self._write_params(tmp_path, "speed_v1: [unclosed\n")
+        valid, _ = self._validate(tmp_path, "speed", 1)
+        assert not valid
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
