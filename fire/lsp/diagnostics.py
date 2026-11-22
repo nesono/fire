@@ -7,39 +7,21 @@ build-time validators can refer to the same rules.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import IntEnum
+from pydantic import BaseModel
 
 from fire.lsp import document_parser
-from fire.lsp.document_parser import Range, Requirement
+from fire.lsp.diagnostic import Diagnostic, Severity, error
+from fire.lsp.document_parser import Requirement
+from fire.lsp.field_diagnostics import diagnose_fields
 from fire.starlark import patterns
 
-
-class Severity(IntEnum):
-    """Severity values as defined by the Language Server Protocol."""
-
-    ERROR = 1
-    WARNING = 2
-    INFORMATION = 3
-    HINT = 4
-
-
-@dataclass(frozen=True)
-class Diagnostic:
-    range: Range
-    severity: Severity
-    code: str
-    message: str
-
-
-def _error(range_: Range, code: str, message: str) -> Diagnostic:
-    return Diagnostic(range_, Severity.ERROR, code, message)
+__all__ = ["Diagnostic", "Severity", "diagnose_requirements"]
 
 
 def _heading_diagnostics(requirement: Requirement, seen: set[str]) -> list[Diagnostic]:
     if not patterns.REQ_ID_PATTERN.match(requirement.id):
         return [
-            _error(
+            error(
                 requirement.id_range,
                 "FIRE001",
                 f"'{requirement.id}' is not a valid requirement ID "
@@ -48,7 +30,7 @@ def _heading_diagnostics(requirement: Requirement, seen: set[str]) -> list[Diagn
         ]
     if requirement.id in seen:
         return [
-            _error(
+            error(
                 requirement.id_range,
                 "FIRE002",
                 f"Duplicate requirement ID '{requirement.id}'",
@@ -57,7 +39,7 @@ def _heading_diagnostics(requirement: Requirement, seen: set[str]) -> list[Diagn
     seen.add(requirement.id)
     if not requirement.fields:
         return [
-            _error(
+            error(
                 requirement.id_range,
                 "FIRE003",
                 f"Requirement '{requirement.id}' has no metadata line",
@@ -68,7 +50,7 @@ def _heading_diagnostics(requirement: Requirement, seen: set[str]) -> list[Diagn
 
 def _todo_diagnostics(text: str) -> list[Diagnostic]:
     return [
-        _error(
+        error(
             todo.range,
             "FIRE004",
             f"Bare or malformed TODO '{todo.text}'. Must use format TODO(KEY-1234)",
@@ -78,12 +60,26 @@ def _todo_diagnostics(text: str) -> list[Diagnostic]:
     ]
 
 
-def diagnose_requirements(text: str) -> list[Diagnostic]:
-    """Return diagnostics for a requirement document, ordered by position."""
+def _requirement_diagnostics(
+    requirement: Requirement, seen: set[str], model: type[BaseModel] | None
+) -> list[Diagnostic]:
+    heading = _heading_diagnostics(requirement, seen)
+    if heading or model is None or not requirement.fields:
+        return heading
+    return diagnose_fields(requirement, model)
+
+
+def diagnose_requirements(
+    text: str, model: type[BaseModel] | None = None
+) -> list[Diagnostic]:
+    """Return diagnostics for a requirement document, ordered by position.
+
+    When *model* is given, each requirement's metadata is validated against it.
+    """
     seen: set[str] = set()
     diagnostics = _todo_diagnostics(text)
     for requirement in document_parser.parse_requirements(text):
-        diagnostics.extend(_heading_diagnostics(requirement, seen))
+        diagnostics.extend(_requirement_diagnostics(requirement, seen, model))
     return sorted(
         diagnostics, key=lambda d: (d.range.start.line, d.range.start.character)
     )

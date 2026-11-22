@@ -13,12 +13,47 @@ py_library(
 )
 
 py_library(
+    name = "diagnostic",
+    srcs = ["diagnostic.py"],
+    deps = [":document_parser"],
+)
+
+py_library(
+    name = "field_diagnostics",
+    srcs = ["field_diagnostics.py"],
+    deps = [
+        ":diagnostic",
+        ":document_parser",
+        "//fire/starlark:markdown_common",
+        "//fire/starlark:metadata_parsing",
+        "//fire/starlark:pydantic_tools",
+        "@pip//pydantic",
+    ],
+)
+
+py_library(
     name = "diagnostics",
     srcs = ["diagnostics.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":diagnostic",
         ":document_parser",
+        ":field_diagnostics",
         "//fire/starlark:patterns",
+        "@pip//pydantic",
+    ],
+)
+
+py_test(
+    name = "field_diagnostics_test",
+    size = "small",
+    srcs = ["field_diagnostics_test.py"],
+    deps = [
+        ":diagnostics",
+        ":document_parser",
+        "//fire/starlark:config_models",
+        "//fire/starlark:dynamic_requirement_model",
+        "@pip//pytest",
     ],
 )
 
