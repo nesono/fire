@@ -3,6 +3,8 @@
 
 import pytest
 
+from lsprotocol import types as lsp
+
 from fire.lsp.analysis import Analyzer
 from fire.starlark.config_models import load_config
 
@@ -63,6 +65,48 @@ class TestReferenceChecks:
     def test_links_are_not_resolved_without_a_workspace(self):
         text = "## R-1\n\nSIL: QM | Sec: false | Version: 1\n\n[@x](/gone.yaml?version=1#x)\n"
         assert _ANALYZER.diagnose("file:///nowhere/a.sysreq.md", text) == []
+
+
+_LINK_DOC = "## R-1\n\nSIL: QM | Sec: false | Version: 1\n\n[@x](/p.yaml?version=1#x)\n"
+_PARAMS = "y_v1:\n  value: 0\nx_v1:\n  value: 1\n"
+
+
+class TestDefinition:
+    def _workspace(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        (tmp_path / "p.yaml").write_text(_PARAMS)
+        return (tmp_path / "a.sysreq.md").as_uri()
+
+    def test_link_resolves_to_a_location(self, tmp_path):
+        uri = self._workspace(tmp_path)
+        location = _ANALYZER.definition(uri, _LINK_DOC, lsp.Position(4, 3))
+        assert location.uri == (tmp_path / "p.yaml").as_uri()
+        assert location.range.start == lsp.Position(2, 0)
+
+    def test_unsaved_target_is_preferred(self, tmp_path):
+        uri = self._workspace(tmp_path)
+        overlay = {tmp_path / "p.yaml": "\n\n\nx_v1:\n"}
+        location = _ANALYZER.definition(uri, _LINK_DOC, lsp.Position(4, 3), overlay)
+        assert location.range.start == lsp.Position(3, 0)
+
+    def test_cursor_position_is_converted_from_utf16(self, tmp_path):
+        uri = self._workspace(tmp_path)
+        text = _LINK_DOC.replace("[@x]", "😀 [@x]")
+        assert _ANALYZER.definition(uri, text, lsp.Position(4, 4)) is not None
+        assert _ANALYZER.definition(uri, text, lsp.Position(4, 1)) is None
+
+    def test_cursor_off_a_link(self, tmp_path):
+        uri = self._workspace(tmp_path)
+        assert _ANALYZER.definition(uri, _LINK_DOC, lsp.Position(0, 1)) is None
+
+    def test_other_document_types_are_ignored(self, tmp_path):
+        self._workspace(tmp_path)
+        uri = (tmp_path / "README.md").as_uri()
+        assert _ANALYZER.definition(uri, _LINK_DOC, lsp.Position(4, 3)) is None
+
+    def test_no_workspace_means_no_definition(self):
+        uri = "file:///nowhere/a.sysreq.md"
+        assert _ANALYZER.definition(uri, _LINK_DOC, lsp.Position(4, 3)) is None
 
 
 if __name__ == "__main__":

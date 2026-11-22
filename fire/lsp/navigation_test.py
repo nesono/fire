@@ -59,6 +59,9 @@ class TestParameterDefinition:
         assert target.path == (workspace.root / "params.yaml").resolve()
         assert target.range == Range(Position(0, 0), Position(0, 12))
 
+    def test_target_carries_the_text_of_its_file(self, workspace):
+        assert _definition(workspace, _param(1)).text == _PARAMS
+
     def test_other_version(self, workspace):
         target = _definition(workspace, _param(2))
         assert target.range.start.line == 2

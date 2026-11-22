@@ -119,6 +119,7 @@ py_library(
     srcs = ["conversion.py"],
     deps = [
         ":diagnostic",
+        ":document_parser",
         "@pip//lsprotocol",
     ],
 )
@@ -129,6 +130,7 @@ py_library(
     deps = [
         ":conversion",
         ":diagnostics",
+        ":navigation",
         ":reference_diagnostics",
         ":uris",
         ":workspace",
@@ -144,6 +146,7 @@ py_library(
     deps = [
         ":analysis",
         ":publisher",
+        ":uris",
         "//fire/starlark:config_models",
         "@pip//lsprotocol",
         "@pip//pygls",
@@ -178,6 +181,7 @@ py_test(
     deps = [
         ":analysis",
         "//fire/starlark:config_models",
+        "@pip//lsprotocol",
         "@pip//pytest",
     ],
 )

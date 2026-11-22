@@ -203,5 +203,43 @@ class TestRefresh:
         assert message.get("method") is None
 
 
+def _definition(client: _Client, uri: str, line: int, character: int):
+    params = {
+        "textDocument": {"uri": uri},
+        "position": {"line": line, "character": character},
+    }
+    client.send({"id": 99, "method": "textDocument/definition", "params": params})
+    return client.receive_until(lambda m: m.get("id") == 99)["result"]
+
+
+class TestDefinition:
+    def test_link_jumps_to_the_parameter_on_disk(self, client, workspace):
+        (workspace / "p.yaml").write_text("y_v1:\n  value: 0\n" + _PARAMS)
+        uri = _open_linking_document_without_target(client, workspace)
+        result = _definition(client, uri, 4, 3)
+        assert result["uri"] == (workspace / "p.yaml").as_uri()
+        assert result["range"]["start"] == {"line": 2, "character": 0}
+
+    def test_link_jumps_into_an_unsaved_buffer(self, client, workspace):
+        uri = _open_linking_document(client, workspace)
+        target = (workspace / "p.yaml").as_uri()
+        _open(client, target, "\n\n\n" + _PARAMS)
+        assert _diagnostics_for(client, uri) == []
+        result = _definition(client, uri, 4, 3)
+        assert result["uri"] == target
+        assert result["range"]["start"]["line"] == 3
+
+    def test_no_definition_off_a_link(self, client, workspace):
+        uri = _open_linking_document(client, workspace)
+        assert _definition(client, uri, 0, 1) is None
+
+
+def _open_linking_document_without_target(client: _Client, workspace) -> str:
+    _initialize(client)
+    uri = (workspace / "a.sysreq.md").as_uri()
+    _open(client, uri, _LINKING)
+    return uri
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

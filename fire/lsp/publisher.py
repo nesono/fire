@@ -15,7 +15,7 @@ from typing import Protocol
 
 from lsprotocol import types as lsp
 
-from fire.lsp.uris import uri_to_path
+from fire.lsp.uris import document_overlay
 
 
 class _Analyzer(Protocol):
@@ -27,11 +27,6 @@ class _Analyzer(Protocol):
 Publish = Callable[[str, list[lsp.Diagnostic]], None]
 
 
-def _overlay(documents: Mapping[str, str]) -> dict[Path, str]:
-    paths = {uri: uri_to_path(uri) for uri in documents}
-    return {path: documents[uri] for uri, path in paths.items() if path is not None}
-
-
 class DiagnosticsPublisher:
     def __init__(self, analyzer: _Analyzer, publish: Publish) -> None:
         self._analyzer = analyzer
@@ -40,7 +35,7 @@ class DiagnosticsPublisher:
 
     def refresh(self, documents: Mapping[str, str]) -> None:
         """Analyze all *documents* (uri to text) and publish any differences."""
-        overlay = _overlay(documents)
+        overlay = document_overlay(documents)
         for uri, text in documents.items():
             self._update(uri, self._analyzer.diagnose(uri, text, overlay))
         for uri in set(self._last) - set(documents):

@@ -31,6 +31,14 @@ vim.lsp.enable("fire_ls")
 Documents whose file name does not end in a configured document-type suffix are
 ignored, so other Markdown files are unaffected.
 
+## Go to definition
+
+On a parameter or requirement link, go to definition jumps to the linked
+`name_vN` key or requirement heading. If the exact version is not defined, it
+jumps to the latest one; if the file exists but the ID or parameter does not, it
+jumps to the top of the file. In Neovim use `vim.lsp.buf.definition()` or
+`<C-]>`. Unsaved buffers are preferred over files on disk.
+
 ## Diagnostics
 
 | Code      | Meaning                                                  |
