@@ -5,6 +5,7 @@ This module defines the Pydantic models that replace the JSON schema
 for validating parameter YAML files.
 """
 
+import math
 from collections import defaultdict
 from typing import Any, Dict, List, Literal, Union
 
@@ -111,7 +112,7 @@ class F64Parameter(UnitParamBase):
     """64-bit float parameter."""
 
     type: Literal["f64"]
-    value: float = Field(strict=True)
+    value: float = Field(strict=True, allow_inf_nan=False)
 
     model_config = {"extra": "forbid"}
 
@@ -177,6 +178,27 @@ def _reject_misshaped_rows(param_name: str, rows: List[Any], columns: List[Any])
             )
 
 
+def _reject_non_finite_values(param_name: str, rows: List[Any], columns: List[Any]):
+    """Assert no table cell is inf or nan, which have no literal in code."""
+    for row_idx, row in enumerate(rows):
+        for col_idx, value in enumerate(row):
+            if isinstance(value, float) and not math.isfinite(value):
+                col_name = columns[col_idx].get("name", f"column {col_idx}")
+                raise ValueError(
+                    f"Parameter '{param_name}': Row {row_idx}, column "
+                    f"'{col_name}': value must be finite, got {value}."
+                )
+
+
+def _reject_non_finite_scalar(param_name: str, param_data: Dict[str, Any]):
+    """Assert a scalar value is not inf or nan, with a single clear error."""
+    value = param_data.get("value")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(
+            f"Parameter '{param_name}': value must be finite, got {value}."
+        )
+
+
 def _reject_inconsistent_types_in_table(
     param_name: str, rows: List[Any], columns: List[Any]
 ):
@@ -233,7 +255,9 @@ class ParameterFile(RootModel[Dict[str, Parameter]]):
                 # Infer and inject column types, then validate row consistency
                 if rows and columns:
                     _reject_misshaped_rows(param_name, rows, columns)
+                    _reject_non_finite_values(param_name, rows, columns)
                     _reject_inconsistent_types_in_table(param_name, rows, columns)
+            _reject_non_finite_scalar(param_name, param_data)
             try:
                 param_data["type"] = infer_parameter_type(param_data)
             except ValueError as e:

@@ -1,0 +1,28 @@
+"""Tests for parameters with non-finite floating point values.
+
+These tests verify that validation fails for inf and nan values, which have
+no literal in the generated code.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:parameters.bzl", "parameter_library")
+
+# Scalar .inf - should FAIL
+parameter_library(
+    name = "test_scalar_infinity",
+    src = "scalar_infinity.yaml",
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)
+
+# Table cell .nan - should FAIL
+parameter_library(
+    name = "test_table_nan",
+    src = "table_nan.yaml",
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+)
