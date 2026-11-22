@@ -1,0 +1,4 @@
+limit_v1:
+  value: .inf
+  unit: m
+  description: Infinite limit

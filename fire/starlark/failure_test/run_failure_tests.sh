@@ -281,6 +281,26 @@ for target in $FAILURE_TARGETS; do
         elif echo "$output" | grep -q "Bare or malformed TODO"; then
             echo "✅ PASS: Build failed with bare/malformed TODO error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for references to undeclared parameters or versions (should FAIL)
+        elif echo "$output" | grep -qE "Parameter .* not found in"; then
+            echo "✅ PASS: Build failed with unknown parameter reference error"
+            SUCCESSES=$((SUCCESSES + 1))
+        # Check for requirement IDs defined more than once (should FAIL)
+        elif echo "$output" | grep -q "Duplicate requirement ID"; then
+            echo "✅ PASS: Build failed with duplicate requirement ID error"
+            SUCCESSES=$((SUCCESSES + 1))
+        # Check for headings that are not valid requirement IDs (should FAIL)
+        elif echo "$output" | grep -q "is not a valid requirement ID"; then
+            echo "✅ PASS: Build failed with invalid requirement heading error"
+            SUCCESSES=$((SUCCESSES + 1))
+        # Check for table rows that do not match the column list (should FAIL)
+        elif echo "$output" | grep -q "values (one per column)"; then
+            echo "✅ PASS: Build failed with table row shape error"
+            SUCCESSES=$((SUCCESSES + 1))
+        # Check for non-finite floating point values (should FAIL)
+        elif echo "$output" | grep -q "must be finite"; then
+            echo "✅ PASS: Build failed with non-finite value error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Check for Pydantic validation errors (should FAIL)
         elif echo "$output" | grep -qE "not a valid boolean|not a valid enumeration member|Input should be one of|not a valid integer|greater than or equal"; then
             echo "✅ PASS: Build failed with Pydantic validation error"

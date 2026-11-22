@@ -1,0 +1,208 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+
+py_library(
+    name = "document_parser",
+    srcs = ["document_parser.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//fire/starlark:markdown_common",
+        "//fire/starlark:metadata_parsing",
+        "//fire/starlark:path_common",
+        "//fire/starlark:patterns",
+    ],
+)
+
+py_library(
+    name = "diagnostic",
+    srcs = ["diagnostic.py"],
+    deps = [":document_parser"],
+)
+
+py_library(
+    name = "field_diagnostics",
+    srcs = ["field_diagnostics.py"],
+    deps = [
+        ":diagnostic",
+        ":document_parser",
+        "//fire/starlark:markdown_common",
+        "//fire/starlark:metadata_parsing",
+        "//fire/starlark:pydantic_tools",
+        "@pip//pydantic",
+    ],
+)
+
+py_library(
+    name = "link_diagnostics",
+    srcs = ["link_diagnostics.py"],
+    deps = [
+        ":diagnostic",
+        ":document_parser",
+        "//fire/starlark:patterns",
+    ],
+)
+
+py_library(
+    name = "diagnostics",
+    srcs = ["diagnostics.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":diagnostic",
+        ":document_parser",
+        ":field_diagnostics",
+        ":link_diagnostics",
+        "//fire/starlark:patterns",
+        "@pip//pydantic",
+    ],
+)
+
+py_test(
+    name = "link_diagnostics_test",
+    size = "small",
+    srcs = ["link_diagnostics_test.py"],
+    deps = [
+        ":diagnostic",
+        ":diagnostics",
+        ":document_parser",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "field_diagnostics_test",
+    size = "small",
+    srcs = ["field_diagnostics_test.py"],
+    deps = [
+        ":diagnostics",
+        ":document_parser",
+        "//fire/starlark:config_models",
+        "//fire/starlark:dynamic_requirement_model",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "diagnostics_test",
+    size = "small",
+    srcs = ["diagnostics_test.py"],
+    deps = [
+        ":diagnostics",
+        ":document_parser",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "document_parser_test",
+    size = "small",
+    srcs = ["document_parser_test.py"],
+    deps = [
+        ":document_parser",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "conversion",
+    srcs = ["conversion.py"],
+    deps = [
+        ":diagnostic",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_library(
+    name = "analysis",
+    srcs = ["analysis.py"],
+    deps = [
+        ":conversion",
+        ":diagnostics",
+        "//fire/starlark:config_models",
+        "//fire/starlark:dynamic_requirement_model",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_library(
+    name = "server",
+    srcs = ["server.py"],
+    deps = [
+        ":analysis",
+        "//fire/starlark:config_models",
+        "@pip//lsprotocol",
+        "@pip//pygls",
+    ],
+)
+
+py_binary(
+    name = "fire_ls",
+    srcs = ["__main__.py"],
+    main = "__main__.py",
+    visibility = ["//visibility:public"],
+    deps = [":server"],
+)
+
+py_test(
+    name = "conversion_test",
+    size = "small",
+    srcs = ["conversion_test.py"],
+    deps = [
+        ":conversion",
+        ":diagnostic",
+        ":document_parser",
+        "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "analysis_test",
+    size = "small",
+    srcs = ["analysis_test.py"],
+    deps = [
+        ":analysis",
+        "//fire/starlark:config_models",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "server_test",
+    size = "small",
+    srcs = ["server_test.py"],
+    deps = [
+        ":server",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "index",
+    srcs = ["index.py"],
+    deps = [":document_parser"],
+)
+
+py_library(
+    name = "workspace",
+    srcs = ["workspace.py"],
+)
+
+py_test(
+    name = "index_test",
+    size = "small",
+    srcs = ["index_test.py"],
+    deps = [
+        ":document_parser",
+        ":index",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "workspace_test",
+    size = "small",
+    srcs = ["workspace_test.py"],
+    deps = [
+        ":workspace",
+        "@pip//pytest",
+    ],
+)

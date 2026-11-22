@@ -25,7 +25,10 @@ bazel_dep(name = "rules_python", version = "2.5.1")
 ## System Requirements
 
 System requirements are stored in `.sysreq.md` files. Each requirement is an
-H2 heading followed by a metadata line and free-form Markdown text.
+H2 heading followed by a metadata line and free-form Markdown text. Every H2
+heading must be exactly a requirement ID (`[A-Z][A-Z0-9_-]+`); other H2
+headings fail validation. Use H3 or deeper for structure inside a requirement.
+Requirement IDs must be unique; a duplicate ID fails validation.
 
 **Metadata fields:**
 
@@ -113,7 +116,8 @@ requirements and source code.
 **Naming:** `<name>_v<N>` — lowercase snake_case with a mandatory version suffix.
 
 **Scalar parameters** infer their type from the YAML value (`f64` from float,
-`i64` from integer, `bool` from boolean, `string` from string):
+`i64` from integer, `bool` from boolean, `string` from string). Floating-point
+values in scalars and tables must be finite (`.inf` and `.nan` are rejected):
 
 ```yaml
 max_speed_v1:
@@ -128,7 +132,8 @@ wheel_count_v1:
 ```
 
 **Table parameters** require `type: table`. Column types are inferred from the
-first row — do not specify them explicitly:
+first row — do not specify them explicitly. Every row must have exactly one
+value per column:
 
 ```yaml
 braking_distance_table_v1:
@@ -164,6 +169,9 @@ parameter_library(
 FIRE generates one source file per parameter version. Wrap the generated output
 in a language library target to use it in your code — FIRE never depends on the
 language rules itself, so you control which ones you use.
+
+String values are escaped for the target language, and descriptions and units
+are flattened to a single line in generated comments.
 
 **Output shape** differs by language: C++, Python, and Go produce a directory
 artifact of per-version files; Java produces a `.srcjar`; Rust produces a single
@@ -357,7 +365,8 @@ missing implementation or verification traces.
 ## Release Readiness Report
 
 The release readiness report checks version consistency across requirements and
-parameters, open TODOs, and implementation/verification trace coverage.
+parameters, requirement ID uniqueness, open TODOs, and
+implementation/verification trace coverage.
 
 ```starlark
 load("@fire//fire/starlark:reports.bzl", "release_report", "release_readiness_test")

@@ -18,6 +18,7 @@ import pathlib
 import re
 import sys
 
+from collections import defaultdict
 from typing import Final
 
 from pydantic import BaseModel, ValidationError
@@ -33,6 +34,7 @@ from fire.starlark.dynamic_requirement_model import (
     build_models_from_config,
     model_for_suffix,
 )
+from fire.starlark.patterns import PARAM_VERSION_SUFFIX_RE, REQ_ID_PATTERN
 from fire.starlark.pydantic_tools import format_validation_errors  # type: ignore
 from fire.starlark.requirement_models import (
     RequirementMetadata,
@@ -80,6 +82,60 @@ def validate_no_bare_todos(content: str, file_path: str) -> list[str]:
                 f"'{snippet}'. Must use format TODO(KEY-1234)"
             )
     return errors
+
+
+def _heading_lines_outside_code(content: str) -> list[tuple[int, str]]:
+    """Return (line number, text) of H2 headings that are not in fenced code."""
+    headings: list[tuple[int, str]] = []
+    fence: str | None = None
+    for line_num, line in enumerate(content.split("\n"), start=1):
+        marker = line.lstrip()[:3]
+        if marker in ("```", "~~~"):
+            fence = None if fence == marker else (fence or marker)
+        elif fence is None and line.startswith("## "):
+            headings.append((line_num, line[3:].strip()))
+    return headings
+
+
+def validate_requirement_headings(content: str, file_path: str) -> list[str]:
+    """Reject H2 headings that are not valid requirement IDs.
+
+    Such headings are skipped by metadata validation and the release report,
+    so a requirement with a malformed heading would otherwise go unnoticed.
+    """
+    return [
+        f"{file_path}:{line_num}: Heading '## {text}' is not a valid "
+        f"requirement ID (expected [A-Z][A-Z0-9_-]+)"
+        for line_num, text in _heading_lines_outside_code(content)
+        if not REQ_ID_PATTERN.match(text)
+    ]
+
+
+def find_duplicate_ids(definitions: list[tuple[str, str]]) -> dict[str, list[str]]:
+    """Map each requirement ID defined more than once to its locations.
+
+    ``definitions`` holds ``(requirement ID, location)`` pairs.
+    """
+    locations: dict[str, list[str]] = defaultdict(list)
+    for req_id, location in definitions:
+        locations[req_id].append(location)
+    return {req_id: locs for req_id, locs in locations.items() if len(locs) > 1}
+
+
+def validate_unique_requirement_ids(file_paths: list[str]) -> list[str]:
+    """Report requirement IDs defined more than once across the given files."""
+    definitions: list[tuple[str, str]] = []
+    for path in file_paths:
+        content, error = file_io_common.read_file_safe(path)
+        if error:
+            continue
+        for line_num, text in _heading_lines_outside_code(content or ""):
+            if REQ_ID_PATTERN.match(text):
+                definitions.append((text, f"{path}:{line_num}"))
+    return [
+        f"Duplicate requirement ID '{req_id}' defined at: {', '.join(locations)}"
+        for req_id, locations in find_duplicate_ids(definitions).items()
+    ]
 
 
 def _find_requirement_heading_index(lines: list[str], req_id: str) -> int | None:
@@ -208,46 +264,59 @@ def validate_parameter_reference(
             return False, f"Parameter file does not exist: {file_path}"
 
     # Read file and check if parameter is defined
-    content, error = file_io_common.read_file_safe(abs_path)
+    data, error = file_io_common.load_yaml_safe(abs_path)
     if error:
         return False, error
+    if not isinstance(data, dict):
+        return False, f"Parameter file {file_path} must contain a mapping"
 
     # Check version if ref_version is specified
     if ref_version is None:
         return False, f"Parameter '{anchor}' misses version in {file_path}"
 
-    # Find the max version to check for staleness warning
-    max_version = 0
-    for line in content.split("\n"):
-        version_match = re.match(rf"^\s*{re.escape(anchor)}_v(\d+)\s*:", line)
-        if version_match:
-            v = int(version_match.group(1))
-            if v > max_version:
-                max_version = v
-
-    # Look for parameter definition using _vN suffix key format
-    # e.g., "  param_name_v2:" in the YAML file
-    versioned_key = f"{anchor}_v{ref_version}:"
-    if versioned_key not in content:
-        # Check if the base parameter exists at all (any version)
-        if f"{anchor}_v" not in content:
-            return False, f"Parameter '{anchor}' not found in {file_path}"
-        # Parameter exists but not at the requested version
-        # Find the max version available
-        if ref_version > max_version:
-            return (
-                False,
-                f"Parameter {anchor} expects a future version ({ref_version}), but max version is {max_version}",
-            )
+    versions = _declared_param_versions(data, anchor)
+    error = _param_version_error(anchor, ref_version, versions, file_path)
+    if error:
+        return False, error
 
     # ANSI color codes: \033[91m = light red, \033[0m = reset
     # Print to stdout so Bazel shows these warnings even when validation passes
-    if max_version > 0 and ref_version < max_version:
+    max_version = max(versions)
+    if ref_version < max_version:
         print(
             f"\033[91mWARNING:\033[0m PARAMETER VERSION MISMATCH! {source_file}: Reference to @{param_name} specifies version={ref_version}, but {file_path} is at version={max_version}"
         )
 
     return True, None
+
+
+def _declared_param_versions(data: dict, anchor: str) -> list[int]:
+    """Return the versions declared for exactly the parameter ``anchor``."""
+    versions = []
+    for key in data:
+        match = PARAM_VERSION_SUFFIX_RE.match(str(key))
+        if match and match.group(1) == anchor:
+            versions.append(int(match.group(2)))
+    return sorted(versions)
+
+
+def _param_version_error(
+    anchor: str, ref_version: int, versions: list[int], file_path: str
+) -> str | None:
+    """Return an error message if ``ref_version`` is not declared, else None."""
+    if not versions:
+        return f"Parameter '{anchor}' not found in {file_path}"
+    if ref_version > versions[-1]:
+        return (
+            f"Parameter {anchor} expects a future version ({ref_version}), "
+            f"but max version is {versions[-1]}"
+        )
+    if ref_version not in versions:
+        return (
+            f"Parameter {anchor} version {ref_version} not found in {file_path} "
+            f"(available: {', '.join(str(v) for v in versions)})"
+        )
+    return None
 
 
 def validate_requirement_reference(
@@ -351,6 +420,7 @@ def validate_requirement_file(
 
     # Validate no bare/malformed TODOs in the entire file
     errors.extend(validate_no_bare_todos(content, file_path))
+    errors.extend(validate_requirement_headings(content, file_path))
 
     known_fields = config.known_fields() if config else None
 
@@ -495,6 +565,7 @@ def main():
             models=models,
         )
         all_errors.extend(errors)
+    all_errors.extend(validate_unique_requirement_ids(requirement_files))
 
     if all_errors:
         print("Cross-reference validation failed:")

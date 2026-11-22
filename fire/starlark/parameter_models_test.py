@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for parameter_models."""
 
+import math
+
 import pytest
 from pydantic import ValidationError
 
@@ -98,6 +100,11 @@ class TestI64Parameter:
 
 
 class TestF64Parameter:
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, math.nan])
+    def test_non_finite_value_rejected(self, value):
+        with pytest.raises(ValidationError, match="finite"):
+            F64Parameter(type="f64", value=value, unit="m", description="d")
+
     def test_valid_float(self):
         p = F64Parameter(type="f64", value=1.5, unit="m/s", description="speed")
         assert p.value == 1.5
@@ -302,6 +309,55 @@ class TestParameterFile:
         }
         with pytest.raises(ValidationError, match="Inconsistent type"):
             ParameterFile.model_validate(data)
+
+    def _table(self, rows, columns=2):
+        return {
+            "lookup_v1": {
+                "type": "table",
+                "description": "lookup",
+                "columns": [{"name": f"c{i}", "unit": "1"} for i in range(columns)],
+                "rows": rows,
+            }
+        }
+
+    @pytest.mark.parametrize(
+        "rows, row_index, got",
+        [
+            ([[1.0, 2.0], [3.0]], 1, 1),
+            ([[1.0, 2.0], [3.0, 4.0, 5.0]], 1, 3),
+            ([[1.0], [3.0, 4.0]], 0, 1),
+            ([[1.0, 2.0, 3.0]], 0, 3),
+        ],
+    )
+    def test_table_row_length_must_match_columns(self, rows, row_index, got):
+        pattern = (
+            rf"'lookup_v1': Row {row_index}: expected 2 values "
+            rf"\(one per column\), got {got}"
+        )
+        with pytest.raises(ValidationError, match=pattern):
+            ParameterFile.model_validate(self._table(rows))
+
+    def test_table_row_that_is_not_a_list_rejected(self):
+        with pytest.raises(ValidationError, match="Row 1: expected 2 values"):
+            ParameterFile.model_validate(self._table([[1.0, 2.0], 3.0]))
+
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, math.nan])
+    def test_table_non_finite_value_rejected(self, value):
+        data = self._table([[1.0, 2.0], [3.0, value]])
+        pattern = r"'lookup_v1': Row 1, column 'c1': value must be finite"
+        with pytest.raises(ValidationError, match=pattern):
+            ParameterFile.model_validate(data)
+
+    def test_scalar_non_finite_value_from_yaml_rejected(self):
+        data = {"limit_v1": {"value": math.inf, "unit": "m", "description": "d"}}
+        with pytest.raises(
+            ValidationError, match="'limit_v1': value must be finite, got inf"
+        ):
+            ParameterFile.model_validate(data)
+
+    def test_table_with_matching_rows_accepted(self):
+        pf = ParameterFile.model_validate(self._table([[1.0, 2.0], [3.0, 4.0]]))
+        assert isinstance(pf.root["lookup_v1"], TableParameter)
 
     def test_table_inferred_column_types(self):
         data = {

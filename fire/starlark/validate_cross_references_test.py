@@ -206,5 +206,186 @@ class TestExtractMarkdownReferences:
         assert req_refs == []
 
 
+# ---------------------------------------------------------------------------
+# validate_requirement_headings
+# ---------------------------------------------------------------------------
+
+
+class TestValidateRequirementHeadings:
+    def test_conformant_headings_accepted(self):
+        content = "## REQ-1\nbody\n## REQ_SW_2\nbody\n"
+        assert vcr.validate_requirement_headings(content, "f.md") == []
+
+    def test_lowercase_heading_rejected(self):
+        errors = vcr.validate_requirement_headings("## req-lower-002\n", "f.md")
+        assert len(errors) == 1
+        assert "f.md:1" in errors[0]
+        assert "req-lower-002" in errors[0]
+
+    def test_heading_with_trailing_title_rejected(self):
+        content = "## REQ-OK-001\n## REQ-TITLE-003 Braking distance\n"
+        errors = vcr.validate_requirement_headings(content, "f.md")
+        assert len(errors) == 1
+        assert "f.md:2" in errors[0]
+
+    def test_trailing_whitespace_accepted(self):
+        assert vcr.validate_requirement_headings("## REQ-1   \n", "f.md") == []
+
+    def test_other_heading_levels_ignored(self):
+        content = "# Title\n### Details\n#### More\n"
+        assert vcr.validate_requirement_headings(content, "f.md") == []
+
+    def test_headings_in_fenced_code_blocks_ignored(self):
+        content = "## REQ-1\n```markdown\n## not a requirement\n```\n"
+        assert vcr.validate_requirement_headings(content, "f.md") == []
+
+    def test_heading_after_fenced_code_block_checked(self):
+        content = "```\n## ignored\n```\n## bad heading\n"
+        errors = vcr.validate_requirement_headings(content, "f.md")
+        assert len(errors) == 1
+        assert "f.md:4" in errors[0]
+
+
+class TestValidateRequirementFileHeadings:
+    def test_non_conformant_heading_fails_validation(self, tmp_path):
+        path = tmp_path / "bad.sysreq.md"
+        path.write_text(
+            textwrap.dedent(
+                """\
+                ## REQ-OK-001
+
+                SIL: QM | Sec: false | Version: 1
+
+                Conformant.
+
+                ## req-lower-002
+
+                SIL: BOGUS | Sec: maybe | Version: 0
+
+                Invalid metadata that must not be silently skipped.
+                """
+            )
+        )
+        errors = vcr.validate_requirement_file(str(path), str(tmp_path))
+        assert any("req-lower-002" in error for error in errors)
+
+
+# ---------------------------------------------------------------------------
+# validate_parameter_reference
+# ---------------------------------------------------------------------------
+
+
+class TestValidateParameterReference:
+    def _write_params(self, tmp_path, content, name="params.yaml"):
+        (tmp_path / name).write_text(textwrap.dedent(content))
+
+    def _validate(self, tmp_path, name, version, path="/params.yaml"):
+        return vcr.validate_parameter_reference(
+            name, f"{path}#{name}", str(tmp_path), version, "req.md"
+        )
+
+    def test_exact_key_and_version_accepted(self, tmp_path):
+        self._write_params(tmp_path, "max_speed_v1:\n  value: 1\n")
+        assert self._validate(tmp_path, "max_speed", 1) == (True, None)
+
+    def test_name_that_is_suffix_of_other_parameter_rejected(self, tmp_path):
+        self._write_params(tmp_path, "max_speed_v1:\n  value: 1\n")
+        valid, error = self._validate(tmp_path, "speed", 1)
+        assert not valid
+        assert "'speed' not found" in error
+
+    def test_commented_out_key_rejected(self, tmp_path):
+        self._write_params(tmp_path, "# speed_v1:\nmax_speed_v1:\n  value: 1\n")
+        valid, error = self._validate(tmp_path, "speed", 1)
+        assert not valid
+
+    def test_key_in_nested_value_rejected(self, tmp_path):
+        self._write_params(
+            tmp_path, "max_speed_v1:\n  description: 'see speed_v1: here'\n"
+        )
+        valid, _ = self._validate(tmp_path, "speed", 1)
+        assert not valid
+
+    def test_future_version_rejected(self, tmp_path):
+        self._write_params(tmp_path, "speed_v1:\n  value: 1\n")
+        valid, error = self._validate(tmp_path, "speed", 2)
+        assert not valid
+        assert "future version (2)" in error
+
+    def test_version_older_than_oldest_present_rejected(self, tmp_path):
+        self._write_params(tmp_path, "speed_v2:\n  value: 1\nspeed_v3:\n  value: 2\n")
+        valid, error = self._validate(tmp_path, "speed", 1)
+        assert not valid
+        assert "version 1" in error
+
+    def test_older_present_version_warns_but_accepted(self, tmp_path, capsys):
+        self._write_params(tmp_path, "speed_v1:\n  value: 1\nspeed_v2:\n  value: 2\n")
+        assert self._validate(tmp_path, "speed", 1) == (True, None)
+        assert "PARAMETER VERSION MISMATCH" in capsys.readouterr().out
+
+    def test_missing_version_rejected(self, tmp_path):
+        self._write_params(tmp_path, "speed_v1:\n  value: 1\n")
+        valid, error = self._validate(tmp_path, "speed", None)
+        assert not valid
+        assert "misses version" in error
+
+    def test_validated_yaml_fallback_used(self, tmp_path):
+        self._write_params(
+            tmp_path, "speed_v1:\n  value: 1\n", name="params_validated.yaml"
+        )
+        assert self._validate(tmp_path, "speed", 1) == (True, None)
+
+    def test_missing_file_rejected(self, tmp_path):
+        valid, error = self._validate(tmp_path, "speed", 1)
+        assert not valid
+        assert "does not exist" in error
+
+    def test_malformed_yaml_rejected(self, tmp_path):
+        self._write_params(tmp_path, "speed_v1: [unclosed\n")
+        valid, _ = self._validate(tmp_path, "speed", 1)
+        assert not valid
+
+
+class TestValidateUniqueRequirementIds:
+    def _write(self, tmp_path, name, content):
+        path = tmp_path / name
+        path.write_text(textwrap.dedent(content))
+        return str(path)
+
+    def test_unique_ids_accepted(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-A-001\n\nbody\n")
+        b = self._write(tmp_path, "b.md", "## REQ-B-001\n\nbody\n")
+        assert vcr.validate_unique_requirement_ids([a, b]) == []
+
+    def test_duplicate_across_files_reports_both_locations(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-D-001\n\nbody\n")
+        b = self._write(tmp_path, "b.md", "intro\n\n## REQ-D-001\n\nbody\n")
+        errors = vcr.validate_unique_requirement_ids([a, b])
+        assert len(errors) == 1
+        assert "REQ-D-001" in errors[0]
+        assert f"{a}:1" in errors[0]
+        assert f"{b}:3" in errors[0]
+
+    def test_duplicate_within_one_file_reported(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-D-001\n\nx\n\n## REQ-D-001\n")
+        errors = vcr.validate_unique_requirement_ids([a])
+        assert len(errors) == 1
+        assert f"{a}:1" in errors[0]
+        assert f"{a}:5" in errors[0]
+
+    def test_each_duplicated_id_reported_once(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-X-1\n## REQ-Y-1\n")
+        b = self._write(tmp_path, "b.md", "## REQ-X-1\n## REQ-Y-1\n")
+        assert len(vcr.validate_unique_requirement_ids([a, b])) == 2
+
+    def test_headings_in_fenced_code_ignored(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-D-001\n```\n## REQ-D-001\n```\n")
+        assert vcr.validate_unique_requirement_ids([a]) == []
+
+    def test_unreadable_file_is_skipped(self, tmp_path):
+        a = self._write(tmp_path, "a.md", "## REQ-A-001\n")
+        assert vcr.validate_unique_requirement_ids([a, str(tmp_path / "x.md")]) == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

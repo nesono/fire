@@ -51,6 +51,7 @@ or when issues are found:
 
 ### Issues Found
 
+- ⚠️ Duplicate requirement IDs: **1** ([details](#requirement-id-uniqueness))
 - ⚠️ Missing implementation traces: **5** ([details](#missing-implementation-traces))
 - ⚠️ Missing verification traces: **3** ([details](#missing-verification-traces))
 - ⚠️ Stale references: **2** ([details](#version-consistency))
@@ -84,7 +85,17 @@ Followed by detailed lists of:
 
 Each stale reference shows source and destination links for easy navigation.
 
-### 3. TODO Inventory
+### 3. Requirement ID Uniqueness
+
+Lists requirement IDs that are defined more than once across all requirement files, with every location:
+
+```markdown
+- **REQ-ABC-001** is defined at: first.md:1, second.md:12
+```
+
+or `- All requirement IDs are unique.` when there are none. Duplicate IDs make the report `NOT READY FOR RELEASE`.
+
+### 4. TODO Inventory
 
 Lists all TODO markers found in requirement and parameter files:
 
@@ -95,7 +106,7 @@ Lists all TODO markers found in requirement and parameter files:
 
 TODOs must follow the pattern `TODO(TICKET-ID)` where TICKET-ID matches `[A-Z]+-[0-9]+`.
 
-### 4. Implementation & Verification Coverage
+### 5. Implementation & Verification Coverage
 
 Lists requirements missing implementation or verification traces:
 
@@ -110,7 +121,7 @@ Lists requirements missing implementation or verification traces:
 - [REQ-ABC-003](path/to/file.md#REQ-ABC-003)
 ```
 
-### 5. Traceability Graph
+### 6. Traceability Graph
 
 Mermaid diagram showing relationships between:
 
