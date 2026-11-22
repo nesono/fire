@@ -1,7 +1,8 @@
 # FIRE Safety Manual
 
 This manual describes how FIRE may be used in the development of safety-related systems, which assumptions the user has to fulfil, and which limitations are known.
-It applies to FIRE 0.6.1.
+It describes the repository at the time of writing, which is after release 0.6.1.
+Limitations that were fixed since 0.6.1 are listed under Resolved Limitations; releases up to and including 0.6.1 still have them.
 
 **FIRE is not a qualified tool.**
 No tool confidence level has been assigned, no qualification has been performed, and no certificate exists.
@@ -45,26 +46,32 @@ FIRE does not defend against malicious input and does not sandbox the scripts th
 The table lists malfunctions that could lead to an undetected defect in a safety-related work product.
 It is the starting point for a tool impact analysis.
 
-| ID   | Use case                          | Malfunction                                                        | Effect                                                       | Detected by FIRE itself?                                    | Limitation         |
-| ---- | --------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------- | ------------------ |
-| UC-1 | Requirement metadata validation   | Invalid or missing metadata is accepted                            | Requirement with wrong SIL or version enters the baseline    | No, when the heading is not conformant                      | L-1                |
-| UC-2 | Cross-reference validation        | Reference to a non-existent parameter or stale version is accepted | Requirement is linked to the wrong or an outdated item       | Partly; stale versions are only warnings at validation time | L-2, L-3           |
-| UC-3 | Parameter validation              | Malformed table is accepted                                        | Generated code contains missing or surplus values            | Partly                                                      | L-8                |
-| UC-4 | Code generation                   | Generated value or declaration deviates from the parameter file    | Product code uses a wrong constant                           | No; there is no check of the generated output               | L-9, L-10          |
-| UC-5 | Source traceability               | A declared link is wrong, or does not reflect the code             | Requirement appears implemented or verified without being so | No                                                          | L-6, L-7           |
-| UC-6 | Release readiness report and gate | The report omits a requirement, or reports a duplicate ID as one   | "READY FOR RELEASE" although evidence is missing             | No                                                          | L-1, L-4, L-5, L-7 |
+| ID   | Use case                          | Malfunction                                                        | Effect                                                       | Detected by FIRE itself?                                                           | Limitation |
+| ---- | --------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------- |
+| UC-1 | Requirement metadata validation   | Invalid or missing metadata is accepted                            | Requirement with wrong SIL or version enters the baseline    | Yes for the checks listed below; no for the correctness of the values              | -          |
+| UC-2 | Cross-reference validation        | Reference to a non-existent item or a stale version is accepted    | Requirement is linked to the wrong or an outdated item       | Partly; stale versions are only warnings at validation time                        | L-3        |
+| UC-3 | Parameter validation              | Malformed parameter data is accepted                               | Generated code contains missing, surplus, or invalid values  | Yes for structure, types, finiteness, and table shape; no for the physical meaning | -          |
+| UC-4 | Code generation                   | Generated value or declaration deviates from the parameter file    | Product code uses a wrong constant                           | No; there is no check of the generated output                                      | L-13       |
+| UC-5 | Source traceability               | A declared link is wrong, or does not reflect the code             | Requirement appears implemented or verified without being so | No                                                                                 | L-6, L-7   |
+| UC-6 | Release readiness report and gate | The report omits a requirement or reports "READY" without evidence | "READY FOR RELEASE" although evidence is missing             | No                                                                                 | L-5, L-7   |
 
 ## Checks Performed
 
 | Check                                                                                           | Where                            | Result on violation                                           |
 | ----------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------- |
 | Required metadata fields and value ranges per document type (`SIL`, `Sec`, `Version`, `Parent`) | `validate_cross_references.py`   | Build fails                                                   |
+| Every H2 heading (outside fenced code) is a valid requirement ID                                | `validate_cross_references.py`   | Build fails                                                   |
 | Every `TODO` uses the form `TODO(KEY-1234)`                                                     | `validate_cross_references.py`   | Build fails                                                   |
 | References use repository-relative paths and a `?version=N` query                               | `validate_cross_references.py`   | Build fails                                                   |
+| Requirement IDs are unique among the files of one `requirement_library`                         | `validate_cross_references.py`   | Build fails                                                   |
+| Requirement IDs are unique among all files of one `release_report`                              | `release_report.py`              | `NOT READY FOR RELEASE`                                       |
 | Referenced requirement file exists and contains the referenced ID                               | `validate_cross_references.py`   | Build fails                                                   |
 | Referenced requirement is in the declared `deps`                                                | `validate_cross_references.py`   | Build fails                                                   |
+| Referenced parameter is declared with exactly that name and version in the parameter file       | `validate_cross_references.py`   | Build fails                                                   |
 | Referenced version is older than the current requirement or parameter version                   | `validate_cross_references.py`   | Warning only                                                  |
 | Parameter keys follow `<name>_v<N>`, versions are consecutive, at most two versions coexist     | `parameter_models.py`            | Build fails                                                   |
+| Every table row has exactly one value per column                                                | `parameter_models.py`            | Build fails                                                   |
+| Floating-point values (scalars and table cells) are finite                                      | `parameter_models.py`            | Build fails                                                   |
 | Scalar types are inferred from the value; table column types are consistent across rows         | `parameter_models.py`            | Build fails                                                   |
 | `implements` and `verifies` reference existing requirement IDs and carry `?version=`            | `extract_source_traceability.py` | Build fails                                                   |
 | Trace version is ahead of the requirement version                                               | `extract_source_traceability.py` | Build fails                                                   |
@@ -82,51 +89,61 @@ FIRE does **not** check that:
   Whether a change is semantic and requires a version increment is a manual decision.
 - A source or test file listed in `implements` or `verifies` exists, contains the claimed implementation, or passes.
 - The set of requirement files passed to `release_report` is the complete set of requirements of the product.
-- Requirement IDs are unique across files.
 - Generated code compiles, is correct for the target language, or matches the parameter file.
 - The `SIL` of a child requirement is consistent with its parent.
-- The parameter `unit` is physically meaningful or consistent between a requirement text and the parameter.
+- The parameter `unit` is physically meaningful, consistent between a requirement text and the parameter, or usable as part of an identifier (L-13).
+- Requirement IDs of files that are never part of the same `requirement_library` or `release_report` are different.
 
 ## Known Limitations
 
-Each limitation was either reproduced with the FIRE scripts at the time of writing or derived from reading the code.
+Each limitation was either reproduced with the FIRE scripts or derived from reading the code.
 The Evidence column states which.
-All Python scripts were run with Python 3.14.
+IDs are stable: they are not reused when a limitation is resolved.
 
-| ID   | Limitation                                                                                                                                                                                                                                                                                                                                     | Evidence                                                       | Direction                                            |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------- |
-| L-1  | **Non-conformant requirement headings are silently skipped.** Only headings that match `## [A-Z][A-Z0-9_-]+` exactly are treated as requirements. A heading such as `## req-lower-002` or `## REQ-TITLE-003 Braking distance` is neither validated nor listed in the release report, even with invalid or missing metadata.                    | Reproduced                                                     | Unsafe (false pass)                                  |
-| L-2  | **Parameter reference existence is checked by text search.** The check looks for the string `<name>_v<N>:` anywhere in the file. A reference `[@speed](…#speed)` passes if the file defines `max_speed_v1`, and so does a key that is commented out. A reference to a version older than the oldest version in the file passes with a warning. | Reproduced (suffix match), code review (comments, old version) | Unsafe (false pass)                                  |
-| L-3  | **Stale references are warnings during validation.** The `requirement_library` build prints `WARNING: REQUIREMENT VERSION MISMATCH` and succeeds. The stale reference only fails the build through the release readiness test.                                                                                                                 | Reproduced                                                     | Depends on gate being used                           |
-| L-4  | **Duplicate requirement IDs are not detected.** Two files with the same ID are both validated. The report lists both and keeps one version (the last one read) for staleness checks. Coverage is evaluated per ID, so a trace for one counts for both.                                                                                         | Reproduced (not detected), code review (version, coverage)     | Unsafe (false pass)                                  |
-| L-5  | **The release gate matches report text.** `release_readiness_test` fails if the report contains `NOT READY FOR RELEASE` anywhere, including in the product name. A report without any status line also fails.                                                                                                                                  | Reproduced                                                     | Safe (false fail)                                    |
-| L-6  | **Traces are declarations.** The files named in `implements` and `verifies` are plain strings, not Bazel labels. Their existence, content, and test results are not checked, and changing them does not invalidate the trace.                                                                                                                  | Code review                                                    | Unsafe (false pass)                                  |
-| L-7  | **Coverage is existence, not adequacy.** One implementing and one verifying trace per requirement ID is sufficient. Only the requirement files passed to `release_report` are assessed; a requirement file left out is absent from the report without a finding.                                                                               | Code review                                                    | Unsafe (false pass)                                  |
-| L-8  | **Table shape is only partly validated.** A row with fewer values than the first row, and rows with more values than there are columns, are accepted. A row longer than the first row aborts validation with an `IndexError` traceback.                                                                                                        | Reproduced                                                     | Unsafe (false pass) / safe (abort)                   |
-| L-9  | **Generated string literals and comments are not escaped.** A string value containing `"` or `\` produces invalid C++ and Rust. A description containing a line break ends the comment, and the remainder is emitted as code. Not tested for Python, Go, and Java, which use the same template approach.                                       | Reproduced (C++, Rust)                                         | Mostly safe (compile error), code injection possible |
-| L-10 | **Non-finite floats are accepted.** `.inf` and `.nan` pass parameter validation and are emitted as the identifier `inf` or `nan`, which is not a valid literal in C++ or Rust.                                                                                                                                                                 | Reproduced                                                     | Safe (compile error)                                 |
-| L-11 | **No tool requirements specification and no coverage metric.** Behavior is defined by README, source code, and tests. CI does not measure code coverage.                                                                                                                                                                                       | Code review                                                    | Qualification effort                                 |
-| L-12 | **PDF rendering depends on the host.** WeasyPrint uses native libraries and fonts of the host. Building PDFs via Bazel is not supported on macOS (see README).                                                                                                                                                                                 | README                                                         | Presentation only                                    |
+| ID   | Limitation                                                                                                                                                                                                                                                                                                                                                                         | Evidence         | Direction                   |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | --------------------------- |
+| L-3  | **Stale references are warnings during validation.** The `requirement_library` build prints `WARNING: REQUIREMENT VERSION MISMATCH` and succeeds. This also applies to a reference to an older version that is still declared in a parameter file. The stale reference only fails the build through the release readiness test.                                                    | Reproduced       | Depends on gate being used  |
+| L-5  | **The release gate matches report text.** `release_readiness_test` fails if the report contains `NOT READY FOR RELEASE` anywhere, including in the product name. A report without any status line also fails.                                                                                                                                                                      | Reproduced       | Safe (false fail)           |
+| L-6  | **Traces are declarations.** The files named in `implements` and `verifies` are plain strings, not Bazel labels. Their existence, content, and test results are not checked, and changing them does not invalidate the trace.                                                                                                                                                      | Code review      | Unsafe (false pass)         |
+| L-7  | **Coverage is existence, not adequacy.** One implementing and one verifying trace per requirement ID is sufficient. Only the requirement files passed to `release_report` are assessed; a requirement file left out is absent from the report without a finding. Traces and the report identify requirements by bare ID, without the file.                                         | Code review      | Unsafe (false pass)         |
+| L-11 | **No tool requirements specification and no coverage metric.** Behavior is defined by README, source code, and tests. CI does not measure code coverage.                                                                                                                                                                                                                           | Code review      | Qualification effort        |
+| L-12 | **PDF rendering depends on the host.** WeasyPrint uses native libraries and fonts of the host. Building PDFs via Bazel is not supported on macOS (see README).                                                                                                                                                                                                                     | README           | Presentation only           |
+| L-13 | **Units become part of identifiers.** The unit is normalized into the suffix of generated constant names. Units with characters that are invalid in identifiers (for example `°C`, `%`, `m/s²`, `dB(A)`) pass validation and generate invalid code, and different units can map to the same suffix (`N·m` and `nm`). Tracked in [#323](https://github.com/nesono/fire/issues/323). | Reproduced (C++) | Mostly safe (compile error) |
 
 "Unsafe" means that a defect can pass undetected, "safe" means that FIRE fails or the product does not compile.
+
+## Resolved Limitations
+
+These limitations were found while writing this manual and are fixed after release 0.6.1.
+Each fix has regression tests (unit tests and failure tests under `fire/starlark/failure_test/`).
+
+| ID   | Was                                                                                                                                                      | Fixed by                                        | Remaining note                                                                                                                                                                                                                                                                                                                                                                      |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L-1  | Headings that are not valid requirement IDs (`## req-lower-002`, `## REQ-TITLE-003 Braking distance`) were skipped by validation and the release report. | [#309](https://github.com/nesono/fire/pull/309) | Only files that pass through `requirement_library` are checked. Requirement titles go on a bold line after the metadata.                                                                                                                                                                                                                                                            |
+| L-2  | A parameter reference was checked by text search: `@speed` matched `max_speed_v1`, commented-out keys counted, and undeclared older versions passed.     | [#311](https://github.com/nesono/fire/pull/311) | A reference to an older version that is still declared only warns (L-3).                                                                                                                                                                                                                                                                                                            |
+| L-4  | Duplicate requirement IDs were not detected.                                                                                                             | [#314](https://github.com/nesono/fire/pull/314) | IDs must be unique within a baseline. Files that never share a `requirement_library` or a `release_report` are not compared (AoU-5).                                                                                                                                                                                                                                                |
+| L-8  | Table rows with too few or too many values were accepted or aborted with a traceback.                                                                    | [#316](https://github.com/nesono/fire/pull/316) | None.                                                                                                                                                                                                                                                                                                                                                                               |
+| L-9  | String values and descriptions were not escaped in the generated code of any of the five languages.                                                      | [#320](https://github.com/nesono/fire/pull/320) | Descriptions and units are flattened to one line in comments, and a trailing backslash is dropped from C++ comments. Trigraphs (`??/`) in strings are not escaped, which matters only for C++ modes that enable trigraphs. CI checks the generated literals and runs the Python output; the other four languages were compiled once outside CI with clang++, Go, rustc, and JDK 17. |
+| L-10 | `.inf` and `.nan` were accepted and generated as invalid identifiers.                                                                                    | [#318](https://github.com/nesono/fire/pull/318) | None.                                                                                                                                                                                                                                                                                                                                                                               |
 
 ## Assumptions of Use
 
 The user is responsible for the following.
 A violated assumption can invalidate the confidence argument for FIRE.
 
-| ID     | Assumption                                                                                                                                                                                  |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AoU-1  | Requirement headings are reviewed or checked to match `## [A-Z][A-Z0-9_-]+` (L-1). Consider a project-side check that every `##` heading in a requirement file is a conformant ID.          |
-| AoU-2  | A `Version` increment is part of the review checklist for every semantic change to a requirement or parameter.                                                                              |
-| AoU-3  | Requirement IDs are unique across the baseline (L-4), for example by an independent check.                                                                                                  |
-| AoU-4  | `release_readiness_test` is part of the release pipeline. Validation warnings are not the only gate (L-3).                                                                                  |
-| AoU-5  | The `requirements`, `params`, and `source_traces` of `release_report` are checked against the complete baseline, for example by comparing against the requirements management source (L-7). |
-| AoU-6  | Trace links are reviewed against the code, and the verifying tests are executed and their results evaluated independently of FIRE (L-6, L-7).                                               |
-| AoU-7  | Generated code is verified: the generated constants are covered by tests or reviewed, and the generated files are compiled in the project's toolchain (UC-4).                               |
-| AoU-8  | Parameter strings and descriptions contain only characters that are valid in all target languages, and no line breaks (L-9). Parameter tables are reviewed for shape (L-8).                 |
-| AoU-9  | The FIRE version, the Bazel version, the Python version, and the pinned Python dependencies (`requirements.txt`) are fixed for a baseline and recorded.                                     |
-| AoU-10 | PDFs and the format specification are not used as the only record of a requirement. The Markdown source is authoritative.                                                                   |
+| ID     | Assumption                                                                                                                                                                                             |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| AoU-2  | A `Version` increment is part of the review checklist for every semantic change to a requirement or parameter.                                                                                         |
+| AoU-4  | `release_readiness_test` is part of the release pipeline. Validation warnings are not the only gate (L-3).                                                                                             |
+| AoU-5  | The `requirements`, `params`, and `source_traces` of `release_report` are checked against the complete baseline, and all requirement files of the baseline are in the same report (L-7, resolved L-4). |
+| AoU-6  | Trace links are reviewed against the code, and the verifying tests are executed and their results evaluated independently of FIRE (L-6, L-7).                                                          |
+| AoU-7  | Generated code is verified: the generated constants are covered by tests or reviewed, and the generated files are compiled in the project's toolchain (UC-4).                                          |
+| AoU-9  | The FIRE version, the Bazel version, the Python version, and the pinned Python dependencies (`requirements.txt`) are fixed for a baseline and recorded.                                                |
+| AoU-10 | PDFs and the format specification are not used as the only record of a requirement. The Markdown source is authoritative.                                                                              |
+| AoU-11 | Parameter units consist only of letters, digits, `/`, `^`, `*`, `·`, spaces, and `-`, and do not map to the same suffix for the same parameter (L-13).                                                 |
+
+AoU-1, AoU-3, and AoU-8 were withdrawn when L-1, L-4, L-8, L-9, and L-10 were resolved.
+IDs are not reused.
 
 ## Guidance for Tool Qualification
 
@@ -150,8 +167,8 @@ TD is the likelihood that a malfunction is prevented or detected.
 FIRE does not give TD for itself.
 Higher TD requires measures in the project, which the assumptions of use point to:
 
-- Reviews of requirements, traces, and generated code (AoU-1, AoU-6, AoU-7).
-- Independent consistency checks of the baseline (AoU-3, AoU-5).
+- Reviews of requirements, traces, and generated code (AoU-6, AoU-7).
+- Independent consistency checks of the baseline (AoU-5).
 - Tests of generated constants in the product test suite (AoU-7).
 
 ### Step 3: Resulting Tool Confidence Level (TCL)
@@ -165,20 +182,21 @@ The options are increased confidence from use, evaluation of the development pro
 The following evidence exists today and may be used in a validation-of-the-tool argument.
 It has not been assessed against a safety standard.
 
-| Evidence                                                                                  | Location                                              |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Unit tests (pytest), colocated with each script as `*_test.py`                            | `fire/starlark/`                                      |
-| Failure tests that confirm invalid inputs fail the build or produce warnings              | `fire/starlark/failure_test/`, `run_failure_tests.sh` |
-| Integration test as a consumer of the module, with a Python version matrix (3.11 to 3.15) | `integration_test/`                                   |
-| Example project with requirements, parameters, and code in five languages                 | `examples/`                                           |
-| CI on Linux and macOS with Bazel 7, 8, and 9; type checking with `ty`; pre-commit checks  | `.github/workflows/ci.yaml`                           |
-| Pinned Python dependencies                                                                | `requirements.txt`, `MODULE.bazel.lock`               |
-| Pull-request based workflow; test-driven development required                             | `AGENT.md`, `CONTRIBUTING.md`                         |
+| Evidence                                                                                  | Location                                                                                              |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Unit tests (pytest), colocated with each script as `*_test.py`                            | `fire/starlark/`                                                                                      |
+| Failure tests that confirm invalid inputs fail the build or produce warnings              | `fire/starlark/failure_test/`, `run_failure_tests.sh`                                                 |
+| Regression tests for every resolved limitation (L-1, L-2, L-4, L-8, L-9, L-10)            | `fire/starlark/*_test.py`, `fire/starlark/generators/escaping_test.py`, `fire/starlark/failure_test/` |
+| Integration test as a consumer of the module, with a Python version matrix (3.11 to 3.15) | `integration_test/`                                                                                   |
+| Example project with requirements, parameters, and code in five languages                 | `examples/`                                                                                           |
+| CI on Linux and macOS with Bazel 7, 8, and 9; type checking with `ty`; pre-commit checks  | `.github/workflows/ci.yaml`                                                                           |
+| Pinned Python dependencies                                                                | `requirements.txt`, `MODULE.bazel.lock`                                                               |
+| Pull-request based workflow; test-driven development required                             | `AGENT.md`, `CONTRIBUTING.md`                                                                         |
 
 A validation-of-the-tool argument additionally needs:
 
 - A tool requirements specification derived from the use cases and failure modes above (L-11).
-- Test cases traced to those requirements, including negative tests for L-1 to L-10.
+- Test cases traced to those requirements, including negative tests for the open limitations. Resolved limitations already have regression tests.
 - A coverage measurement with a justified target.
 - A record of the validation results for the exact FIRE, Bazel, and Python versions used.
 
