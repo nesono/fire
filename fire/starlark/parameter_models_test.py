@@ -355,6 +355,51 @@ class TestParameterFile:
         ):
             ParameterFile.model_validate(data)
 
+    @pytest.mark.parametrize("unit", ["°C", "m/s²", "%", "dB(A)", "N·m"])
+    def test_scalar_unit_with_mappable_symbols_accepted(self, unit):
+        data = {"limit_v1": {"value": 1.0, "unit": unit, "description": "d"}}
+        assert ParameterFile.model_validate(data)
+
+    @pytest.mark.parametrize("unit", ["m.s", "m\nint x;", "m,s"])
+    def test_scalar_unit_with_unsupported_character_rejected(self, unit):
+        data = {"limit_v1": {"value": 1.0, "unit": unit, "description": "d"}}
+        pattern = r"Parameter 'limit_v1': Unit .* unsupported character"
+        with pytest.raises(ValidationError, match=pattern):
+            ParameterFile.model_validate(data)
+
+    def test_table_column_unit_with_unsupported_character_rejected(self):
+        data = self._table([[1.0, 2.0]])
+        data["lookup_v1"]["columns"][1]["unit"] = "m.s"
+        pattern = r"Parameter 'lookup_v1': Column 'c1': Unit .* unsupported character"
+        with pytest.raises(ValidationError, match=pattern):
+            ParameterFile.model_validate(data)
+
+    def test_parameters_with_same_generated_identifier_rejected(self):
+        data = {
+            "speed_v1": {"value": 1.0, "unit": "m", "description": "d"},
+            "speed_m_v1": {"value": 2.0, "unit": "1", "description": "d"},
+        }
+        pattern = r"'speed' and 'speed_m' generate the same identifier 'speed_m'"
+        with pytest.raises(ValidationError, match=pattern):
+            ParameterFile.model_validate(data)
+
+    def test_versions_with_different_units_accepted(self):
+        data = {
+            "speed_v1": {"value": 1.0, "unit": "m/s", "description": "d"},
+            "speed_v2": {"value": 3.6, "unit": "km/h", "description": "d"},
+        }
+        assert ParameterFile.model_validate(data)
+
+    def test_columns_with_same_generated_field_name_rejected(self):
+        data = self._table([[1.0, 2.0]])
+        data["lookup_v1"]["columns"] = [
+            {"name": "speed", "unit": "m"},
+            {"name": "speed_m", "unit": "1"},
+        ]
+        pattern = r"Parameter 'lookup_v1': columns 'speed' and 'speed_m' generate"
+        with pytest.raises(ValidationError, match=pattern):
+            ParameterFile.model_validate(data)
+
     def test_table_with_matching_rows_accepted(self):
         pf = ParameterFile.model_validate(self._table([[1.0, 2.0], [3.0, 4.0]]))
         assert isinstance(pf.root["lookup_v1"], TableParameter)

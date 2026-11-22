@@ -1,0 +1,4 @@
+speed_v1:
+  value: 1.0
+  unit: m.s
+  description: The dot is not valid in an identifier

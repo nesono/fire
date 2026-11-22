@@ -304,6 +304,10 @@ for target in $FAILURE_TARGETS; do
         elif grep -q "must be finite" <<< "$output"; then
             echo "✅ PASS: Build failed with non-finite value error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for units that cannot be used in identifiers (should FAIL)
+        elif echo "$output" | grep -qE "unsupported character|generate the same (identifier|field name)"; then
+            echo "✅ PASS: Build failed with unit identifier error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Check for Pydantic validation errors (should FAIL)
         elif grep -qE "not a valid boolean|not a valid enumeration member|Input should be one of|not a valid integer|greater than or equal" <<< "$output"; then
             echo "✅ PASS: Build failed with Pydantic validation error"

@@ -31,39 +31,7 @@ from fire.starlark.generators.go import generate_go_files
 from fire.starlark.generators.java import generate_java_files
 from fire.starlark.generators.python import generate_python_files
 from fire.starlark.generators.rust import generate_rust_files
-
-
-def normalize_unit_suffix(unit: str) -> str:
-    """Convert unit string to valid identifier suffix.
-
-    Args:
-        unit: Unit string (e.g., "m/s", "m/s^2", "m^3", "1")
-
-    Returns:
-        Normalized suffix (e.g., "mps", "mps2", "m3", "")
-
-    Examples:
-        "m/s"    -> "mps"    (meters per second)
-        "m/s^2"  -> "mps2"   (meters per second squared)
-        "rad/s"  -> "radps"  (radians per second)
-        "m^3"    -> "m3"     (cubic meters)
-        "kg/m^3" -> "kgpm3"  (kilograms per cubic meter)
-        "m"      -> "m"      (meters)
-        "1"      -> ""       (dimensionless quantity)
-        "dimensionless" -> ""
-    """
-    if not unit or unit == "1" or unit.lower() == "dimensionless":
-        return ""
-
-    suffix = unit.lower()
-    suffix = suffix.replace("/", "p")  # "/" means "per" -> "p"
-    suffix = suffix.replace("^", "")  # Remove caret, keep exponent
-    suffix = suffix.replace("·", "")  # Remove SI dot (if used)
-    suffix = suffix.replace("*", "")  # Remove asterisk (if used)
-    suffix = suffix.replace(" ", "")  # Remove spaces
-    suffix = suffix.replace("-", "")  # Remove hyphens (for negative exponents)
-
-    return suffix
+from fire.starlark.unit_suffix import normalize_unit_suffix
 
 
 def yaml_to_items(yaml_data):

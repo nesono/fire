@@ -1,0 +1,9 @@
+speed_v1:
+  value: 1.0
+  unit: m
+  description: Generates SPEED_M
+
+speed_m_v1:
+  value: 2.0
+  unit: "1"
+  description: Also generates SPEED_M
