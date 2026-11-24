@@ -22,11 +22,13 @@ Without Bazel, install the pinned packages from `requirements.txt` and run
 ```lua
 vim.lsp.config("fire_ls", {
   cmd = { "/absolute/path/to/fire/bazel-bin/fire/lsp/fire_ls" },
-  filetypes = { "markdown" },
+  filetypes = { "markdown", "yaml" },
   root_markers = { "MODULE.bazel" },
 })
 vim.lsp.enable("fire_ls")
 ```
+
+`"yaml"` is only needed for parameter files, see below.
 
 Documents whose file name does not end in a configured document-type suffix are
 ignored, so other Markdown files are unaffected.
@@ -65,7 +67,20 @@ content. In Neovim use `vim.lsp.buf.references()`.
 The outline of a requirement file lists each requirement ID with its metadata
 as detail. In a parameter YAML file it lists each `name_vN` key. In Neovim use
 `vim.lsp.buf.document_symbol()`. Parameter files are only outlined if the editor
-sends them to the server, which the Neovim example above does not do.
+sends them to the server (`"yaml"` in `filetypes`).
+
+## Parameter files
+
+Parameter YAML files are validated with the same rules as the build, and each
+error is shown where it occurs. A `.yaml` file is treated as a parameter file if
+it has a top-level key ending in `_v<digits>` (such as `max_speed_v1:`), so CI or
+Docker YAML files are ignored. A wrongly written key like `maxSpeed_v1` still
+counts, but a file whose only key lost its `_vN` suffix no longer does. The editor
+must send YAML files to the server, so add `"yaml"` to `filetypes`.
+
+Like the build, the whole-file rules (key names, version gaps, more than two
+versions, colliding identifiers) are only checked once every parameter itself is
+valid, so they can appear after earlier errors are fixed.
 
 ## Workspace symbols
 

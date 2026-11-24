@@ -132,6 +132,7 @@ py_library(
         ":diagnostics",
         ":link_index",
         ":navigation",
+        ":parameter_diagnostics",
         ":reference_diagnostics",
         ":references",
         ":symbol_search",

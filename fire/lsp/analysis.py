@@ -18,6 +18,10 @@ from fire.lsp.conversion import (
 from fire.lsp.diagnostics import diagnose_requirements
 from fire.lsp.link_index import LinkIndex
 from fire.lsp.navigation import definition_at
+from fire.lsp.parameter_diagnostics import (
+    diagnose_parameters,
+    looks_like_parameter_file,
+)
 from fire.lsp.reference_diagnostics import ReferenceChecker
 from fire.lsp.references import (
     ReferenceTarget,
@@ -75,6 +79,8 @@ class Analyzer:
         path = uri_to_path(uri)
         if path is None:
             return []
+        if path.suffix == _YAML_SUFFIX:
+            return self._diagnose_parameters(text)
         model = model_for_suffix(self._config, self._models, str(path))
         if model is None:
             return []
@@ -85,6 +91,12 @@ class Analyzer:
                 text, model, self._references(path, overlay or {})
             )
         ]
+
+    def _diagnose_parameters(self, text: str) -> list[lsp.Diagnostic]:
+        if not looks_like_parameter_file(text):
+            return []
+        lines = text.split("\n")
+        return [to_lsp_diagnostic(d, lines) for d in diagnose_parameters(text)]
 
     def definition(
         self,
