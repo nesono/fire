@@ -74,13 +74,13 @@ source_traceability(
     },
     deps = ["//requirements:integration_requirements"],
     implements = {
-        "consumer/test.cpp": [
+        "//consumer:test_cpp.cc": [
             "REQ-INT-001?version=1",
             "REQ-INT-002?version=1",
             "REQ-INT-003?version=1",
             "REQ-INT-004?version=1",
         ],
-        "consumer/test.rs": [
+        "//consumer:test_rust.rs": [
             "REQ-INT-001?version=1",
             "REQ-INT-002?version=1",
             "REQ-INT-003?version=1",

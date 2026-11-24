@@ -31,7 +31,7 @@ def _extract_source_traceability_impl(ctx):
         script = ctx.executable._script,
         script_target = ctx.attr._script,
         args = args,
-        extra_inputs = ctx.files.deps,
+        extra_inputs = ctx.files.deps + [f for f in ctx.files.srcs if f.is_source],
         outputs = [output],
         mnemonic = "ExtractSourceTraceability",
         progress_message = "Extracting source traceability for %s" % ctx.label.name,
@@ -56,6 +56,11 @@ _extract_source_traceability = rule(
         "out": attr.output(
             mandatory = True,
         ),
+        "srcs": attr.label_list(
+            allow_files = True,
+            default = [],
+            doc = "File names (keys without a colon) named in implements and verifies. They are inputs of the action, so Bazel fails if they do not exist; the script does not read them.",
+        ),
         "verifies": attr.string_list_dict(
             default = {},
             doc = "Dict mapping test files to versioned requirement refs they verify",
@@ -74,13 +79,16 @@ def source_traceability(name, deps, implements = {}, verifies = {}, tags = [], v
 
     Maps source files to the specific requirement IDs they implement or
     verify, with version tracking. Produces a <name>.trace.json and
-    validates that all referenced requirement IDs exist in deps.
+    validates that all referenced requirement IDs exist in deps. Keys of
+    implements and verifies without a colon are file names in this package
+    and must exist. Keys with a colon (":test_target", "//pkg:file") are not
+    checked.
 
     Args:
         name: Name of the target
         deps: List of requirement libraries containing the referenced requirements
         implements: Dict mapping source files to lists of "REQ_ID?version=N" strings
-        verifies: Dict mapping test files to lists of "REQ_ID?version=N" strings
+        verifies: Dict mapping test files or test targets to lists of "REQ_ID?version=N" strings
         tags: Tags for this target
         visibility: Visibility of the target
 
@@ -107,6 +115,7 @@ def source_traceability(name, deps, implements = {}, verifies = {}, tags = [], v
         name = name,
         deps = deps,
         implements = implements,
+        srcs = {key: True for key in implements.keys() + verifies.keys() if ":" not in key}.keys(),
         verifies = verifies,
         out = name + ".trace.json",
         tags = tags,
