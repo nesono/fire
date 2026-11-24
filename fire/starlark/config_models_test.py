@@ -69,6 +69,32 @@ class TestDocumentTypeDefinition:
         with pytest.raises(ValueError, match="must end with '.md'"):
             DocumentTypeDefinition(suffix=".sysreq.yaml", display_name="Bad")
 
+    def _doc_type(self, **extra):
+        return DocumentTypeDefinition(
+            suffix=".sysreq.md", display_name="System Requirement", **extra
+        )
+
+    def test_unset_coverage_requires_implementation_and_verification(self):
+        assert self._doc_type().required_coverage() == [
+            "implementation",
+            "verification",
+        ]
+
+    def test_explicit_coverage_is_returned(self):
+        dt = self._doc_type(coverage=["child"])
+        assert dt.required_coverage() == ["child"]
+
+    def test_empty_coverage_requires_nothing(self):
+        assert self._doc_type(coverage=[]).required_coverage() == []
+
+    def test_unknown_coverage_kind_rejected(self):
+        with pytest.raises(ValueError, match="coverage"):
+            self._doc_type(coverage=["testing"])
+
+    def test_duplicate_coverage_rejected(self):
+        with pytest.raises(ValueError, match="must not contain duplicates"):
+            self._doc_type(coverage=["child", "child"])
+
 
 class TestFireConfig:
     def _minimal_config(self, **overrides):
@@ -139,6 +165,15 @@ class TestLoadConfig:
         assert regreq.required_fields == ["version"]
         assert set(regreq.optional_fields) == {"sil", "sec", "parent"}
 
+    def test_default_coverage_per_document_type(self):
+        cfg = load_config()
+        assert cfg.document_types["sysreq"].required_coverage() == ["child"]
+        assert cfg.document_types["swreq"].required_coverage() == [
+            "implementation",
+            "verification",
+        ]
+        assert cfg.document_types["regreq"].required_coverage() == ["verification"]
+
     def test_default_sil_values(self):
         cfg = load_config()
         sil = cfg.field_definitions["sil"]
@@ -174,6 +209,28 @@ class TestLoadConfig:
         cfg = load_config(config_file)
         assert "handbook" in cfg.document_types
         assert cfg.document_types["handbook"].suffix == ".handbook.md"
+
+    def test_custom_config_without_coverage_keeps_previous_behavior(self, tmp_path):
+        config_file = tmp_path / "fire_config.yaml"
+        config_file.write_text(
+            yaml.dump(
+                {
+                    "fire_config_version": 1,
+                    "field_definitions": {
+                        "version": {"display_name": "Version", "type": "int"}
+                    },
+                    "document_types": {
+                        "sysreq": {
+                            "suffix": ".sysreq.md",
+                            "display_name": "System Requirement",
+                            "required_fields": ["version"],
+                        }
+                    },
+                }
+            )
+        )
+        sysreq = load_config(config_file).document_types["sysreq"]
+        assert sysreq.required_coverage() == ["implementation", "verification"]
 
     def test_load_nonexistent_file(self, tmp_path):
         with pytest.raises(OSError):
