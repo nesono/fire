@@ -366,15 +366,30 @@ IDs and versions ahead of the requirement fail the build. When a requirement is
 incremented past the version a trace declares, the build prints an `OUTDATED`
 warning so the source can be reviewed and re-pinned.
 
-The release report itself checks trace coverage — that each requirement has at
-least one implementing and one verifying source — and reports the rest as
-missing implementation or verification traces.
+The release report checks that each requirement has the coverage its document
+type requires (see [Release Readiness Report](#release-readiness-report)) and
+reports the rest as missing implementation or verification traces.
 
 ## Release Readiness Report
 
 The release readiness report checks version consistency across requirements and
-parameters, requirement ID uniqueness, open TODOs, and
-implementation/verification trace coverage.
+parameters, requirement ID uniqueness, open TODOs, and coverage.
+
+**Coverage** is what each requirement needs to be considered covered, and
+depends on its document type:
+
+| Coverage         | Satisfied when                                             |
+| ---------------- | ---------------------------------------------------------- |
+| `child`          | another requirement lists it as `Parent` (any version)     |
+| `implementation` | a `source_traceability` target lists it under `implements` |
+| `verification`   | a `source_traceability` target lists it under `verifies`   |
+
+The built-in types require `child` for `sysreq`, `implementation` and
+`verification` for `swreq`, and `verification` for `regreq`. Files without a
+known suffix require `implementation` and `verification`. Requirements that miss
+their coverage are listed in the report and make it `NOT READY FOR RELEASE`.
+Configure the coverage per type in
+[Custom Document Types](#custom-document-types).
 
 ```starlark
 load("@fire//fire/starlark:reports.bzl", "release_report", "release_readiness_test")
@@ -436,6 +451,7 @@ document_types:
     display_name: "System Requirement"
     required_fields: [sil, version]
     optional_fields: []
+    coverage: [child]
 
   # Add your own types
   handbook:
@@ -444,7 +460,13 @@ document_types:
     description: "Product handbook entries"
     required_fields: [version]
     optional_fields: [sil]
+    coverage: [] # entries need neither children nor traces
 ```
+
+`coverage` lists what the release report requires of a type (`child`,
+`implementation`, `verification`). A type that does not declare it requires
+`implementation` and `verification`, as FIRE did for every type before
+coverage was configurable; use `coverage: []` for types that need none.
 
 Pass the config to FIRE rules:
 

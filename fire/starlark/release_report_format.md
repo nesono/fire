@@ -54,6 +54,7 @@ or when issues are found:
 - ⚠️ Duplicate requirement IDs: **1** ([details](#requirement-id-uniqueness))
 - ⚠️ Missing implementation traces: **5** ([details](#missing-implementation-traces))
 - ⚠️ Missing verification traces: **3** ([details](#missing-verification-traces))
+- ⚠️ Missing child requirements: **1** ([details](#missing-child-requirements))
 - ⚠️ Stale references: **2** ([details](#version-consistency))
 - ⚠️ Open TODOs: **1** ([details](#todo-inventory))
 ```
@@ -106,11 +107,20 @@ Lists all TODO markers found in requirement and parameter files:
 
 TODOs must follow the pattern `TODO(TICKET-ID)` where TICKET-ID matches `[A-Z]+-[0-9]+`.
 
-### 5. Implementation & Verification Coverage
+### 5. Coverage
 
-Lists requirements missing implementation or verification traces:
+Lists the coverage each document type requires (`child`, `implementation`,
+`verification`; configurable in `fire_config.yaml`), then the requirements that
+lack it:
 
 ```markdown
+### Required Coverage
+
+- System Requirement (`.sysreq.md`): child
+- Software Requirement (`.swreq.md`): implementation, verification
+- Regulatory Requirement (`.regreq.md`): verification
+- Other files: implementation, verification
+
 ### Missing Implementation Traces
 
 - [REQ-ABC-001](path/to/file.md#REQ-ABC-001)
@@ -119,7 +129,15 @@ Lists requirements missing implementation or verification traces:
 ### Missing Verification Traces
 
 - [REQ-ABC-003](path/to/file.md#REQ-ABC-003)
+
+### Missing Child Requirements
+
+- [REQ-SYS-004](path/to/file.md#REQ-SYS-004)
 ```
+
+A requirement counts as having a child when another requirement lists it as
+`Parent`, whatever version that link pins. Stale links are reported separately
+under Version Consistency.
 
 ### 6. Traceability Graph
 

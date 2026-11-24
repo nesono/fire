@@ -13,7 +13,12 @@ from fire.starlark import (
     path_common,
     validate_cross_references,
 )
-from fire.starlark.config_models import FireConfig, load_config
+from fire.starlark.config_models import (
+    LEGACY_COVERAGE,
+    DocumentTypeDefinition,
+    FireConfig,
+    load_config,
+)
 from fire.starlark.patterns import REQ_ID_PATTERN, TODO_PATTERN
 from fire.starlark.version_tracking import (
     build_param_version_map,
@@ -137,6 +142,20 @@ def parse_requirement_sections(
     return sections
 
 
+def collect_parent_references(
+    section: dict,
+) -> list[tuple[str, int | None, str | None]]:
+    """Collect the requirements a section lists as ``Parent`` with their versions."""
+    refs: list[tuple[str, int | None, str | None]] = []
+    parent = section["metadata"].get("parent")
+    for parent_value in parent if isinstance(parent, list) else []:
+        match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, str(parent_value))
+        if match:
+            _, version = path_common.extract_version_from_url(match.group(2))
+            refs.append((match.group(1), version, match.group(2)))
+    return refs
+
+
 def collect_requirement_references(
     section: dict,
 ) -> list[tuple[str, int | None, str | None]]:
@@ -145,17 +164,7 @@ def collect_requirement_references(
     for req_id, path in markdown_common.extract_requirement_references(section["body"]):
         _, version = path_common.extract_version_from_url(path)
         refs.append((req_id, version, path))
-    parent = section["metadata"].get("parent")
-    if isinstance(parent, list):
-        for parent_value in parent:
-            if isinstance(parent_value, str):
-                match = re.match(markdown_common.MARKDOWN_LINK_PATTERN, parent_value)
-                if match:
-                    parent_id = match.group(1)
-                    parent_path = match.group(2)
-                    _, version = path_common.extract_version_from_url(parent_path)
-                    refs.append((parent_id, version, parent_path))
-    return refs
+    return refs + collect_parent_references(section)
 
 
 def collect_param_references(
@@ -253,6 +262,54 @@ def find_stale_trace_versions(
             if current is not None and current != version:
                 stale.append((param, "param", version, current))
     return stale
+
+
+def _document_type_for(path: str, config: FireConfig) -> DocumentTypeDefinition | None:
+    matches = [dt for dt in config.document_types.values() if path.endswith(dt.suffix)]
+    return max(matches, key=lambda dt: len(dt.suffix), default=None)
+
+
+def _required_coverage(section: dict, config: FireConfig) -> list[str]:
+    doc_type = _document_type_for(section["file_path"], config)
+    return doc_type.required_coverage() if doc_type else list(LEGACY_COVERAGE)
+
+
+def find_missing_coverage(
+    sections: list[dict],
+    trace_index: dict[str, dict[str, list[dict]]],
+    config: FireConfig,
+) -> dict[str, list[dict]]:
+    """Find the requirements that lack the coverage their document type requires."""
+    parented = {pid for s in sections for pid, _, _ in collect_parent_references(s)}
+    covered = {
+        "child": parented,
+        "implementation": set(trace_index["impl"]),
+        "verification": set(trace_index["verif"]),
+    }
+    missing: dict[str, list[dict]] = {kind: [] for kind in covered}
+    for section in sections:
+        for kind in _required_coverage(section, config):
+            if section["id"] not in covered[kind]:
+                missing[kind].append(section)
+    return missing
+
+
+def _required_coverage_lines(config: FireConfig) -> list[str]:
+    lines = ["### Required Coverage", ""]
+    for doc_type in config.document_types.values():
+        kinds = ", ".join(doc_type.required_coverage()) or "none"
+        lines.append(f"- {doc_type.display_name} (`{doc_type.suffix}`): {kinds}")
+    lines.append(f"- Other files: {', '.join(LEGACY_COVERAGE)}")
+    lines.append("")
+    return lines
+
+
+def _missing_coverage_lines(title: str, sections: list[dict]) -> list[str]:
+    lines = [f"### {title}"]
+    for section in sections:
+        lines.append(f"- [{section['id']}]({section['file_path']}#{section['id']})")
+    lines.append("")
+    return lines
 
 
 def _find_duplicate_requirement_ids(sections: list[dict]) -> dict[str, list[str]]:
@@ -356,14 +413,11 @@ def generate_release_report(
         all_trace_entries, requirement_versions, param_versions
     )
 
-    missing_impl: list[dict] = []
-    missing_verif: list[dict] = []
-    for section in sections:
-        req_id = section["id"]
-        if req_id not in trace_index["impl"]:
-            missing_impl.append(section)
-        if req_id not in trace_index["verif"]:
-            missing_verif.append(section)
+    coverage_config = config if config is not None else load_config()
+    missing = find_missing_coverage(sections, trace_index, coverage_config)
+    missing_impl = missing["implementation"]
+    missing_verif = missing["verification"]
+    missing_child = missing["child"]
 
     duplicate_ids = _find_duplicate_requirement_ids(sections)
 
@@ -374,6 +428,8 @@ def generate_release_report(
         readiness_issues.append("Missing implementation traces")
     if missing_verif:
         readiness_issues.append("Missing verification traces")
+    if missing_child:
+        readiness_issues.append("Missing child requirements")
     if stale_req_refs:
         readiness_issues.append("Stale requirement references")
     if stale_param_refs:
@@ -412,6 +468,11 @@ def generate_release_report(
             lines.append(
                 f"- ⚠️  Missing verification traces: **{len(missing_verif)}** "
                 f"([details](#missing-verification-traces))"
+            )
+        if missing_child:
+            lines.append(
+                f"- ⚠️  Missing child requirements: **{len(missing_child)}** "
+                f"([details](#missing-child-requirements))"
             )
         if stale_total > 0:
             lines.append(
@@ -513,24 +574,18 @@ def generate_release_report(
             lines.append(f"- {error}")
     lines.append("")
 
-    lines.append("## Implementation & Verification Coverage")
+    lines.append("## Coverage")
     lines.append("")
-    if missing_impl:
-        lines.append("### Missing Implementation Traces")
-        for section in missing_impl:
-            req_id = section["id"]
-            source_link = f"{section['file_path']}#{req_id}"
-            lines.append(f"- [{req_id}]({source_link})")
-        lines.append("")
-    if missing_verif:
-        lines.append("### Missing Verification Traces")
-        for section in missing_verif:
-            req_id = section["id"]
-            source_link = f"{section['file_path']}#{req_id}"
-            lines.append(f"- [{req_id}]({source_link})")
-        lines.append("")
-    if not missing_impl and not missing_verif:
-        lines.append("- All requirements have implementation and verification traces.")
+    lines.extend(_required_coverage_lines(coverage_config))
+    for title, found in (
+        ("Missing Implementation Traces", missing_impl),
+        ("Missing Verification Traces", missing_verif),
+        ("Missing Child Requirements", missing_child),
+    ):
+        if found:
+            lines.extend(_missing_coverage_lines(title, found))
+    if not (missing_impl or missing_verif or missing_child):
+        lines.append("- All requirements meet the coverage required by their type.")
         lines.append("")
 
     lines.append("## Traceability Graph")

@@ -22,6 +22,20 @@ class TestGenerateFormatSpec:
             assert dt.display_name in output
             assert dt.suffix in output
 
+    def test_states_required_coverage_per_document_type(self, default_config):
+        output = generate_format_spec(default_config)
+        sections = output.split("### Release Coverage")
+        assert len(sections) == 4  # one per built-in document type
+        assert sections[1].lstrip().startswith("The release report requires: `child`")
+        assert "`implementation`, `verification`" in sections[2].split("\n")[2]
+        assert "`verification`" in sections[3].split("\n")[2]
+
+    def test_states_when_no_coverage_is_required(self, default_config):
+        config = default_config.model_copy(deep=True)
+        config.document_types["sysreq"].coverage = []
+        output = generate_format_spec(config)
+        assert "The release report requires no coverage." in output
+
     def test_contains_sil_values(self, default_config):
         output = generate_format_spec(default_config)
         assert "ASIL-A" in output
