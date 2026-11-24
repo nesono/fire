@@ -262,5 +262,38 @@ class TestReferences:
         assert _ANALYZER.references(uri, _REQS, lsp.Position(0, 5), False) == []
 
 
+_MISSING_UNIT = "max_speed_v1:\n  value: 30.0\n  description: Maximum speed\n"
+
+
+class TestParameterFiles:
+    def test_missing_unit_is_reported(self):
+        (diag,) = _ANALYZER.diagnose("file:///a/params.yaml", _MISSING_UNIT)
+        assert diag.code == "FIRE018"
+        assert diag.severity == lsp.DiagnosticSeverity.Error
+        assert diag.range.start == lsp.Position(0, 0)
+        assert "unit" in diag.message
+
+    def test_syntax_error_is_reported(self):
+        (diag,) = _ANALYZER.diagnose("file:///a/params.yaml", "a_v1:\n  value: [1, 2\n")
+        assert diag.code == "FIRE017"
+
+    def test_valid_parameter_file(self):
+        text = "a_v1:\n  value: 1\n  unit: m\n  description: d\n"
+        assert _ANALYZER.diagnose("file:///a/params.yaml", text) == []
+
+    def test_other_yaml_files_are_ignored(self):
+        text = "name: ci\non: push\njobs: {}\n"
+        assert _ANALYZER.diagnose("file:///a/.github/ci.yaml", text) == []
+
+    def test_columns_are_utf16(self):
+        line = 'a_v1: {value: "😀", unit: m, description: d, extra: 1}'
+        (diag,) = _ANALYZER.diagnose("file:///a/params.yaml", line + "\n")
+        assert diag.range.start.character == line.index("extra") + 1
+
+    def test_yaml_documents_do_not_need_a_workspace(self, tmp_path):
+        uri = (tmp_path / "params.yaml").as_uri()
+        assert [d.code for d in _ANALYZER.diagnose(uri, _MISSING_UNIT)] == ["FIRE018"]
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
