@@ -14,6 +14,7 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 load("//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_go_parameters", "generate_java_parameters", "generate_python_parameters", "generate_rust_parameters")
 load("//fire/starlark:parameters.bzl", "parameter_library")
+load("//fire/starlark/failure_test:macros.bzl", "discoverable")
 
 # Generate parameter library from test YAML
 parameter_library(
@@ -124,9 +125,10 @@ go_binary(
 )
 
 # Rust - should fail to compile: constant not found
-rust_binary(
+discoverable(
     name = "test_version_too_old_rust",
     srcs = ["test_version_too_old_rust.rs"],
+    rule = rust_binary,
     tags = [
         "failure_test",
         "manual",
@@ -166,9 +168,10 @@ cc_binary(
 )
 
 # Rust - should emit deprecation warning at compile time
-rust_binary(
+discoverable(
     name = "test_version_upgraded_rust",
     srcs = ["test_version_upgraded_rust.rs"],
+    rule = rust_binary,
     tags = [
         "failure_test",
         "manual",

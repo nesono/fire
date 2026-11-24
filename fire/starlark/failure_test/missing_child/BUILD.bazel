@@ -5,9 +5,9 @@ requirement has no child requirement.
 They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
 """
 
-load("//fire/starlark:reports.bzl", "release_report")
+load("//fire/starlark:reports.bzl", "release_readiness_test", "release_report")
 load("//fire/starlark:requirements.bzl", "requirement_library")
-load(":not_ready.bzl", "release_not_ready_test")
+load("//fire/starlark/failure_test:macros.bzl", "discoverable")
 
 requirement_library(
     name = "orphan_requirements",
@@ -22,7 +22,13 @@ release_report(
 )
 
 # System requirement without a child requirement - should FAIL
-release_not_ready_test(
+discoverable(
     name = "test_missing_child",
     report = ":orphan_report",
+    rule = release_readiness_test,
+    tags = [
+        "failure_test",
+        "manual",
+        "release_not_ready",
+    ],
 )
