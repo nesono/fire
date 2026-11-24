@@ -17,7 +17,7 @@ _NAME: Final = "fire-ls"
 _VERSION: Final = "0.1.0"
 _WATCHED_GLOBS: Final = ("**/*.md", "**/*.yaml")
 _WATCH_REGISTRATION_ID: Final = "fire-watch-linked-files"
-_COMPLETION_TRIGGERS: Final = [":", " "]
+_COMPLETION_TRIGGERS: Final = [":", " ", "(", "/", "?", "#", "="]
 
 
 def _publish(

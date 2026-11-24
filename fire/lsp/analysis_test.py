@@ -340,5 +340,62 @@ class TestCompletions:
         )
 
 
+class TestLinkCompletions:
+    def _workspace(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        (tmp_path / "reqs.sysreq.md").write_text("## REQ-A\n\nVersion: 3\n")
+        (tmp_path / "params.yaml").write_text(
+            "max_speed_v1:\n  value: 1\nmax_speed_v2:\n  value: 2\n"
+        )
+        return tmp_path
+
+    def _items(self, root, marked: str, overlay=None):
+        before, _, after = marked.partition("§")
+        line = before.count("\n")
+        character = len(before[before.rfind("\n") + 1 :].encode("utf-16-le")) // 2
+        uri = (root / "doc.sysreq.md").as_uri()
+        position = lsp.Position(line, character)
+        return _ANALYZER.completions(uri, before + after, position, overlay)
+
+    def test_workspace_files_after_the_opening_parenthesis(self, tmp_path):
+        root = self._workspace(tmp_path)
+        items = self._items(root, "See [@max_speed](§")
+        assert [i.label for i in items] == ["/params.yaml", "/reqs.sysreq.md"]
+        assert items[0].kind == lsp.CompletionItemKind.File
+
+    def test_unsaved_files_are_offered(self, tmp_path):
+        root = self._workspace(tmp_path)
+        overlay = {root / "draft.sysreq.md": "## REQ-D\n\nVersion: 1\n"}
+        labels = [i.label for i in self._items(root, "[x](§", overlay)]
+        assert "/draft.sysreq.md" in labels
+
+    def test_versions_of_a_parameter(self, tmp_path):
+        root = self._workspace(tmp_path)
+        items = self._items(root, "[@max_speed](/params.yaml?version=§")
+        assert [i.label for i in items] == ["2", "1"]
+
+    def test_unsaved_target_decides_the_version(self, tmp_path):
+        root = self._workspace(tmp_path)
+        overlay = {root / "reqs.sysreq.md": "## REQ-A\n\nVersion: 9\n"}
+        items = self._items(root, "[REQ-A](/reqs.sysreq.md?version=§", overlay)
+        assert [i.label for i in items] == ["9"]
+
+    def test_anchors_of_a_requirement_file(self, tmp_path):
+        root = self._workspace(tmp_path)
+        items = self._items(root, "[x](/reqs.sysreq.md?version=3#§")
+        assert [i.label for i in items] == ["REQ-A"]
+
+    def test_columns_are_utf16(self, tmp_path):
+        root = self._workspace(tmp_path)
+        items = self._items(root, "😀 [x](/re§")
+        start = items[0].text_edit.range.start.character
+        assert start == len("😀 [x](") + 1
+
+    def test_without_a_workspace_only_metadata_is_completed(self):
+        uri = "file:///nowhere/a.sysreq.md"
+        items = _ANALYZER.completions(uri, "[x](/", lsp.Position(0, 5))
+        assert items == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

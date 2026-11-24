@@ -19,6 +19,7 @@ from fire.lsp.conversion import (
 )
 from fire.lsp.diagnostics import diagnose_requirements
 from fire.lsp.link_index import LinkIndex
+from fire.lsp.link_completion import link_candidates
 from fire.lsp.navigation import definition_at
 from fire.lsp.parameter_diagnostics import (
     diagnose_parameters,
@@ -100,18 +101,34 @@ class Analyzer:
                 return doc_type
         return None
 
+    def _link_files(self, root: Path, overlay: Mapping[Path, str]) -> list[str]:
+        """Repository-relative paths of the files that define symbols to link to."""
+        symbols = self._index_for(root).symbols(overlay)
+        return sorted({"/" + symbol.container for symbol in symbols})
+
     def completions(
-        self, uri: str, text: str, position: lsp.Position
+        self,
+        uri: str,
+        text: str,
+        position: lsp.Position,
+        overlay: Mapping[Path, str] | None = None,
     ) -> list[lsp.CompletionItem]:
-        """Complete metadata field names and values in a requirement document."""
+        """Complete metadata lines and link URLs in a requirement document."""
         path = uri_to_path(uri)
         doc_type = self._document_type(path) if path else None
-        if doc_type is None:
+        if path is None or doc_type is None:
             return []
         lines = text.split("\n")
         cursor = from_lsp_position(position, lines)
         fields = self._config.field_definitions
         candidates = metadata_candidates(text, cursor, doc_type, fields)
+        workspace = self._workspace(path, overlay or {})
+        if workspace is not None:
+
+            def files() -> list[str]:
+                return self._link_files(workspace.root, overlay or {})
+
+            candidates += link_candidates(text, cursor, workspace, files)
         return [to_lsp_completion_item(c, lines) for c in candidates]
 
     def _diagnose_parameters(self, text: str) -> list[lsp.Diagnostic]:
