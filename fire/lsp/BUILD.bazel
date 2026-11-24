@@ -420,3 +420,23 @@ py_test(
         "@pip//pytest",
     ],
 )
+
+py_library(
+    name = "yaml_nodes",
+    srcs = ["yaml_nodes.py"],
+    deps = [
+        ":document_parser",
+        "@pip//pyyaml",
+    ],
+)
+
+py_test(
+    name = "yaml_nodes_test",
+    size = "small",
+    srcs = ["yaml_nodes_test.py"],
+    deps = [
+        ":document_parser",
+        ":yaml_nodes",
+        "@pip//pytest",
+    ],
+)
