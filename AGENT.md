@@ -92,6 +92,11 @@ Always keep the documentation up to date. When changing the interfaces or
 behavior, make sure that there is no contradicting documentation in the
 repository.
 
+Record every user-visible change in the `[Unreleased]` section of
+[[CHANGELOG.md]] in the same PR: new features, changed or stricter behavior
+(under "Breaking changes", with what to change), and fixes. Do not list
+internal changes such as tests or refactoring.
+
 Please keep the information to the points mentioned, no other information like
 Test Results, "Benefits", etc.
 
