@@ -22,12 +22,10 @@ class Target:
 
 
 def _contains(link: Link, position: Position) -> bool:
-    """True if *position* is within ``[text](url)``, brackets included."""
-    if position.line != link.text_range.start.line:
+    span = link.span
+    if position.line != span.start.line:
         return False
-    start = link.text_range.start.character - 1
-    end = link.url_range.end.character + 1
-    return start <= position.character < end
+    return span.start.character <= position.character < span.end.character
 
 
 def link_at(text: str, position: Position) -> Link | None:
