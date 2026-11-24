@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Final
 
 from lsprotocol import types as lsp
+from pygls.capabilities import ServerCapabilitiesBuilder
 from pygls.lsp.server import LanguageServer
 
 from fire.lsp.analysis import Analyzer
@@ -18,6 +19,23 @@ _VERSION: Final = "0.1.0"
 _WATCHED_GLOBS: Final = ("**/*.md", "**/*.yaml")
 _WATCH_REGISTRATION_ID: Final = "fire-watch-linked-files"
 _COMPLETION_TRIGGERS: Final = [":", " ", "(", "/", "?", "#", "=", "@", "["]
+
+
+def _utf16_positions(
+    cls: type[ServerCapabilitiesBuilder], client_capabilities: lsp.ClientCapabilities
+) -> lsp.PositionEncodingKind:
+    return lsp.PositionEncodingKind.Utf16
+
+
+def _always_use_utf16() -> None:
+    """Answer UTF-16 whatever encodings the client offers.
+
+    All columns are computed in UTF-16 code units, which every client has to
+    support. pygls would pick the client's first preference, and Neovim lists
+    UTF-8 first, so every column after non-ASCII text would be read as a byte
+    offset by the editor.
+    """
+    ServerCapabilitiesBuilder.choose_position_encoding = classmethod(_utf16_positions)  # type: ignore[assignment]
 
 
 def _publish(
@@ -50,6 +68,7 @@ def _register_watching(server: LanguageServer) -> None:
 
 def create_server(config: FireConfig | None = None) -> LanguageServer:
     """Create a server using *config*, or the built-in default configuration."""
+    _always_use_utf16()
     server = LanguageServer(_NAME, _VERSION)
     analyzer = Analyzer(config or load_config())
     publisher = DiagnosticsPublisher(
