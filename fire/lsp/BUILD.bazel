@@ -132,6 +132,7 @@ py_library(
         ":completion",
         ":conversion",
         ":diagnostics",
+        ":link_completion",
         ":link_index",
         ":navigation",
         ":parameter_diagnostics",
@@ -489,6 +490,32 @@ py_test(
         ":completion",
         ":document_parser",
         "//fire/starlark:config_models",
+        "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "link_completion",
+    srcs = ["link_completion.py"],
+    deps = [
+        ":completion",
+        ":document_parser",
+        ":index",
+        ":workspace",
+        "//fire/starlark:patterns",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_test(
+    name = "link_completion_test",
+    size = "small",
+    srcs = ["link_completion_test.py"],
+    deps = [
+        ":document_parser",
+        ":link_completion",
+        ":workspace",
         "@pip//lsprotocol",
         "@pip//pytest",
     ],

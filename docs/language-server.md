@@ -59,8 +59,16 @@ In a requirement document the metadata line under a requirement heading is
 completed: field names of the document type (required fields first, fields
 already present left out) and, after `Key:`, the allowed values (enum values,
 `true`/`false`) and a `TODO(KEY-1234)` snippet where the field allows a TODO.
-Nothing is offered outside the metadata line. The server asks the editor to
-trigger completion after `:` and a space. Completion plugins such as
+Inside the URL of a link (`[text](url)` or a `[label]: url` definition) the
+parts are completed in order: after `](` the repository-relative paths of the
+requirement and parameter files of the workspace, after `?` the `version=`
+parameter, after `?version=` the current version of the linked requirement (or
+the versions of the linked parameter, latest first), and after `#` the
+requirement IDs or parameter names in the target file, the linked one first.
+The link text (`REQ-1` or `@name`), or the anchor after the cursor, tells which
+requirement or parameter is meant. Unsaved documents are offered and used.
+Nothing else is offered outside the metadata line. The server asks the editor to
+trigger completion after `:`, a space, `(`, `/`, `?`, `#` and `=`. Completion plugins such as
 blink.cmp or nvim-cmp use it automatically; Neovim's built-in completion needs
 `vim.lsp.completion.enable(true, client_id, bufnr, { autotrigger = true })`,
 for example in an `LspAttach` autocommand.

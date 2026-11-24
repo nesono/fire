@@ -391,6 +391,33 @@ def _complete(client: _Client, uri: str, line: int, character: int):
     return client.receive_until(lambda m: m.get("id") == 80)["result"]
 
 
+class TestLinkCompletion:
+    def test_paths_versions_and_anchors(self, client, workspace):
+        (workspace / "p.yaml").write_text(_PARAMS)
+        (workspace / "reqs.sysreq.md").write_text(_TARGET)
+        _initialize_with_folder(client, workspace)
+        uri = (workspace / "doc.sysreq.md").as_uri()
+        lines = [
+            "[REQ-A](/",
+            "[@x](/p.yaml?version=",
+            "[REQ-A](/reqs.sysreq.md?version=3#",
+        ]
+        _open(client, uri, "\n".join(lines) + "\n")
+        paths = _complete(client, uri, 0, len(lines[0]))
+        assert {i["label"] for i in paths["items"]} == {"/p.yaml", "/reqs.sysreq.md"}
+        versions = _complete(client, uri, 1, len(lines[1]))
+        assert [i["label"] for i in versions["items"]] == ["1"]
+        anchors = _complete(client, uri, 2, len(lines[2]))
+        assert [i["label"] for i in anchors["items"]] == ["REQ-A"]
+
+    def test_link_characters_are_triggers(self, client):
+        response = _initialize(client)
+        triggers = response["result"]["capabilities"]["completionProvider"][
+            "triggerCharacters"
+        ]
+        assert {"(", "/", "?", "#", "="} <= set(triggers)
+
+
 class TestCompletion:
     def test_server_announces_trigger_characters(self, client):
         response = _initialize(client)
