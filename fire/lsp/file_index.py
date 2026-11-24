@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Generic, TypeVar
@@ -39,15 +39,15 @@ def _read(path: Path) -> str | None:
 
 
 class FileIndex(ABC, Generic[T]):
-    """Indexes the files under *root* whose names end in one of *suffixes*.
+    """Indexes the files under *root* that *accepts* by root-relative path.
 
     Hidden directories, ``bazel-*`` outputs, ``node_modules`` and
     ``__pycache__`` are skipped and symlinked directories are not followed.
     """
 
-    def __init__(self, root: Path, suffixes: tuple[str, ...]) -> None:
+    def __init__(self, root: Path, accepts: Callable[[str], bool]) -> None:
         self.root = root.resolve()
-        self._suffixes = suffixes
+        self._accepts = accepts
         self._cache: dict[Path, _CacheEntry[T]] = {}
 
     @abstractmethod
@@ -74,8 +74,9 @@ class FileIndex(ABC, Generic[T]):
         for directory, dirnames, filenames in os.walk(self.root):
             dirnames[:] = sorted(d for d in dirnames if not _is_ignored(d))
             for filename in filenames:
-                if filename.endswith(self._suffixes):
-                    yield Path(directory) / filename
+                path = Path(directory) / filename
+                if self._accepts(path.relative_to(self.root).as_posix()):
+                    yield path
 
     def _indexed_overlay(self, overlay: Mapping[Path, str]) -> dict[Path, str]:
         documents = {}
@@ -86,9 +87,9 @@ class FileIndex(ABC, Generic[T]):
         return documents
 
     def _is_indexed(self, path: Path) -> bool:
-        parts = path.relative_to(self.root).parts
-        has_suffix = path.name.endswith(self._suffixes)
-        return has_suffix and not any(_is_ignored(part) for part in parts[:-1])
+        relative = path.relative_to(self.root)
+        in_ignored_directory = any(_is_ignored(part) for part in relative.parts[:-1])
+        return self._accepts(relative.as_posix()) and not in_ignored_directory
 
     def _cached(self, path: Path) -> list[T]:
         try:

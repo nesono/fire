@@ -46,6 +46,7 @@ py_library(
     deps = [
         ":diagnostic",
         ":document_parser",
+        ":document_types",
         ":index",
         ":link_diagnostics",
         ":workspace",
@@ -130,6 +131,7 @@ py_library(
     deps = [
         ":conversion",
         ":diagnostics",
+        ":document_types",
         ":link_index",
         ":navigation",
         ":reference_diagnostics",
@@ -142,6 +144,7 @@ py_library(
         "//fire/starlark:config_models",
         "//fire/starlark:dynamic_requirement_model",
         "@pip//lsprotocol",
+        "@pip//pydantic",
     ],
 )
 
@@ -150,10 +153,22 @@ py_library(
     srcs = ["server.py"],
     deps = [
         ":analysis",
+        ":document_types",
         ":publisher",
         ":uris",
         "//fire/starlark:config_models",
         "@pip//lsprotocol",
+        "@pip//pygls",
+    ],
+)
+
+py_library(
+    name = "main",
+    srcs = ["__main__.py"],
+    deps = [
+        ":document_types",
+        ":server",
+        "//fire/starlark:config_models",
         "@pip//pygls",
     ],
 )
@@ -163,7 +178,7 @@ py_binary(
     srcs = ["__main__.py"],
     main = "__main__.py",
     visibility = ["//visibility:public"],
-    deps = [":server"],
+    deps = [":main"],
 )
 
 py_test(
@@ -185,6 +200,7 @@ py_test(
     srcs = ["analysis_test.py"],
     deps = [
         ":analysis",
+        ":document_types",
         "//fire/starlark:config_models",
         "@pip//lsprotocol",
         "@pip//pytest",
@@ -196,6 +212,7 @@ py_test(
     size = "small",
     srcs = ["server_test.py"],
     deps = [
+        ":document_types",
         ":server",
         "@pip//pytest",
     ],
@@ -212,6 +229,7 @@ py_library(
     srcs = ["navigation.py"],
     deps = [
         ":document_parser",
+        ":document_types",
         ":index",
         ":link_diagnostics",
         ":workspace",
@@ -261,6 +279,7 @@ py_test(
     deps = [
         ":diagnostic",
         ":document_parser",
+        ":document_types",
         ":reference_diagnostics",
         ":workspace",
         "@pip//pytest",
@@ -308,6 +327,7 @@ py_test(
     srcs = ["navigation_test.py"],
     deps = [
         ":document_parser",
+        ":document_types",
         ":navigation",
         ":workspace",
         "@pip//pytest",
@@ -331,6 +351,7 @@ py_library(
     srcs = ["workspace_index.py"],
     deps = [
         ":conversion",
+        ":document_types",
         ":file_index",
         ":symbols",
         "@pip//lsprotocol",
@@ -348,6 +369,7 @@ py_test(
     size = "small",
     srcs = ["workspace_index_test.py"],
     deps = [
+        ":document_types",
         ":workspace_index",
         "@pip//lsprotocol",
         "@pip//pytest",
@@ -372,9 +394,27 @@ py_library(
     deps = [
         ":conversion",
         ":document_parser",
+        ":document_types",
         ":file_index",
         ":link_diagnostics",
         "@pip//lsprotocol",
+    ],
+)
+
+py_library(
+    name = "document_types",
+    srcs = ["document_types.py"],
+    deps = ["//fire/starlark:config_models"],
+)
+
+py_test(
+    name = "document_types_test",
+    size = "small",
+    srcs = ["document_types_test.py"],
+    deps = [
+        ":document_types",
+        "//fire/starlark:config_models",
+        "@pip//pytest",
     ],
 )
 
@@ -401,6 +441,7 @@ py_test(
     size = "small",
     srcs = ["link_index_test.py"],
     deps = [
+        ":document_types",
         ":link_index",
         "@pip//lsprotocol",
         "@pip//pytest",
@@ -417,6 +458,16 @@ py_test(
         ":references",
         ":workspace",
         "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "main_test",
+    size = "small",
+    srcs = ["main_test.py"],
+    deps = [
+        ":main",
         "@pip//pytest",
     ],
 )

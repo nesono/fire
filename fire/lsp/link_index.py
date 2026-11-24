@@ -11,6 +11,7 @@ from lsprotocol import types as lsp
 
 from fire.lsp.conversion import to_lsp_range
 from fire.lsp.document_parser import Link, parse_links
+from fire.lsp.document_types import DocumentTypes
 from fire.lsp.file_index import FileIndex
 from fire.lsp.link_diagnostics import is_checked_link, is_parameter_link
 
@@ -36,6 +37,9 @@ def identify(link: Link) -> tuple[str, str]:
 
 class LinkIndex(FileIndex[IndexedLink]):
     """Indexes links with repository-relative paths in requirement files."""
+
+    def __init__(self, root: Path, types: DocumentTypes) -> None:
+        super().__init__(root, types.is_document)
 
     def links(self, overlay: Mapping[Path, str]) -> list[IndexedLink]:
         """Return all indexed links, ordered by file then position."""

@@ -73,7 +73,6 @@ def target_at(
     position: Position,
     path: Path,
     workspace: Workspace,
-    suffixes: tuple[str, ...],
 ) -> ReferenceTarget | None:
     """Return what the cursor in the document at *path* asks references for.
 

@@ -16,7 +16,6 @@ from fire.lsp.references import (
 )
 from fire.lsp.workspace import Workspace
 
-_SUFFIXES = (".sysreq.md",)
 _REQS = "## REQ-A\n\nSIL: QM | Sec: false | Version: 3\n\n## REQ-B\n\nVersion: 1\n"
 _PARAMS = "max_speed_v1:\n  value: 1\nmax_speed_v2:\n  value: 2\n"
 
@@ -30,7 +29,7 @@ def workspace(tmp_path: Path) -> Workspace:
 
 def _target(workspace, path: str, text: str, line: int, character: int):
     full = (workspace.root / path).resolve()
-    return target_at(text, Position(line, character), full, workspace, _SUFFIXES)
+    return target_at(text, Position(line, character), full, workspace)
 
 
 class TestTargetAt:

@@ -6,10 +6,11 @@ from pathlib import Path
 import pytest
 
 from fire.lsp.document_parser import Position, Range
+from fire.lsp.document_types import DocumentTypes
 from fire.lsp.navigation import definition_at, link_at
 from fire.lsp.workspace import Workspace
 
-_SUFFIXES = (".sysreq.md",)
+_TYPES = DocumentTypes.for_suffixes((".sysreq.md",))
 _PARAMS = "max_speed_v1:\n  value: 1\nmax_speed_v2:\n  value: 2\n"
 _OTHER = "# Doc\n\n## REQ-OTHER\n\nSIL: QM | Sec: false | Version: 3\n"
 _FILE_START = Range(Position(0, 0), Position(0, 0))
@@ -28,7 +29,7 @@ def _param(version: int = 2, name: str = "max_speed", path: str = "/params.yaml"
 
 
 def _definition(workspace, text: str, character: int = 8, line: int = 0):
-    return definition_at(text, Position(line, character), workspace, _SUFFIXES)
+    return definition_at(text, Position(line, character), workspace, _TYPES)
 
 
 class TestLinkAt:

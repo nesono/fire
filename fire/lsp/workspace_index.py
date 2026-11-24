@@ -11,6 +11,7 @@ from typing import Final
 from lsprotocol import types as lsp
 
 from fire.lsp.conversion import to_lsp_range
+from fire.lsp.document_types import DocumentTypes
 from fire.lsp.file_index import FileIndex
 from fire.lsp.symbols import parameter_symbols, requirement_symbols
 
@@ -26,8 +27,13 @@ class IndexedSymbol:
 
 
 class WorkspaceIndex(FileIndex[IndexedSymbol]):
-    def __init__(self, root: Path, suffixes: tuple[str, ...]) -> None:
-        super().__init__(root, (*suffixes, _YAML_SUFFIX))
+    def __init__(self, root: Path, types: DocumentTypes) -> None:
+        def accepts(relative_path: str) -> bool:
+            return types.is_document(relative_path) or relative_path.endswith(
+                _YAML_SUFFIX
+            )
+
+        super().__init__(root, accepts)
 
     def symbols(self, overlay: Mapping[Path, str]) -> list[IndexedSymbol]:
         """Return the symbols of all indexed files, ordered by path then line."""

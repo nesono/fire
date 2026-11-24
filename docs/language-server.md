@@ -31,6 +31,30 @@ vim.lsp.enable("fire_ls")
 Documents whose file name does not end in a configured document-type suffix are
 ignored, so other Markdown files are unaffected.
 
+## Document types
+
+A file is a FIRE document if its name ends in a suffix of a document type in
+`fire_config.yaml` (`.sysreq.md`, `.swreq.md`, `.regreq.md` by default). Files
+that do not follow that naming convention, such as plain `.md` requirement
+files, can be assigned a type with `--glob-type PATTERN=TYPE`, which may be
+repeated:
+
+```bash
+fire_ls --glob-type 'docs/requirements/**/*.md=sysreq' --glob-type 'sw/**/*.md=swreq'
+```
+
+Patterns are relative to the workspace root (the directory with `MODULE.bazel`
+or `WORKSPACE`); `**` matches any number of directories, `*` and `?` stay within
+one directory. Rules are tried in order before the suffixes, and `TYPE` must be
+a document type of the configuration. Everything works for matching files:
+diagnostics, outline, workspace symbols, go to definition and references, and
+links into them are checked for the requirement ID. Other Markdown files stay
+ignored. In Neovim add the arguments to `cmd`:
+
+```lua
+cmd = { "/path/to/fire_ls", "--glob-type", "docs/requirements/**/*.md=sysreq" },
+```
+
 ## Link styles
 
 Inline links (`[text](url)`) and reference-style links (`[text][1]`, `[text][]`

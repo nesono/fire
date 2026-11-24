@@ -7,6 +7,7 @@ import pytest
 
 from fire.lsp.diagnostic import Severity
 from fire.lsp.document_parser import Position, Range
+from fire.lsp.document_types import DocumentTypes
 from fire.lsp.reference_diagnostics import ReferenceChecker
 from fire.lsp.workspace import Workspace
 
@@ -22,7 +23,7 @@ def checker(tmp_path: Path) -> ReferenceChecker:
         "## REQ-OTHER\n\nSIL: QM | Sec: false | Version: 3\n"
     )
     (tmp_path / "notes.md").write_text("# Notes\n")
-    return ReferenceChecker(Workspace(tmp_path), _SUFFIXES)
+    return ReferenceChecker(Workspace(tmp_path), DocumentTypes.for_suffixes(_SUFFIXES))
 
 
 def _param(version: int | str = 2, path: str = "/params.yaml", name: str = "max_speed"):

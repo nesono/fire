@@ -6,6 +6,7 @@ import pytest
 from lsprotocol import types as lsp
 
 from fire.lsp.analysis import Analyzer
+from fire.lsp.document_types import GlobRule
 from fire.starlark.config_models import load_config
 
 _ANALYZER = Analyzer(load_config())
@@ -260,6 +261,66 @@ class TestReferences:
     def test_no_workspace(self):
         uri = "file:///nowhere/a.sysreq.md"
         assert _ANALYZER.references(uri, _REQS, lsp.Position(0, 5), False) == []
+
+
+_PLAIN = "## REQ-1\n\nSIL: ASIL-Z | Sec: false | Version: 1\n"
+_GLOBBED = Analyzer(load_config(), [GlobRule("fixtures/**/*.md", "sysreq")])
+
+
+class TestGlobRules:
+    def _workspace(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        (tmp_path / "fixtures").mkdir()
+        (tmp_path / "fixtures" / "a.md").write_text(_PLAIN)
+        (tmp_path / "README.md").write_text(_PLAIN)
+        return tmp_path
+
+    def test_matching_plain_markdown_is_validated(self, tmp_path):
+        root = self._workspace(tmp_path)
+        uri = (root / "fixtures" / "a.md").as_uri()
+        assert [d.code for d in _GLOBBED.diagnose(uri, _PLAIN)] == ["FIRE005"]
+
+    def test_markdown_outside_the_glob_is_ignored(self, tmp_path):
+        root = self._workspace(tmp_path)
+        assert _GLOBBED.diagnose((root / "README.md").as_uri(), _PLAIN) == []
+
+    def test_without_the_rule_plain_markdown_is_ignored(self, tmp_path):
+        root = self._workspace(tmp_path)
+        assert _ANALYZER.diagnose((root / "fixtures" / "a.md").as_uri(), _PLAIN) == []
+
+    def test_outline_of_a_matching_file(self, tmp_path):
+        root = self._workspace(tmp_path)
+        uri = (root / "fixtures" / "a.md").as_uri()
+        assert [s.name for s in _GLOBBED.document_symbols(uri, _PLAIN)] == ["REQ-1"]
+
+    def test_workspace_symbols_include_matching_files_only(self, tmp_path):
+        root = self._workspace(tmp_path)
+        symbols = _GLOBBED.workspace_symbols("req", [root])
+        assert [s.container_name for s in symbols] == ["fixtures/a.md"]
+
+    def test_links_into_a_matching_file_are_checked_for_the_id(self, tmp_path):
+        root = self._workspace(tmp_path)
+        link = "[REQ-9](/fixtures/a.md?version=1#REQ-9)"
+        text = f"## R-2\n\nSIL: QM | Sec: false | Version: 1\n\n{link}\n"
+        uri = (root / "b.sysreq.md").as_uri()
+        assert [d.code for d in _GLOBBED.diagnose(uri, text)] == ["FIRE013"]
+        assert [d.code for d in _ANALYZER.diagnose(uri, text)] == []
+
+    def test_go_to_definition_into_a_matching_file(self, tmp_path):
+        root = self._workspace(tmp_path)
+        link = "[REQ-1](/fixtures/a.md?version=1#REQ-1)"
+        text = f"## R-2\n\nSIL: QM | Sec: false | Version: 1\n\n{link}\n"
+        uri = (root / "b.sysreq.md").as_uri()
+        location = _GLOBBED.definition(uri, text, lsp.Position(4, 3))
+        assert location.range.start == lsp.Position(0, 3)
+
+    def test_references_to_a_heading_in_a_matching_file(self, tmp_path):
+        root = self._workspace(tmp_path)
+        link = "[REQ-1](/fixtures/a.md?version=1#REQ-1)"
+        (root / "b.sysreq.md").write_text(f"## R-2\n\nVersion: 1\n\n{link}\n")
+        uri = (root / "fixtures" / "a.md").as_uri()
+        refs = _GLOBBED.references(uri, _PLAIN, lsp.Position(0, 5), False)
+        assert [r.uri for r in refs] == [(root / "b.sysreq.md").as_uri()]
 
 
 if __name__ == "__main__":

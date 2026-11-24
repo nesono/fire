@@ -10,6 +10,7 @@ from typing import Any, BinaryIO
 
 import pytest
 
+from fire.lsp.document_types import GlobRule
 from fire.lsp.server import create_server
 
 _TIMEOUT_SECONDS = 5
@@ -17,12 +18,12 @@ _BAD_SIL = "## REQ-1\n\nSIL: ASIL-Z | Sec: false | Version: 1\n"
 
 
 class _Client:
-    def __init__(self) -> None:
+    def __init__(self, glob_rules=()) -> None:
         server_in, self._to_server = os.pipe()
         self._from_server, server_out = os.pipe()
         self._writer: BinaryIO = os.fdopen(self._to_server, "wb")
         self._reader: BinaryIO = os.fdopen(self._from_server, "rb")
-        server = create_server()
+        server = create_server(glob_rules=glob_rules)
         self._thread = threading.Thread(
             target=server.start_io,
             args=(os.fdopen(server_in, "rb"), os.fdopen(server_out, "wb")),
@@ -345,6 +346,18 @@ class TestReferences:
     def test_no_references_off_a_symbol(self, client, workspace):
         uri = self._setup(client, workspace)
         assert _references(client, uri, 2, 1) == []
+
+
+class TestGlobRules:
+    def test_plain_markdown_matching_a_rule_gets_diagnostics(self, workspace):
+        client = _Client([GlobRule("fixtures/**/*.md", "sysreq")])
+        try:
+            _initialize_with_folder(client, workspace)
+            uri = (workspace / "fixtures" / "a.md").as_uri()
+            _open(client, uri, _BAD_SIL)
+            assert _diagnostics_for(client, uri) == ["FIRE005"]
+        finally:
+            client.close()
 
 
 if __name__ == "__main__":

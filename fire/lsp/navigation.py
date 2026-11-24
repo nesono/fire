@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from fire.lsp.document_parser import Link, Position, Range, parse_links
+from fire.lsp.document_types import DocumentTypes
 from fire.lsp.index import parameters_in, requirements_in
 from fire.lsp.link_diagnostics import is_checked_link, is_parameter_link
 from fire.lsp.workspace import Workspace
@@ -40,17 +41,15 @@ def _parameter_range(link: Link, content: str) -> Range | None:
     return info.versions.get(link.version) or info.versions[max(info.versions)]
 
 
-def _requirement_range(
-    link: Link, content: str, suffixes: tuple[str, ...]
-) -> Range | None:
-    if not link.path.endswith(suffixes):
+def _requirement_range(link: Link, content: str, types: DocumentTypes) -> Range | None:
+    if not types.is_document(link.path):
         return None
     info = requirements_in(content).get(link.text)
     return info.range if info else None
 
 
 def definition_at(
-    text: str, position: Position, workspace: Workspace, suffixes: tuple[str, ...]
+    text: str, position: Position, workspace: Workspace, types: DocumentTypes
 ) -> Target | None:
     """Return where the link under *position* is defined.
 
@@ -67,5 +66,5 @@ def definition_at(
     if is_parameter_link(link):
         found = _parameter_range(link, content)
     else:
-        found = _requirement_range(link, content, suffixes)
+        found = _requirement_range(link, content, types)
     return Target(path, found or _FILE_START, content)

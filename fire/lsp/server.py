@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Final
 
 from lsprotocol import types as lsp
 from pygls.lsp.server import LanguageServer
 
 from fire.lsp.analysis import Analyzer
+from fire.lsp.document_types import GlobRule
 from fire.lsp.publisher import DiagnosticsPublisher
 from fire.lsp.uris import document_overlay, uri_to_path
 from fire.starlark.config_models import FireConfig, load_config
@@ -47,10 +49,16 @@ def _register_watching(server: LanguageServer) -> None:
     )
 
 
-def create_server(config: FireConfig | None = None) -> LanguageServer:
-    """Create a server using *config*, or the built-in default configuration."""
+def create_server(
+    config: FireConfig | None = None, glob_rules: Sequence[GlobRule] = ()
+) -> LanguageServer:
+    """Create a server using *config*, or the built-in default configuration.
+
+    *glob_rules* give files that do not follow the suffix naming convention a
+    document type.
+    """
     server = LanguageServer(_NAME, _VERSION)
-    analyzer = Analyzer(config or load_config())
+    analyzer = Analyzer(config or load_config(), glob_rules)
     publisher = DiagnosticsPublisher(
         analyzer, lambda uri, diagnostics: _publish(server, uri, diagnostics)
     )

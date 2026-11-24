@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from fire.lsp.diagnostic import Diagnostic, error, warning
 from fire.lsp.document_parser import Link, parse_links
+from fire.lsp.document_types import DocumentTypes
 from fire.lsp.index import (
     ParameterInfo,
     RequirementInfo,
@@ -60,13 +61,13 @@ def _parameter_diagnostics(link: Link, targets: _Targets) -> list[Diagnostic]:
 
 
 def _requirement_diagnostics(
-    link: Link, targets: _Targets, suffixes: tuple[str, ...]
+    link: Link, targets: _Targets, types: DocumentTypes
 ) -> list[Diagnostic]:
     text = targets.text(link.path)
     if text is None:
         message = f"Requirement file does not exist: {link.path}"
         return [error(link.url_range, "FIRE012", message)]
-    if not link.path.endswith(suffixes):
+    if not types.is_document(link.path):
         return []
     info: RequirementInfo | None = requirements_in(text).get(link.text)
     if info is None:
@@ -78,13 +79,13 @@ def _requirement_diagnostics(
 class ReferenceChecker:
     """Checks parameter and requirement links against files in a workspace.
 
-    *suffixes* are the document-type file suffixes. Requirement links to other
+    *types* decides which files are documents. Requirement links to other
     Markdown files only need to resolve to an existing file.
     """
 
-    def __init__(self, workspace: Workspace, suffixes: tuple[str, ...]) -> None:
+    def __init__(self, workspace: Workspace, types: DocumentTypes) -> None:
         self._workspace = workspace
-        self._suffixes = suffixes
+        self._types = types
 
     def diagnose(self, text: str) -> list[Diagnostic]:
         targets = _Targets(self._workspace)
@@ -97,4 +98,4 @@ class ReferenceChecker:
     def _diagnose_link(self, link: Link, targets: _Targets) -> list[Diagnostic]:
         if is_parameter_link(link):
             return _parameter_diagnostics(link, targets)
-        return _requirement_diagnostics(link, targets, self._suffixes)
+        return _requirement_diagnostics(link, targets, self._types)
