@@ -7,8 +7,10 @@ edited is often not valid YAML. Positions are code points.
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import Final
 
 import yaml
@@ -29,6 +31,22 @@ _KEY_VALUE_RE: Final = re.compile(
     r"^(?P<key>[A-Za-z_][A-Za-z0-9_]*):[ \t]*(?P<typed>[^ \t]*)$"
 )
 _LIST_MARKER: Final = "- "
+_QUOTES: Final = ('"', "'")
+_UNIT_LINE_RE: Final = re.compile(
+    r"^\s*(?:-\s+)?unit:[ \t]*(?P<quote>[\"'])?(?P<rest>\S)?"
+)
+
+
+@dataclass(frozen=True)
+class WorkspaceUnits:
+    """Units used in the parameter files of the workspace, and how they are written.
+
+    *quoted* is ``True`` if most are quoted, ``False`` if most are plain and
+    ``None`` if there is no majority.
+    """
+
+    units: Sequence[str]
+    quoted: bool | None
 
 
 def _indent(line: str) -> int:
@@ -136,21 +154,45 @@ def _yaml_text(unit: str) -> str:
     """*unit* as a YAML scalar: quoted if it would not read back as this text."""
     dumped = yaml.safe_dump(unit, width=10_000, allow_unicode=True).splitlines()[0]
     quoted = dumped[:1] in ("'", '"')
-    return f'"{unit}"' if quoted and '"' not in unit else dumped
+    return (
+        json.dumps(unit, ensure_ascii=False) if quoted and '"' not in unit else dumped
+    )
 
 
-def _unit_candidates(known: Sequence[str], replace: Range) -> list[Candidate]:
-    units = [(unit, "used in this workspace") for unit in known]
-    units += [(unit, "common unit") for unit in COMMON_UNITS if unit not in known]
+def _document_quotes(lines: list[str], skip: int) -> bool | None:
+    """Whether most ``unit:`` values in the document are quoted, ``None`` on a tie."""
+    quoted = plain = 0
+    for index, line in enumerate(lines):
+        match = _UNIT_LINE_RE.match(line) if index != skip else None
+        if match and (match["quote"] or match["rest"]):
+            quoted, plain = quoted + bool(match["quote"]), plain + (not match["quote"])
+    return None if quoted == plain else quoted > plain
+
+
+def _unit_text(unit: str, typed_quote: str, quote_all: bool) -> str:
+    if typed_quote == "'":
+        return "'" + unit.replace("'", "''") + "'"
+    if typed_quote == '"' or quote_all:
+        return json.dumps(unit, ensure_ascii=False)
+    return _yaml_text(unit)
+
+
+def _unit_candidates(
+    workspace: WorkspaceUnits, replace: Range, typed_quote: str, quote_all: bool
+) -> list[Candidate]:
+    units = [(unit, "used in this workspace") for unit in workspace.units]
+    units += [
+        (unit, "common unit") for unit in COMMON_UNITS if unit not in workspace.units
+    ]
     seen: set[str] = set()
     return [
         Candidate(
             unit,
-            _yaml_text(unit),
+            _unit_text(unit, typed_quote, quote_all),
             replace,
             lsp.CompletionItemKind.Unit,
             detail=detail,
-            filter_text=unit,
+            filter_text=typed_quote + unit,
         )  # fmt: skip
         for unit, detail in units
         if not (unit in seen or seen.add(unit))
@@ -158,10 +200,12 @@ def _unit_candidates(known: Sequence[str], replace: Range) -> list[Candidate]:
 
 
 def _value_candidates(
-    key: str, replace: Range, known_units: Callable[[], Sequence[str]]
+    key: str,
+    replace: Range,
+    units: Callable[[], list[Candidate]],
 ) -> list[Candidate]:
     if key == "unit":
-        return _unit_candidates(known_units(), replace)
+        return units()
     if key == "type":
         kind = lsp.CompletionItemKind.EnumMember
         return [
@@ -171,12 +215,14 @@ def _value_candidates(
 
 
 def parameter_candidates(
-    text: str, position: Position, known_units: Callable[[], Sequence[str]]
+    text: str, position: Position, workspace_units: Callable[[], WorkspaceUnits]
 ) -> list[Candidate]:
     """Complete field names, ``type`` and ``unit`` in a parameter YAML file.
 
-    *known_units* returns the units used elsewhere in the workspace and is only
-    called when a unit is being completed.
+    *workspace_units* is only called when a unit is being completed. Units are
+    written in the style of the document: quoted if most of its units are, else
+    if most of the workspace's are, else quoted. A quote that was already typed
+    is kept, and an auto-paired closing quote is replaced with the unit.
     """
     lines = text.split("\n")
     if position.line >= len(lines):
@@ -187,10 +233,23 @@ def parameter_candidates(
     marker = len(_LIST_MARKER) if before[indent:].startswith(_LIST_MARKER) else 0
     content = before[indent + marker :]
     value = _KEY_VALUE_RE.match(content)
-    if value is not None:
-        replace = Range(
-            Position(line, cursor - len(value["typed"])), Position(line, cursor)
-        )
-        return _value_candidates(value["key"], replace, known_units)
-    replace = Range(Position(line, indent + marker), Position(line, cursor))
-    return [] if ":" in content else _key_candidates(lines, line, replace, indent)
+    if value is None:
+        replace = Range(Position(line, indent + marker), Position(line, cursor))
+        return [] if ":" in content else _key_candidates(lines, line, replace, indent)
+    typed_quote = value["typed"][:1] if value["typed"][:1] in _QUOTES else ""
+    closing = (
+        cursor + 1
+        if typed_quote and lines[line][cursor : cursor + 1] == typed_quote
+        else cursor
+    )
+    replace = Range(
+        Position(line, cursor - len(value["typed"])), Position(line, closing)
+    )
+
+    def units() -> list[Candidate]:
+        workspace = workspace_units()
+        document = _document_quotes(lines, line)
+        quote_all = document if document is not None else workspace.quoted is not False
+        return _unit_candidates(workspace, replace, typed_quote, quote_all)
+
+    return _value_candidates(value["key"], replace, units)

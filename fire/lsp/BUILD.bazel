@@ -596,6 +596,7 @@ py_library(
     srcs = ["unit_index.py"],
     deps = [
         ":file_index",
+        ":parameter_completion",
         ":parameter_diagnostics",
     ],
 )

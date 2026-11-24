@@ -23,7 +23,7 @@ from fire.lsp.link_completion import link_candidates
 from fire.lsp.link_insertion import link_insertion_candidates
 from fire.lsp.link_targets import LinkTarget, LinkTargetIndex
 from fire.lsp.navigation import definition_at
-from fire.lsp.parameter_completion import parameter_candidates
+from fire.lsp.parameter_completion import WorkspaceUnits, parameter_candidates
 from fire.lsp.parameter_diagnostics import (
     diagnose_parameters,
     looks_like_parameter_file,
@@ -119,14 +119,16 @@ class Analyzer:
         symbols = self._index_for(root).symbols(overlay)
         return sorted({"/" + symbol.container for symbol in symbols})
 
-    def _workspace_units(self, path: Path, overlay: Mapping[Path, str]) -> list[str]:
+    def _workspace_units(
+        self, path: Path, overlay: Mapping[Path, str]
+    ) -> WorkspaceUnits:
         root = find_workspace_root(path)
         if root is None:
-            return []
+            return WorkspaceUnits([], None)
         root = root.resolve()
         if root not in self._unit_indexes:
             self._unit_indexes[root] = UnitIndex(root)
-        return self._unit_indexes[root].units(overlay)
+        return self._unit_indexes[root].workspace_units(overlay)
 
     def _parameter_completions(
         self, path: Path, text: str, position: lsp.Position, overlay: Mapping[Path, str]
@@ -136,7 +138,7 @@ class Analyzer:
         lines = text.split("\n")
         cursor = from_lsp_position(position, lines)
 
-        def units() -> list[str]:
+        def units() -> WorkspaceUnits:
             return self._workspace_units(path, overlay)
 
         candidates = parameter_candidates(text, cursor, units)

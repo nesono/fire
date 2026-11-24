@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from fire.lsp.parameter_completion import WorkspaceUnits
 from fire.lsp.unit_index import UnitIndex
 
 _PARAMS = """a_v1:
@@ -50,6 +51,28 @@ def test_open_documents_win_over_disk(tmp_path: Path):
 def test_empty_values_are_skipped(tmp_path: Path):
     (tmp_path / "a.yaml").write_text("a_v1:\n  unit:\n  value: 1\n")
     assert UnitIndex(tmp_path).units({}) == []
+
+
+def test_the_quoting_style_of_the_workspace(tmp_path: Path):
+    (tmp_path / "a.yaml").write_text(
+        'a_v1:\n  unit: "m"\nb_v1:\n  unit: "s"\nc_v1:\n  unit: kg\n'
+    )
+    assert UnitIndex(tmp_path).workspace_units({}) == WorkspaceUnits(
+        ["kg", "m", "s"], True
+    )
+
+
+def test_plain_style_and_ties(tmp_path: Path):
+    (tmp_path / "a.yaml").write_text(
+        'a_v1:\n  unit: m\nb_v1:\n  unit: s\nc_v1:\n  unit: "1"\n'
+    )
+    assert UnitIndex(tmp_path).workspace_units({}).quoted is False
+    (tmp_path / "a.yaml").write_text('a_v1:\n  unit: m\nb_v1:\n  unit: "s"\n')
+    assert UnitIndex(tmp_path).workspace_units({}).quoted is None
+
+
+def test_no_units_means_no_style(tmp_path: Path):
+    assert UnitIndex(tmp_path).workspace_units({}) == WorkspaceUnits([], None)
 
 
 if __name__ == "__main__":

@@ -5,19 +5,24 @@ import pytest
 from lsprotocol import types as lsp
 
 from fire.lsp.document_parser import Position, Range
-from fire.lsp.parameter_completion import COMMON_UNITS, parameter_candidates
+from fire.lsp.parameter_completion import (
+    COMMON_UNITS,
+    WorkspaceUnits,
+    parameter_candidates,
+)
 
 _CURSOR = "§"
 _SCALAR = "max_speed_v1:\n  value: 30.0\n  description: Speed\n  §\n"
 _TABLE = "t_v1:\n  type: table\n  description: d\n  columns:\n    - name: x\n      unit: m\n  §\n"
 
 
-def _complete(marked: str, known_units=()):
+def _complete(marked: str, known_units=(), workspace_quoted=None):
     before, _, after = marked.partition(_CURSOR)
     line = before.count("\n")
     character = len(before) - (before.rfind("\n") + 1)
+    workspace = WorkspaceUnits(list(known_units), workspace_quoted)
     return parameter_candidates(
-        before + after, Position(line, character), lambda: known_units
+        before + after, Position(line, character), lambda: workspace
     )
 
 
@@ -111,11 +116,9 @@ class TestValues:
         candidate = _complete("a_v1:\n  unit: m§\n")[0]
         assert candidate.replace == Range(Position(1, 8), Position(1, 9))
 
-    def test_units_that_would_not_parse_as_text_are_quoted(self):
-        by_label = {
-            c.label: c.new_text
-            for c in _complete("a_v1:\n  unit: §\n", ["1", "%", "m/s"])
-        }
+    def test_units_that_would_not_parse_as_text_are_quoted_even_in_plain_style(self):
+        candidates = _complete("a_v1:\n  unit: §\n", ["1", "%", "m/s"], False)
+        by_label = {c.label: c.new_text for c in candidates}
         assert by_label["1"] == '"1"'
         assert by_label["%"] == '"%"'
         assert by_label["m/s"] == "m/s"
@@ -131,6 +134,62 @@ class TestValues:
     @pytest.mark.parametrize("key", ["value", "description", "name"])
     def test_free_text_fields_have_no_completions(self, key):
         assert _labels(f"a_v1:\n  {key}: §\n") == []
+
+
+def _new_text(marked: str, label: str = "m/s", **options) -> str:
+    return {c.label: c.new_text for c in _complete(marked, **options)}[label]
+
+
+class TestQuotingStyle:
+    _QUOTED = (
+        'a_v1:\n  unit: "m"\nb_v1:\n  unit: "s"\nc_v1:\n  unit: kg\nd_v1:\n  unit: §\n'
+    )
+    _PLAIN = (
+        'a_v1:\n  unit: m\nb_v1:\n  unit: s\nc_v1:\n  unit: "1"\nd_v1:\n  unit: §\n'
+    )
+
+    def test_follows_a_file_that_mostly_quotes_units(self):
+        assert _new_text(self._QUOTED) == '"m/s"'
+
+    def test_follows_a_file_that_mostly_writes_plain_units(self):
+        assert _new_text(self._PLAIN) == "m/s"
+
+    def test_the_document_wins_over_the_workspace(self):
+        assert _new_text(self._QUOTED, workspace_quoted=False) == '"m/s"'
+        assert _new_text(self._PLAIN, workspace_quoted=True) == "m/s"
+
+    def test_a_tie_falls_back_to_the_workspace(self):
+        tie = 'a_v1:\n  unit: "m"\nb_v1:\n  unit: s\nc_v1:\n  unit: §\n'
+        assert _new_text(tie, workspace_quoted=False) == "m/s"
+        assert _new_text(tie, workspace_quoted=True) == '"m/s"'
+
+    def test_without_any_signal_units_are_quoted(self):
+        assert _new_text("a_v1:\n  unit: §\n") == '"m/s"'
+
+    def test_column_units_count_too(self):
+        text = 't_v1:\n  type: table\n  columns:\n    - name: x\n      unit: "m"\n    - name: y\n      unit: §\n'
+        assert _new_text(text) == '"m/s"'
+
+
+class TestTypedQuotes:
+    def test_an_opening_quote_is_kept_and_part_of_the_replacement(self):
+        candidate = {c.label: c for c in _complete('a_v1:\n  unit: "m§\n')}["m/s"]
+        assert candidate.new_text == '"m/s"'
+        assert candidate.replace == Range(Position(1, 8), Position(1, 10))
+        assert candidate.filter_text == '"m/s'
+
+    def test_an_auto_paired_closing_quote_is_consumed(self):
+        candidate = {c.label: c for c in _complete('a_v1:\n  unit: "m§"\n')}["m/s"]
+        assert candidate.replace == Range(Position(1, 8), Position(1, 11))
+
+    def test_single_quotes_stay_single(self):
+        by_label = {c.label: c.new_text for c in _complete("a_v1:\n  unit: 'm§'\n")}
+        assert by_label["m/s"] == "'m/s'"
+
+    def test_a_quote_inside_a_unit_is_escaped(self):
+        assert (
+            _new_text('a_v1:\n  unit: "§"\n', 'a"b', known_units=['a"b']) == '"a\\"b"'
+        )
 
 
 if __name__ == "__main__":
