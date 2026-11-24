@@ -31,6 +31,18 @@ vim.lsp.enable("fire_ls")
 Documents whose file name does not end in a configured document-type suffix are
 ignored, so other Markdown files are unaffected.
 
+## Link styles
+
+Inline links (`[text](url)`) and reference-style links (`[text][1]`, `[text][]`
+and `[text]` with a `[1]: url` definition) are understood by every feature.
+For a reference-style link, problems with the target (path, version, missing
+file, stale version) are reported at the definition line, once per definition,
+while the label and text rules apply at the usage. A `[text]` without a
+definition is plain text; `[REQ-ID][label]` or `[@name][label]` with an
+undefined label is reported as `FIRE016`. Go to definition and find references
+work from the usage of a reference-style link, but not yet from its definition
+line.
+
 ## Go to definition
 
 On a parameter or requirement link, go to definition jumps to the linked

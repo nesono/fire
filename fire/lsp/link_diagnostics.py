@@ -11,7 +11,12 @@ import re
 from typing import Final
 
 from fire.lsp.diagnostic import Diagnostic, error, warning
-from fire.lsp.document_parser import Link, Requirement, parse_links
+from fire.lsp.document_parser import (
+    Link,
+    Requirement,
+    parse_links,
+    parse_unresolved_references,
+)
 from fire.starlark import patterns
 
 _PARAM_TEXT_RE: Final = re.compile(r"@[a-zA-Z_][a-zA-Z0-9_]*")
@@ -68,13 +73,27 @@ def is_checked_link(link: Link) -> bool:
     return is_parameter_link(link) or is_requirement_link(link)
 
 
+def _looks_like_a_reference(text: str) -> bool:
+    return bool(_PARAM_TEXT_RE.fullmatch(text) or patterns.REQ_ID_PATTERN.match(text))
+
+
+def _undefined_references(text: str) -> list[Diagnostic]:
+    # Only parameter and requirement references are checked, so prose such as
+    # array[i][j] is left alone.
+    return [
+        error(ref.range, "FIRE016", f"Reference label '{ref.label}' is not defined")
+        for ref in parse_unresolved_references(text)
+        if _looks_like_a_reference(ref.text)
+    ]
+
+
 def diagnose_links(text: str, requirements: list[Requirement]) -> list[Diagnostic]:
     """Return diagnostics for parameter and requirement links in *text*.
 
     Paths on ``Parent`` lines are left to the metadata field rules.
     """
     parent_lines = _parent_lines(requirements)
-    diagnostics: list[Diagnostic] = []
+    diagnostics = _undefined_references(text)
     for link in parse_links(text):
         if is_checked_link(link):
             check_path = link.url_range.start.line not in parent_lines

@@ -71,5 +71,54 @@ class TestParameterAnchor:
         assert "min_speed" in diag.message
 
 
+def _lines(body: str):
+    return diagnose_requirements(_HEAD + body)
+
+
+class TestReferenceStyleLinks:
+    def test_valid_reference_style_links_have_no_diagnostics(self):
+        body = "See [@max_speed][p] and [REQ-2][r].\n\n[p]: /params.yaml?version=1#max_speed\n[r]: /a.sysreq.md?version=1#REQ-2\n"
+        assert _lines(body) == []
+
+    def test_undefined_label_on_a_parameter_reference(self):
+        (diag,) = _lines("See [@max_speed][nope].\n")
+        assert (diag.code, diag.severity) == ("FIRE016", Severity.ERROR)
+        assert diag.range == Range(Position(4, 17), Position(4, 21))
+        assert "nope" in diag.message
+
+    def test_undefined_label_on_a_requirement_reference(self):
+        assert [d.code for d in _lines("See [REQ-2][nope].\n")] == ["FIRE016"]
+
+    def test_implicit_label_without_definition(self):
+        assert [d.code for d in _lines("See [REQ-2][].\n")] == ["FIRE016"]
+
+    def test_plain_brackets_in_prose_are_not_flagged(self):
+        assert _lines("Use array[i][j] and matrix[0][1] here.\n") == []
+
+    def test_definition_problems_are_reported_at_the_definition(self):
+        body = "See [@max_speed][p].\n\n[p]: params.yaml?version=1#max_speed\n"
+        (diag,) = _lines(body)
+        assert diag.code == "FIRE009"
+        assert diag.range.start.line == 6
+
+    def test_parameter_definition_without_version(self):
+        body = "See [@max_speed][p].\n\n[p]: /params.yaml#max_speed\n"
+        (diag,) = _lines(body)
+        assert (diag.code, diag.severity) == ("FIRE010", Severity.ERROR)
+        assert diag.range.start.line == 6
+
+    def test_a_definition_shared_by_several_usages_is_reported_once(self):
+        body = (
+            "[@max_speed][p] and again [@max_speed][p]\n\n[p]: /params.yaml#max_speed\n"
+        )
+        assert [d.code for d in _lines(body)] == ["FIRE010"]
+
+    def test_text_and_anchor_must_still_match(self):
+        body = "See [@max_speed][p].\n\n[p]: /params.yaml?version=1#min_speed\n"
+        (diag,) = _lines(body)
+        assert diag.code == "FIRE011"
+        assert diag.range.start.line == 4
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

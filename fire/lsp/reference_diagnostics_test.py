@@ -113,5 +113,22 @@ class TestSkippedLinks:
         assert checker.diagnose(link) == []
 
 
+class TestReferenceStyleLinks:
+    def test_missing_file_is_reported_at_the_definition(self, checker):
+        text = "See [@max_speed][p].\n\n[p]: /nope.yaml?version=2#max_speed\n"
+        (diag,) = checker.diagnose(text)
+        assert diag.code == "FIRE012"
+        assert diag.range.start.line == 2
+
+    def test_stale_version_is_reported_at_the_definition(self, checker):
+        text = "See [REQ-OTHER][r].\n\n[r]: /other.sysreq.md?version=2#REQ-OTHER\n"
+        (diag,) = checker.diagnose(text)
+        assert (diag.code, diag.range.start.line) == ("FIRE015", 2)
+
+    def test_valid_reference_style_link(self, checker):
+        text = "See [@max_speed][p].\n\n[p]: /params.yaml?version=2#max_speed\n"
+        assert checker.diagnose(text) == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

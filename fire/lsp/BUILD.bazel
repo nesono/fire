@@ -5,7 +5,6 @@ py_library(
     srcs = ["document_parser.py"],
     visibility = ["//visibility:public"],
     deps = [
-        "//fire/starlark:markdown_common",
         "//fire/starlark:metadata_parsing",
         "//fire/starlark:path_common",
         "//fire/starlark:patterns",

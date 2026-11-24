@@ -11,13 +11,18 @@ Characters are counted in Python code points, not UTF-16 code units.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Final
 
-from fire.starlark import markdown_common, metadata_parsing, path_common, patterns
+from fire.starlark import metadata_parsing, path_common, patterns
 
 _HEADING_RE: Final = re.compile(r"^## (\S.*?)\s*$")
-_LINK_RE: Final = re.compile(markdown_common.MARKDOWN_LINK_PATTERN)
+_USAGE_RE: Final = re.compile(
+    r"\[(?P<text>[^\]]+)\](?:\((?P<url>[^)]+)\)|\[(?P<label>[^\]]*)\])?"
+)
+_DEFINITION_RE: Final = re.compile(r"^ {0,3}\[(?P<label>[^\]]+)\]:[ \t]*(?P<url>\S+)")
+_NOT_A_SHORTCUT: Final = "([:"
 _TODO_RE: Final = re.compile(r"TODO(?:\([^)\s]*\))?")
 _FIELD_SEPARATOR: Final = "|"
 _FENCE_MARKERS: Final = ("```", "~~~")
@@ -53,14 +58,40 @@ class Link:
     path: str
     version: int | None
     anchor: str | None
+    usage: Range | None = None
 
     @property
     def span(self) -> Range:
-        """The whole ``[text](url)``, brackets included."""
+        """The whole link as written, brackets included.
+
+        For a reference-style link this is the usage such as ``[text][1]``; its
+        ``url_range`` points at the definition instead.
+        """
+        if self.usage is not None:
+            return self.usage
         line = self.text_range.start.line
         return _range(
             line, self.text_range.start.character - 1, self.url_range.end.character + 1
         )
+
+
+@dataclass(frozen=True)
+class LinkDefinition:
+    """A reference-style link definition such as ``[1]: /path?version=2#ID``."""
+
+    label: str
+    url: str
+    label_range: Range
+    url_range: Range
+
+
+@dataclass(frozen=True)
+class UnresolvedReference:
+    """An explicit or implicit reference whose label has no definition."""
+
+    label: str
+    text: str
+    range: Range
 
 
 @dataclass(frozen=True)
@@ -159,26 +190,124 @@ def _split_url(url: str) -> tuple[str, int | None, str | None]:
     return path.split("?")[0], version, anchor or None
 
 
-def _link_from_match(line_no: int, match: re.Match[str]) -> Link:
-    path, version, anchor = _split_url(match.group(2))
+def _normalize_label(label: str) -> str:
+    return " ".join(label.split()).casefold()
+
+
+def _text_lines(text: str) -> list[str]:
+    return text.split("\n")
+
+
+def parse_link_definitions(text: str) -> dict[str, LinkDefinition]:
+    """Return reference-style link definitions by normalized label.
+
+    As in CommonMark, labels ignore case and whitespace differences and the
+    first definition of a label wins.
+    """
+    definitions: dict[str, LinkDefinition] = {}
+    for line_no, line in enumerate(_text_lines(text)):
+        match = _DEFINITION_RE.match(line)
+        if match:
+            definition = LinkDefinition(
+                label=match.group("label"),
+                url=match.group("url"),
+                label_range=_range(line_no, *match.span("label")),
+                url_range=_range(line_no, *match.span("url")),
+            )
+            definitions.setdefault(_normalize_label(definition.label), definition)
+    return definitions
+
+
+def _usages(text: str) -> Iterator[tuple[int, re.Match[str], str]]:
+    """Yield ``(line, match, line text)`` for every bracketed usage."""
+    for line_no, line in enumerate(_text_lines(text)):
+        if _DEFINITION_RE.match(line):
+            continue
+        for match in _USAGE_RE.finditer(line):
+            yield line_no, match, line
+
+
+def _reference_label(match: re.Match[str], line: str) -> str | None:
+    """The label a ``[text][label]``, ``[text][]`` or ``[text]`` usage names."""
+    explicit = match.group("label")
+    if explicit is not None:
+        return explicit or match.group("text")
+    following = line[match.end() : match.end() + 1]
+    if following and following in _NOT_A_SHORTCUT:
+        return None
+    return match.group("text")
+
+
+def _inline_link(line_no: int, match: re.Match[str]) -> Link:
+    url = match.group("url")
+    path, version, anchor = _split_url(url)
     return Link(
-        text=match.group(1),
-        text_range=_range(line_no, match.start(1), match.end(1)),
-        url=match.group(2),
-        url_range=_range(line_no, match.start(2), match.end(2)),
+        text=match.group("text"),
+        text_range=_range(line_no, *match.span("text")),
+        url=url,
+        url_range=_range(line_no, *match.span("url")),
         path=path,
         version=version,
         anchor=anchor,
     )
 
 
+def _reference_link(
+    line_no: int, match: re.Match[str], definition: LinkDefinition
+) -> Link:
+    path, version, anchor = _split_url(definition.url)
+    return Link(
+        text=match.group("text"),
+        text_range=_range(line_no, *match.span("text")),
+        url=definition.url,
+        url_range=definition.url_range,
+        path=path,
+        version=version,
+        anchor=anchor,
+        usage=_range(line_no, *match.span()),
+    )
+
+
 def parse_links(text: str) -> list[Link]:
-    """Return every inline ``[text](url)`` link with its ranges."""
-    return [
-        _link_from_match(index, match)
-        for index, line in enumerate(text.split("\n"))
-        for match in _LINK_RE.finditer(line)
-    ]
+    """Return every link: inline ``[text](url)`` and resolved reference-style.
+
+    A reference-style usage is resolved through its definition; usages whose
+    label is undefined are not links.
+    """
+    definitions = parse_link_definitions(text)
+    links: list[Link] = []
+    for line_no, match, line in _usages(text):
+        if match.group("url") is not None:
+            links.append(_inline_link(line_no, match))
+            continue
+        label = _reference_label(match, line)
+        definition = definitions.get(_normalize_label(label)) if label else None
+        if definition is not None:
+            links.append(_reference_link(line_no, match, definition))
+    return links
+
+
+def parse_unresolved_references(text: str) -> list[UnresolvedReference]:
+    """Return explicit and implicit references whose label is not defined.
+
+    Shortcut references such as ``[text]`` are plain text unless defined, so
+    they are never reported.
+    """
+    definitions = parse_link_definitions(text)
+    unresolved: list[UnresolvedReference] = []
+    for line_no, match, _ in _usages(text):
+        label = match.group("label")
+        if label is None or match.group("url") is not None:
+            continue
+        name = label or match.group("text")
+        if _normalize_label(name) not in definitions:
+            group = "label" if label else "text"
+            unresolved.append(
+                UnresolvedReference(
+                    name, match.group("text"), _range(line_no, *match.span(group))
+                )
+            )
+    return unresolved
 
 
 def parse_todos(text: str) -> list[Todo]:
