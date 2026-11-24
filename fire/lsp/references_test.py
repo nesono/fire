@@ -6,9 +6,14 @@ from pathlib import Path
 import pytest
 from lsprotocol import types as lsp
 
-from fire.lsp.document_parser import Position
+from fire.lsp.document_parser import Position, Range
 from fire.lsp.link_index import IndexedLink
-from fire.lsp.references import ReferenceTarget, find_references, target_at
+from fire.lsp.references import (
+    ReferenceTarget,
+    declaration_range,
+    find_references,
+    target_at,
+)
 from fire.lsp.workspace import Workspace
 
 _SUFFIXES = (".sysreq.md",)
@@ -122,6 +127,35 @@ class TestFindReferences:
 
     def test_no_references(self, workspace):
         assert find_references([], self._params_target(workspace), workspace.root) == []
+
+
+class TestDeclarationRange:
+    def _target(self, workspace, kind, name, version):
+        return ReferenceTarget(workspace.root / "x", kind, name, version)
+
+    def test_requirement_heading_id(self, workspace):
+        target = self._target(workspace, "requirement", "REQ-B", 1)
+        assert declaration_range(target, _REQS) == Range(Position(4, 3), Position(4, 8))
+
+    def test_parameter_key_of_the_version(self, workspace):
+        target = self._target(workspace, "parameter", "max_speed", 1)
+        assert declaration_range(target, _PARAMS) == Range(
+            Position(0, 0), Position(0, 12)
+        )
+
+    def test_unknown_parameter_version_uses_the_latest(self, workspace):
+        target = self._target(workspace, "parameter", "max_speed", 9)
+        assert declaration_range(target, _PARAMS).start.line == 2
+
+    def test_missing_symbol(self, workspace):
+        assert (
+            declaration_range(self._target(workspace, "requirement", "NOPE", 1), _REQS)
+            is None
+        )
+        assert (
+            declaration_range(self._target(workspace, "parameter", "nope", 1), _PARAMS)
+            is None
+        )
 
 
 if __name__ == "__main__":

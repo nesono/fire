@@ -39,6 +39,15 @@ jumps to the latest one; if the file exists but the ID or parameter does not, it
 jumps to the top of the file. In Neovim use `vim.lsp.buf.definition()` or
 `<C-]>`. Unsaved buffers are preferred over files on disk.
 
+## Find references
+
+On a requirement heading ID, a `name_vN` key in a parameter file, or a link,
+find references lists every link in the workspace that points at that
+requirement or parameter, including `Parent:` links. Links to exactly the
+version at the cursor come first. With `includeDeclaration` the heading or key
+itself is listed first. Open, unsaved documents are searched with their current
+content. In Neovim use `vim.lsp.buf.references()`.
+
 ## Document symbols
 
 The outline of a requirement file lists each requirement ID with its metadata

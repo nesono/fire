@@ -131,8 +131,10 @@ py_library(
     deps = [
         ":conversion",
         ":diagnostics",
+        ":link_index",
         ":navigation",
         ":reference_diagnostics",
+        ":references",
         ":symbol_search",
         ":symbols",
         ":uris",

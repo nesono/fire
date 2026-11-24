@@ -16,8 +16,15 @@ from fire.lsp.conversion import (
     to_lsp_symbol,
 )
 from fire.lsp.diagnostics import diagnose_requirements
+from fire.lsp.link_index import LinkIndex
 from fire.lsp.navigation import definition_at
 from fire.lsp.reference_diagnostics import ReferenceChecker
+from fire.lsp.references import (
+    ReferenceTarget,
+    declaration_range,
+    find_references,
+    target_at,
+)
 from fire.lsp.symbol_search import search_symbols
 from fire.lsp.symbols import parameter_symbols, requirement_symbols
 from fire.lsp.uris import uri_to_path
@@ -49,6 +56,7 @@ class Analyzer:
         self._models = build_models_from_config(config)
         self._suffixes = tuple(dt.suffix for dt in config.document_types.values())
         self._indexes: dict[Path, WorkspaceIndex] = {}
+        self._link_indexes: dict[Path, LinkIndex] = {}
 
     def _workspace(self, path: Path, overlay: Mapping[Path, str]) -> Workspace | None:
         root = find_workspace_root(path)
@@ -148,3 +156,62 @@ class Analyzer:
             )
             for symbol in search_symbols(symbols, query, _WORKSPACE_SYMBOL_LIMIT)
         ]
+
+    def _link_index_for(self, root: Path) -> LinkIndex:
+        if root not in self._link_indexes:
+            self._link_indexes[root] = LinkIndex(root, self._suffixes)
+        return self._link_indexes[root]
+
+    def _declaration(
+        self, target: ReferenceTarget, workspace: Workspace
+    ) -> lsp.Location | None:
+        """Locate the heading or ``name_vN`` key that *target* refers to."""
+        if not target.path.is_relative_to(workspace.root):
+            return None
+        located = workspace.locate(
+            "/" + target.path.relative_to(workspace.root).as_posix()
+        )
+        found = declaration_range(target, located[1]) if located else None
+        if located is None or found is None:
+            return None
+        return lsp.Location(
+            located[0].as_uri(), to_lsp_range(found, located[1].split("\n"))
+        )
+
+    def _reference_locations(
+        self, target: ReferenceTarget, root: Path, overlay: Mapping[Path, str]
+    ) -> list[lsp.Location]:
+        links = self._link_index_for(root).links(overlay)
+        return [link.location for link in find_references(links, target, root)]
+
+    def references(
+        self,
+        uri: str,
+        text: str,
+        position: lsp.Position,
+        include_declaration: bool,
+        overlay: Mapping[Path, str] | None = None,
+    ) -> list[lsp.Location]:
+        """Return the links that point at the symbol at *position*.
+
+        The cursor may be on a link, a requirement heading ID, or a parameter
+        key. Links to the exact version at the cursor come first.
+        """
+        path = uri_to_path(uri)
+        workspace = self._workspace(path, overlay or {}) if path else None
+        if path is None or workspace is None or not self._has_symbols(path):
+            return []
+        cursor = from_lsp_position(position, text.split("\n"))
+        target = target_at(text, cursor, path.resolve(), workspace, self._suffixes)
+        if target is None:
+            return []
+        locations = self._reference_locations(target, workspace.root, overlay or {})
+        declaration = (
+            self._declaration(target, workspace) if include_declaration else None
+        )
+        return [declaration, *locations] if declaration else locations
+
+    def _has_symbols(self, path: Path) -> bool:
+        if path.suffix == _YAML_SUFFIX:
+            return True
+        return model_for_suffix(self._config, self._models, str(path)) is not None
