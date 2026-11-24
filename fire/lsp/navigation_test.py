@@ -114,5 +114,21 @@ class TestNoDefinition:
         assert _definition(workspace, "plain text", character=2) is None
 
 
+class TestReferenceStyleDefinition:
+    _TEXT = "See [@max_speed][p] here.\n\n[p]: /params.yaml?version=1#max_speed\n"
+
+    def test_usage_resolves_through_its_definition(self, workspace):
+        target = _definition(workspace, self._TEXT, character=8)
+        assert target.path == (workspace.root / "params.yaml").resolve()
+        assert target.range == Range(Position(0, 0), Position(0, 12))
+
+    def test_cursor_on_the_label_part_counts(self, workspace):
+        assert _definition(workspace, self._TEXT, character=18) is not None
+
+    def test_undefined_label_has_no_definition(self, workspace):
+        text = "See [@max_speed][nope] here.\n"
+        assert _definition(workspace, text, character=8) is None
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

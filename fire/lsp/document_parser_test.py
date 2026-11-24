@@ -6,9 +6,11 @@ import pytest
 from fire.lsp.document_parser import (
     Position,
     Range,
+    parse_link_definitions,
     parse_links,
     parse_requirements,
     parse_todos,
+    parse_unresolved_references,
 )
 
 
@@ -143,6 +145,120 @@ class TestTodos:
 
     def test_no_todos(self):
         assert parse_todos("nothing here") == []
+
+
+def _at(text: str, needle: str, occurrence: int = 0) -> Range:
+    """The range of the *occurrence*-th *needle* in a multi-line *text*."""
+    offset = -1
+    for _ in range(occurrence + 1):
+        offset = text.index(needle, offset + 1)
+    line = text.count("\n", 0, offset)
+    start = offset - (text.rfind("\n", 0, offset) + 1)
+    return _range(line, start, start + len(needle))
+
+
+_DEFINITION = "[1]: /a.sysreq.md?version=2#REQ-1"
+_EXPLICIT = f"See [REQ-1][1] here.\n\n{_DEFINITION}\n"
+
+
+class TestLinkDefinitions:
+    def test_label_url_and_ranges(self):
+        definition = parse_link_definitions(_EXPLICIT)["1"]
+        assert definition.url == "/a.sysreq.md?version=2#REQ-1"
+        assert definition.label_range == _at(_EXPLICIT, "1", 2)
+        assert definition.url_range == _at(_EXPLICIT, "/a.sysreq.md?version=2#REQ-1")
+
+    def test_labels_are_case_and_whitespace_insensitive(self):
+        text = "[My  Label]: /a.md\n"
+        assert "my label" in parse_link_definitions(text)
+
+    def test_first_definition_wins(self):
+        text = "[a]: /first.md\n[a]: /second.md\n"
+        assert parse_link_definitions(text)["a"].url == "/first.md"
+
+    def test_must_start_the_line(self):
+        assert parse_link_definitions("text [a]: /x.md\n") == {}
+
+    def test_external_definition(self):
+        text = "[UN ECE R13-H]: https://unece.org/x\n"
+        assert parse_link_definitions(text)["un ece r13-h"].url == "https://unece.org/x"
+
+
+class TestReferenceStyleLinks:
+    def test_explicit_reference(self):
+        (link,) = parse_links(_EXPLICIT)
+        assert link.text == "REQ-1"
+        assert (link.path, link.version, link.anchor) == ("/a.sysreq.md", 2, "REQ-1")
+        assert link.text_range == _at(_EXPLICIT, "REQ-1")
+
+    def test_url_range_points_at_the_definition(self):
+        (link,) = parse_links(_EXPLICIT)
+        assert link.url_range == _at(_EXPLICIT, "/a.sysreq.md?version=2#REQ-1")
+
+    def test_span_is_the_usage(self):
+        (link,) = parse_links(_EXPLICIT)
+        assert link.span == _at(_EXPLICIT, "[REQ-1][1]")
+
+    def test_implicit_reference(self):
+        text = "See [@x][] here.\n\n[@x]: /p.yaml?version=1#x\n"
+        (link,) = parse_links(text)
+        assert (link.text, link.path, link.anchor) == ("@x", "/p.yaml", "x")
+        assert link.span == _at(text, "[@x][]")
+
+    def test_shortcut_reference(self):
+        text = "See [@x] here.\n\n[@x]: /p.yaml?version=1#x\n"
+        (link,) = parse_links(text)
+        assert link.span == _at(text, "[@x]")
+
+    def test_shortcut_followed_by_a_colon_is_not_a_link(self):
+        text = "For each pair in [@x]: do it.\n\n[@x]: /p.yaml?version=1#x\n"
+        assert parse_links(text) == []
+
+    def test_undefined_shortcut_is_not_a_link(self):
+        assert parse_links("see [maybe] later and [ ] checkbox\n") == []
+
+    def test_labels_match_case_insensitively(self):
+        text = "See [REQ-1][Ref].\n\n[ref]: /a.md?version=1#REQ-1\n"
+        assert len(parse_links(text)) == 1
+
+    def test_one_link_per_usage_of_the_same_definition(self):
+        text = "[A][1] and [B][1]\n\n[1]: /a.md?version=1#A\n"
+        assert [link.text for link in parse_links(text)] == ["A", "B"]
+
+    def test_inline_links_still_work_next_to_reference_links(self):
+        text = "[A](/a.md?version=1#A) and [B][1]\n\n[1]: /b.md?version=1#B\n"
+        assert [(link.text, link.path) for link in parse_links(text)] == [
+            ("A", "/a.md"),
+            ("B", "/b.md"),
+        ]
+
+    def test_definition_lines_are_not_usages(self):
+        assert parse_links("[1]: /a.md?version=1#A\n[1]: /a.md\n") == []
+
+    def test_inline_span_is_unchanged(self):
+        text = "See [@a](/p.yaml?version=1#a) here"
+        (link,) = parse_links(text)
+        assert link.span == _at(text, "[@a](/p.yaml?version=1#a)")
+
+
+class TestUnresolvedReferences:
+    def test_explicit_label_without_definition(self):
+        text = "See [REQ-1][nope] here.\n"
+        (ref,) = parse_unresolved_references(text)
+        assert (ref.label, ref.text) == ("nope", "REQ-1")
+        assert ref.range == _at(text, "nope")
+
+    def test_implicit_label_without_definition(self):
+        text = "See [REQ-1][] here.\n"
+        (ref,) = parse_unresolved_references(text)
+        assert ref.label == "REQ-1"
+        assert ref.range == _at(text, "REQ-1")
+
+    def test_defined_labels_are_resolved(self):
+        assert parse_unresolved_references(_EXPLICIT) == []
+
+    def test_shortcuts_are_never_unresolved(self):
+        assert parse_unresolved_references("see [maybe] later\n") == []
 
 
 if __name__ == "__main__":

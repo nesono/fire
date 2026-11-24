@@ -88,6 +88,6 @@ def diagnose_requirements(
         diagnostics.extend(references.diagnose(text))
     for requirement in requirements:
         diagnostics.extend(_requirement_diagnostics(requirement, seen, model))
-    return sorted(
-        diagnostics, key=lambda d: (d.range.start.line, d.range.start.character)
-    )
+    # Several usages of one reference-style definition report it only once.
+    unique = dict.fromkeys(diagnostics)
+    return sorted(unique, key=lambda d: (d.range.start.line, d.range.start.character))

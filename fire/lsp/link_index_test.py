@@ -69,5 +69,16 @@ class TestLinkIndex:
         assert names == ["edited"]
 
 
+class TestReferenceStyleLinks:
+    def test_usage_is_indexed_with_the_definitions_target(self, root):
+        text = "See [@x][p] here.\n\n[p]: /params.yaml?version=3#x\n"
+        (root / "r.sysreq.md").write_text(text)
+        link = next(
+            entry for entry in _links(LinkIndex(root, _SUFFIXES)) if entry.name == "x"
+        )
+        assert (link.kind, link.path, link.version) == ("parameter", "/params.yaml", 3)
+        assert link.location.range == lsp.Range(lsp.Position(0, 4), lsp.Position(0, 11))
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
