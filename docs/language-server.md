@@ -110,6 +110,9 @@ In Neovim use `vim.lsp.buf.workspace_symbol("query")`.
 | `FIRE013` | Linked requirement ID or parameter not found in the file |
 | `FIRE014` | Link points at a version newer than the file has         |
 | `FIRE015` | Link points at an older version than the file has        |
+| `FIRE016` | Reference-style link uses a label that is not defined    |
+| `FIRE017` | Parameter file is not valid YAML                         |
+| `FIRE018` | Parameter file violates a parameter rule                 |
 
 Links are resolved against the nearest ancestor directory that contains a
 `MODULE.bazel` or `WORKSPACE` file; without one only the syntax checks run.
