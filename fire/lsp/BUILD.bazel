@@ -137,11 +137,13 @@ py_library(
         ":link_insertion",
         ":link_targets",
         ":navigation",
+        ":parameter_completion",
         ":parameter_diagnostics",
         ":reference_diagnostics",
         ":references",
         ":symbol_search",
         ":symbols",
+        ":unit_index",
         ":uris",
         ":workspace",
         ":workspace_index",
@@ -562,6 +564,48 @@ py_test(
         ":link_insertion",
         ":link_targets",
         "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "parameter_completion",
+    srcs = ["parameter_completion.py"],
+    deps = [
+        ":completion",
+        ":document_parser",
+        "@pip//lsprotocol",
+        "@pip//pyyaml",
+    ],
+)
+
+py_test(
+    name = "parameter_completion_test",
+    size = "small",
+    srcs = ["parameter_completion_test.py"],
+    deps = [
+        ":document_parser",
+        ":parameter_completion",
+        "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "unit_index",
+    srcs = ["unit_index.py"],
+    deps = [
+        ":file_index",
+        ":parameter_diagnostics",
+    ],
+)
+
+py_test(
+    name = "unit_index_test",
+    size = "small",
+    srcs = ["unit_index_test.py"],
+    deps = [
+        ":unit_index",
         "@pip//pytest",
     ],
 )

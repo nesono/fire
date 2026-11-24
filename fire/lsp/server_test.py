@@ -391,6 +391,18 @@ def _complete(client: _Client, uri: str, line: int, character: int):
     return client.receive_until(lambda m: m.get("id") == 80)["result"]
 
 
+class TestParameterFileCompletion:
+    def test_field_names_and_units(self, client, workspace):
+        (workspace / "other.yaml").write_text("x_v1:\n  unit: furlong\n")
+        _initialize_with_folder(client, workspace)
+        uri = (workspace / "params.yaml").as_uri()
+        _open(client, uri, "a_v1:\n  value: 1\n  \nb_v1:\n  unit: \n", "yaml")
+        keys = _complete(client, uri, 2, 2)["items"]
+        assert [i["label"] for i in keys] == ["unit", "description", "type"]
+        units = _complete(client, uri, 4, 8)["items"]
+        assert units[0]["label"] == "furlong"
+
+
 class TestLinkCompletion:
     def test_paths_versions_and_anchors(self, client, workspace):
         (workspace / "p.yaml").write_text(_PARAMS)

@@ -445,5 +445,61 @@ class TestLinkInsertion:
         assert _ANALYZER.completions(uri, "[@", lsp.Position(0, 2)) == []
 
 
+class TestParameterCompletions:
+    _URI = "file:///a/params.yaml"
+    _TEXT = "a_v1:\n  value: 1\n  §\n"
+
+    def _items(self, marked: str, uri: str = _URI, overlay=None):
+        before, _, after = marked.partition("§")
+        line = before.count("\n")
+        character = len(before[before.rfind("\n") + 1 :].encode("utf-16-le")) // 2
+        return _ANALYZER.completions(
+            uri, before + after, lsp.Position(line, character), overlay
+        )
+
+    def test_field_names(self):
+        items = self._items(self._TEXT)
+        assert [i.label for i in items] == ["unit", "description", "type"]
+        assert items[0].text_edit.new_text == "unit: "
+        assert items[0].kind == lsp.CompletionItemKind.Property
+
+    def test_table_type(self):
+        items = self._items("a_v1:\n  type: §\n")
+        assert [i.label for i in items] == ["table"]
+
+    def test_common_units_without_a_workspace(self):
+        labels = [i.label for i in self._items("a_v1:\n  unit: §\n")]
+        assert "m/s" in labels and "1" in labels
+
+    def test_units_used_in_the_workspace_come_first(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        (tmp_path / "other.yaml").write_text("x_v1:\n  unit: furlong\n")
+        uri = (tmp_path / "params.yaml").as_uri()
+        items = self._items("a_v1:\n  unit: §\n", uri)
+        assert items[0].label == "furlong"
+        assert items[0].detail == "used in this workspace"
+
+    def test_units_of_unsaved_documents_count(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        uri = (tmp_path / "params.yaml").as_uri()
+        overlay = {tmp_path / "other.yaml": "x_v1:\n  unit: cubit\n"}
+        items = self._items("a_v1:\n  unit: §\n", uri, overlay)
+        assert items[0].label == "cubit"
+
+    def test_quoted_units(self):
+        by_label = {
+            i.label: i.text_edit.new_text for i in self._items("a_v1:\n  unit: §\n")
+        }
+        assert by_label["1"] == '"1"'
+
+    def test_other_yaml_files_get_nothing(self):
+        assert self._items("steps:\n  §\n", "file:///a/ci.yaml") == []
+
+    def test_columns_are_utf16(self):
+        text = "a_v1:\n  description: 😀\n  un§\n"
+        items = self._items(text)
+        assert items[0].text_edit.range.start == lsp.Position(2, 2)
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
