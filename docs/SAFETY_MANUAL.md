@@ -109,7 +109,7 @@ IDs are not reused when a limitation is resolved. Fixed defects are recorded in 
 | L-5 | **No tool requirements specification and no coverage metric.** Behavior is defined by README, source code, and tests. CI does not measure code coverage.                                                                                                                                                                                   | Code review | Qualification effort       |
 | L-6 | **PDF rendering depends on the host.** WeasyPrint uses native libraries and fonts of the host. Building PDFs via Bazel is not supported on macOS (see README).                                                                                                                                                                             | README      | Presentation only          |
 
-| L-8 | **Escaping in generated code has limits.** String values are escaped per target language, and descriptions and units are flattened to one line in comments (a trailing backslash is dropped from C++ comments). Trigraph sequences (`??/`) are not escaped, which matters only for C++ modes that enable trigraphs. CI checks the generated literals and runs the Python output; C++, Go, Rust, and Java output with special characters is not compiled in CI. | Code review | Mostly safe (compile error) |
+| L-8 | **Escaping in generated code has limits.** String values are escaped per target language, and descriptions and units are flattened to one line in comments (a trailing backslash is dropped from C++ comments). Trigraph sequences (`??/`) are not escaped, which matters only for C++ modes that enable trigraphs. CI compiles and runs generated code with special characters in values and units for all five languages (`fire/starlark/codegen_test`), in the default C++ language mode only. | Code review, CI tests | Mostly safe (compile error) |
 
 "Unsafe" means that a defect can pass undetected, "safe" means that FIRE fails or the product does not compile.
 
@@ -171,6 +171,7 @@ It has not been assessed against a safety standard.
 | Failure tests that confirm invalid inputs fail the build or produce warnings              | `fire/starlark/failure_test/`, `run_failure_tests.sh` |
 | Integration test as a consumer of the module, with a Python version matrix (3.11 to 3.15) | `integration_test/`                                   |
 | Example project with requirements, parameters, and code in five languages                 | `examples/`                                           |
+| Compile-and-run tests of generated code with special characters in five languages         | `fire/starlark/codegen_test/`                         |
 | CI on Linux and macOS with Bazel 7, 8, and 9; type checking with `ty`; pre-commit checks  | `.github/workflows/ci.yaml`                           |
 | Pinned Python dependencies                                                                | `requirements.txt`, `MODULE.bazel.lock`               |
 | Pull-request based workflow; test-driven development required                             | `AGENT.md`, `CONTRIBUTING.md`                         |

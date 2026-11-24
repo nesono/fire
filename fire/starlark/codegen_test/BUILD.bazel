@@ -1,0 +1,115 @@
+"""Compile-and-run tests for generated code with special characters.
+
+The parameter file contains strings, descriptions and units that need escaping
+or mapping. Each language compiles the generated code and asserts the values,
+so a regression in a generator fails the build instead of a consumer's build.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+load("@rules_java//java:defs.bzl", "java_library", "java_test")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("//fire/starlark:codegen.bzl", "generate_cc_parameters", "generate_go_parameters", "generate_java_parameters", "generate_python_parameters", "generate_rust_parameters")
+load("//fire/starlark:parameters.bzl", "parameter_library")
+
+parameter_library(
+    name = "special_params",
+    src = "special_params.yaml",
+)
+
+# C++
+generate_cc_parameters(
+    name = "special_params_h",
+    base_name = "special_params_cc",
+    parameter_library = ":special_params",
+)
+
+cc_library(
+    name = "special_params_cc",
+    hdrs = [":special_params_h"],
+)
+
+cc_test(
+    name = "special_params_cc_test",
+    srcs = ["special_params_test.cc"],
+    deps = [":special_params_cc"],
+)
+
+# Python
+generate_python_parameters(
+    name = "special_params_py_src",
+    base_name = "special_params_py",
+    parameter_library = ":special_params",
+)
+
+py_library(
+    name = "special_params_py",
+    data = [":special_params_py_src"],
+)
+
+py_test(
+    name = "special_params_py_test",
+    srcs = ["special_params_test.py"],
+    main = "special_params_test.py",
+    deps = [
+        ":special_params_py",
+        "@pip//pytest",
+    ],
+)
+
+# Go
+generate_go_parameters(
+    name = "special_params_go_src",
+    base_name = "special_params_go",
+    parameter_library = ":special_params",
+)
+
+go_library(
+    name = "special_params_go",
+    srcs = [":special_params_go_src"],
+)
+
+go_test(
+    name = "special_params_go_test",
+    srcs = ["special_params_test.go"],
+    deps = [":special_params_go"],
+)
+
+# Rust
+generate_rust_parameters(
+    name = "special_params_rs_src",
+    parameter_library = ":special_params",
+)
+
+rust_library(
+    name = "special_params_rs",
+    srcs = [":special_params_rs_src"],
+)
+
+rust_test(
+    name = "special_params_rust_test",
+    srcs = ["special_params_test.rs"],
+    crate_root = "special_params_test.rs",
+    deps = [":special_params_rs"],
+)
+
+# Java
+generate_java_parameters(
+    name = "special_params_java_src",
+    class_name = "SpecialParams",
+    package_prefix = "com.example.special",
+    parameter_library = ":special_params",
+)
+
+java_library(
+    name = "special_params_java",
+    srcs = [":special_params_java_src"],
+)
+
+java_test(
+    name = "special_params_java_test",
+    srcs = ["SpecialCharactersTest.java"],
+    test_class = "com.example.special.SpecialCharactersTest",
+    deps = [":special_params_java"],
+)
