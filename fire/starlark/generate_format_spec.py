@@ -7,7 +7,11 @@ The document type sections are driven by the config; shared sections
 
 from __future__ import annotations
 
-from fire.starlark.config_models import FireConfig, load_config
+from fire.starlark.config_models import (
+    DocumentTypeDefinition,
+    FireConfig,
+    load_config,
+)
 
 
 def _generate_field_docs(
@@ -81,6 +85,17 @@ def _generate_metadata_format(config: FireConfig, doc_type_name: str) -> str:
     return " | ".join(parts)
 
 
+def _generate_coverage_docs(doc_type: DocumentTypeDefinition) -> list[str]:
+    """Describe the coverage the release report requires of a document type."""
+    kinds = ", ".join(f"`{kind}`" for kind in doc_type.required_coverage())
+    text = (
+        f"The release report requires: {kinds}."
+        if kinds
+        else "The release report requires no coverage."
+    )
+    return ["### Release Coverage", "", text, ""]
+
+
 def _generate_document_type_section(
     config: FireConfig, doc_type_name: str
 ) -> list[str]:
@@ -129,6 +144,7 @@ def _generate_document_type_section(
             _generate_field_docs(config, fname, required=fname in required_set)
         )
 
+    lines.extend(_generate_coverage_docs(doc_type))
     return lines
 
 

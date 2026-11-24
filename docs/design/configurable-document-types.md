@@ -71,6 +71,7 @@ document_types:
     description: "High-level system requirements"
     required_fields: [sil, sec, version]
     optional_fields: [parent]
+    coverage: [child]
 
   swreq:
     suffix: ".swreq.md"
@@ -78,6 +79,7 @@ document_types:
     description: "Implementation-level software requirements"
     required_fields: [sil, sec, version]
     optional_fields: [parent]
+    coverage: [implementation, verification]
 
   regreq:
     suffix: ".regreq.md"
@@ -85,6 +87,7 @@ document_types:
     description: "Regulatory obligations (SIL/Sec optional)"
     required_fields: [version]
     optional_fields: [sil, sec, parent]
+    coverage: [verification]
 ```
 
 Consumers extend this by adding their own types:
@@ -103,6 +106,7 @@ handbook:
 - **`field_definitions`** are reusable across document types (sil is identical for sysreq and swreq)
 - **Field types**: `enum`, `bool`, `int`, `parent_link` — matching existing Pydantic validators. Extensible later with `string`, `float`, `regex`
 - **Default config** ships with FIRE and matches current hardcoded behavior — backwards compatible with no consumer config
+- **Coverage** (`coverage:` per document type, one of `child`, `implementation`, `verification`) declares what the release report requires of a type. A type that does not declare it requires `implementation` and `verification`, which was the behavior for every type before coverage was configurable; `coverage: []` requires nothing
 - **Dynamic Pydantic models** built at runtime from config, preserving error reporting quality and `extra: "forbid"` behavior
 
 ## Files to Create

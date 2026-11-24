@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Unit tests for release report draft parsers."""
 
+import json
+
 import pytest
 
 from fire.starlark import release_report
+from fire.starlark.config_models import FireConfig
 
 
 def test_parse_source_traceability_data():
@@ -151,7 +154,7 @@ max_speed_v1:
     assert "# Release Readiness Report: Demo" in report
     assert "## Version Consistency" in report
     assert "## TODO Inventory" in report
-    assert "## Implementation & Verification Coverage" in report
+    assert "## Coverage" in report
     assert "```mermaid" in report
 
 
@@ -183,6 +186,128 @@ def test_report_states_unique_requirement_ids(tmp_path):
 
     assert "Duplicate requirement IDs" not in report
     assert "- All requirement IDs are unique." in report
+
+
+def _write_doc(tmp_path, name, req_id, parent=None):
+    parent_field = f" | Parent: [{parent}](/{parent}.sysreq.md?version=1#{parent})"
+    path = tmp_path / name
+    path.write_text(
+        f"## {req_id}\n\nSIL: QM | Sec: false | Version: 1"
+        f"{parent_field if parent else ''}\n\nBody.\n"
+    )
+    return str(path)
+
+
+def _write_trace(tmp_path, implements=(), verifies=()):
+    def entries(ids):
+        return {f"src/{r}.py": [{"req_id": r, "version": 1}] for r in ids}
+
+    path = tmp_path / "trace.json"
+    path.write_text(
+        json.dumps({"implements": entries(implements), "verifies": entries(verifies)})
+    )
+    return str(path)
+
+
+def _report(paths, traces=(), config=None):
+    return release_report.generate_release_report(
+        list(paths), [], list(traces), "Demo", config
+    )
+
+
+class TestCoverageByDocumentType:
+    def test_system_requirement_needs_a_child_not_traces(self, tmp_path):
+        sys_req = _write_doc(tmp_path, "a.sysreq.md", "REQ-SYS-001")
+        sw_req = _write_doc(tmp_path, "b.swreq.md", "REQ-SW-001", "REQ-SYS-001")
+        trace = _write_trace(tmp_path, ["REQ-SW-001"], ["REQ-SW-001"])
+
+        report = _report([sys_req, sw_req], [trace])
+
+        assert "**Status: READY FOR RELEASE**" in report
+        assert "- All requirements meet the coverage required" in report
+
+    def test_system_requirement_without_child_is_reported(self, tmp_path):
+        sys_req = _write_doc(tmp_path, "a.sysreq.md", "REQ-SYS-001")
+
+        report = _report([sys_req])
+
+        assert "**Status: NOT READY FOR RELEASE**" in report
+        assert "Missing child requirements: **1**" in report
+        assert "### Missing Child Requirements" in report
+        assert "- [REQ-SYS-001](" in report.split("### Missing Child Requirements")[1]
+        assert "Missing implementation traces" not in report
+
+    def test_child_counts_regardless_of_pinned_parent_version(self, tmp_path):
+        sys_req = _write_doc(tmp_path, "a.sysreq.md", "REQ-SYS-001")
+        path = tmp_path / "b.swreq.md"
+        path.write_text(
+            "## REQ-SW-001\n\nSIL: QM | Sec: false | Version: 1 | "
+            "Parent: [REQ-SYS-001](/a.sysreq.md?version=7#REQ-SYS-001)\n"
+        )
+
+        report = _report([sys_req, str(path)])
+
+        assert "Missing child requirements" not in report
+
+    def test_software_requirement_needs_implementation_and_verification(self, tmp_path):
+        sw_req = _write_doc(tmp_path, "b.swreq.md", "REQ-SW-001")
+
+        report = _report([sw_req])
+
+        assert "Missing implementation traces: **1**" in report
+        assert "Missing verification traces: **1**" in report
+        assert "Missing child requirements" not in report
+
+    def test_regulatory_requirement_needs_only_verification(self, tmp_path):
+        reg_req = _write_doc(tmp_path, "c.regreq.md", "REQ-REG-001")
+
+        report = _report([reg_req])
+        assert "Missing verification traces: **1**" in report
+        assert "Missing implementation traces" not in report
+
+        trace = _write_trace(tmp_path, verifies=["REQ-REG-001"])
+        assert "**Status: READY FOR RELEASE**" in _report([reg_req], [trace])
+
+    def test_unknown_suffix_keeps_implementation_and_verification(self, tmp_path):
+        plain = _write_doc(tmp_path, "notes.md", "REQ-X-001")
+
+        report = _report([plain])
+
+        assert "Missing implementation traces: **1**" in report
+        assert "Missing verification traces: **1**" in report
+
+    def test_configured_coverage_replaces_the_default(self, tmp_path):
+        config = FireConfig.model_validate(
+            {
+                "fire_config_version": 1,
+                "field_definitions": {
+                    "version": {"display_name": "Version", "type": "int"}
+                },
+                "document_types": {
+                    "handbook": {
+                        "suffix": ".handbook.md",
+                        "display_name": "Handbook",
+                        "required_fields": ["version"],
+                        "coverage": [],
+                    }
+                },
+            }
+        )
+        entry = tmp_path / "hb.handbook.md"
+        entry.write_text("## HB-001\n\nVersion: 1\n\nBody.\n")
+
+        report = _report([str(entry)], config=config)
+
+        assert "**Status: READY FOR RELEASE**" in report
+
+    def test_report_lists_the_required_coverage_per_document_type(self, tmp_path):
+        sys_req = _write_doc(tmp_path, "a.sysreq.md", "REQ-SYS-001")
+
+        report = _report([sys_req])
+
+        assert "### Required Coverage" in report
+        assert "- System Requirement (`.sysreq.md`): child" in report
+        assert "- Regulatory Requirement (`.regreq.md`): verification" in report
 
 
 if __name__ == "__main__":

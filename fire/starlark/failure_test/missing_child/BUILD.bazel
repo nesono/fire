@@ -1,0 +1,28 @@
+"""Tests for requirements that lack the coverage their document type requires.
+
+These tests verify that the release readiness gate fails when a system
+requirement has no child requirement.
+They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
+"""
+
+load("//fire/starlark:reports.bzl", "release_report")
+load("//fire/starlark:requirements.bzl", "requirement_library")
+load(":not_ready.bzl", "release_not_ready_test")
+
+requirement_library(
+    name = "orphan_requirements",
+    srcs = ["orphan.sysreq.md"],
+)
+
+release_report(
+    name = "orphan_report",
+    out = "ORPHAN_REPORT.md",
+    product = "Missing child",
+    requirements = [":orphan_requirements"],
+)
+
+# System requirement without a child requirement - should FAIL
+release_not_ready_test(
+    name = "test_missing_child",
+    report = ":orphan_report",
+)

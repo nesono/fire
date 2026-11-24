@@ -166,6 +166,23 @@ for target in $FAILURE_TARGETS; do
             fi
         fi
 
+    elif has_tag "$target" "release_not_ready"; then
+        # Release readiness gates must fail and name the missing coverage
+        set +e
+        output=$(bazel test $BAZEL_OPTS --test_output=all "$target" 2>&1)
+        test_exit_code=$?
+        set -e
+
+        if [ $test_exit_code -ne 0 ] && grep -q "Missing child requirements" <<< "$output"; then
+            echo "✅ PASS: Release readiness failed with missing child requirements"
+            SUCCESSES=$((SUCCESSES + 1))
+        else
+            echo "❌ FAIL: Release readiness should fail with missing child requirements"
+            echo "Exit code: $test_exit_code"
+            head -20 <<< "$output"
+            FAILURES=$((FAILURES + 1))
+        fi
+
     elif has_tag "$target" "too_many_versions"; then
         set +e
         output=$(bazel build $BAZEL_OPTS --action_env=CACHE_BUST=$RANDOM "$target" 2>&1)
