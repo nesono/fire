@@ -322,3 +322,42 @@ py_test(
         "@pip//pytest",
     ],
 )
+
+py_library(
+    name = "workspace_index",
+    srcs = ["workspace_index.py"],
+    deps = [
+        ":conversion",
+        ":symbols",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_library(
+    name = "symbol_search",
+    srcs = ["symbol_search.py"],
+    deps = [":workspace_index"],
+)
+
+py_test(
+    name = "workspace_index_test",
+    size = "small",
+    srcs = ["workspace_index_test.py"],
+    deps = [
+        ":workspace_index",
+        "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "symbol_search_test",
+    size = "small",
+    srcs = ["symbol_search_test.py"],
+    deps = [
+        ":symbol_search",
+        ":workspace_index",
+        "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
