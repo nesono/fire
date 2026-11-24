@@ -67,8 +67,15 @@ the versions of the linked parameter, latest first), and after `#` the
 requirement IDs or parameter names in the target file, the linked one first.
 The link text (`REQ-1` or `@name`), or the anchor after the cursor, tells which
 requirement or parameter is meant. Unsaved documents are offered and used.
+Typing `[@` offers the parameters of the workspace and typing `[` followed by a
+capital letter (`[REQ`) the requirement IDs. Choosing one replaces what was
+typed, including a closing `]` added by an auto-pairing plugin, with the
+complete link to the latest version, for example
+`[@max_speed](/examples/vehicle_params.yaml?version=3#max_speed)`. The path and
+version are shown next to each entry, which tells apart an ID defined in more
+than one file. Nothing is offered when the cursor is inside an existing link.
 Nothing else is offered outside the metadata line. The server asks the editor to
-trigger completion after `:`, a space, `(`, `/`, `?`, `#` and `=`. Completion plugins such as
+trigger completion after `:`, a space, `(`, `/`, `?`, `#`, `=`, `@` and `[`. Completion plugins such as
 blink.cmp or nvim-cmp use it automatically; Neovim's built-in completion needs
 `vim.lsp.completion.enable(true, client_id, bufnr, { autotrigger = true })`,
 for example in an `LspAttach` autocommand.

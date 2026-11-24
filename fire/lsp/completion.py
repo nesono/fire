@@ -38,6 +38,7 @@ class Candidate:
     documentation: str = ""
     sort_text: str | None = None
     snippet: bool = False
+    filter_text: str | None = None
 
 
 def _owning_requirement(

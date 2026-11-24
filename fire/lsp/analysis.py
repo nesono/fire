@@ -20,6 +20,8 @@ from fire.lsp.conversion import (
 from fire.lsp.diagnostics import diagnose_requirements
 from fire.lsp.link_index import LinkIndex
 from fire.lsp.link_completion import link_candidates
+from fire.lsp.link_insertion import link_insertion_candidates
+from fire.lsp.link_targets import LinkTarget, LinkTargetIndex
 from fire.lsp.navigation import definition_at
 from fire.lsp.parameter_diagnostics import (
     diagnose_parameters,
@@ -64,6 +66,7 @@ class Analyzer:
         self._suffixes = tuple(dt.suffix for dt in config.document_types.values())
         self._indexes: dict[Path, WorkspaceIndex] = {}
         self._link_indexes: dict[Path, LinkIndex] = {}
+        self._target_indexes: dict[Path, LinkTargetIndex] = {}
 
     def _workspace(self, path: Path, overlay: Mapping[Path, str]) -> Workspace | None:
         root = find_workspace_root(path)
@@ -101,6 +104,13 @@ class Analyzer:
                 return doc_type
         return None
 
+    def _link_targets(
+        self, root: Path, overlay: Mapping[Path, str]
+    ) -> list[LinkTarget]:
+        if root not in self._target_indexes:
+            self._target_indexes[root] = LinkTargetIndex(root, self._suffixes)
+        return self._target_indexes[root].targets(overlay)
+
     def _link_files(self, root: Path, overlay: Mapping[Path, str]) -> list[str]:
         """Repository-relative paths of the files that define symbols to link to."""
         symbols = self._index_for(root).symbols(overlay)
@@ -129,6 +139,11 @@ class Analyzer:
                 return self._link_files(workspace.root, overlay or {})
 
             candidates += link_candidates(text, cursor, workspace, files)
+
+            def targets() -> list[LinkTarget]:
+                return self._link_targets(workspace.root, overlay or {})
+
+            candidates += link_insertion_candidates(text, cursor, targets)
         return [to_lsp_completion_item(c, lines) for c in candidates]
 
     def _diagnose_parameters(self, text: str) -> list[lsp.Diagnostic]:

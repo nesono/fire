@@ -397,5 +397,53 @@ class TestLinkCompletions:
         assert items == []
 
 
+class TestLinkInsertion:
+    def _workspace(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        (tmp_path / "reqs.sysreq.md").write_text("## REQ-A\n\nVersion: 3\n")
+        (tmp_path / "params.yaml").write_text(
+            "max_speed_v1:\n  value: 1\nmax_speed_v2:\n  value: 2\n"
+        )
+        return tmp_path
+
+    def _items(self, root, marked: str, overlay=None):
+        before, _, after = marked.partition("§")
+        line = before.count("\n")
+        character = len(before[before.rfind("\n") + 1 :].encode("utf-16-le")) // 2
+        uri = (root / "doc.sysreq.md").as_uri()
+        return _ANALYZER.completions(
+            uri, before + after, lsp.Position(line, character), overlay
+        )
+
+    def test_parameter_link_is_inserted(self, tmp_path):
+        root = self._workspace(tmp_path)
+        (item,) = self._items(root, "See [@ma§")
+        assert item.label == "@max_speed"
+        assert (
+            item.text_edit.new_text == "[@max_speed](/params.yaml?version=2#max_speed)"
+        )
+        assert item.filter_text == "[@max_speed"
+
+    def test_requirement_link_is_inserted(self, tmp_path):
+        root = self._workspace(tmp_path)
+        (item,) = self._items(root, "See [REQ§")
+        assert item.text_edit.new_text == "[REQ-A](/reqs.sysreq.md?version=3#REQ-A)"
+
+    def test_unsaved_documents_decide_the_version(self, tmp_path):
+        root = self._workspace(tmp_path)
+        overlay = {root / "reqs.sysreq.md": "## REQ-A\n\nVersion: 9\n"}
+        (item,) = self._items(root, "[REQ§", overlay)
+        assert "version=9" in item.text_edit.new_text
+
+    def test_columns_are_utf16(self, tmp_path):
+        root = self._workspace(tmp_path)
+        (item,) = self._items(root, "😀 [@§")
+        assert item.text_edit.range.start.character == len("😀 ") + 1
+
+    def test_without_a_workspace_nothing_is_inserted(self):
+        uri = "file:///nowhere/a.sysreq.md"
+        assert _ANALYZER.completions(uri, "[@", lsp.Position(0, 2)) == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
