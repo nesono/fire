@@ -312,7 +312,7 @@ for target in $FAILURE_TARGETS; do
             echo "✅ PASS: Build failed with missing required field error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for declared files or targets that do not exist (should FAIL)
-        elif grep -q "missing input file" <<< "$output"; then
+        elif grep -qE "missing input file|no such package|no such target" <<< "$output"; then
             echo "✅ PASS: Build failed with missing traceability file error"
             SUCCESSES=$((SUCCESSES + 1))
         # Check for non-repository-relative paths (should FAIL)

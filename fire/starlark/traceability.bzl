@@ -59,7 +59,7 @@ _extract_source_traceability = rule(
         "srcs": attr.label_list(
             allow_files = True,
             default = [],
-            doc = "File names (keys without a colon) named in implements and verifies. They are inputs of the action, so Bazel fails if they do not exist; the script does not read them.",
+            doc = "Files named in implements and verifies (every key that does not start with a colon). They are inputs of the action, so Bazel fails if they do not exist; the script does not read them.",
         ),
         "verifies": attr.string_list_dict(
             default = {},
@@ -80,8 +80,9 @@ def source_traceability(name, deps, implements = {}, verifies = {}, tags = [], v
     Maps source files to the specific requirement IDs they implement or
     verify, with version tracking. Produces a <name>.trace.json and
     validates that all referenced requirement IDs exist in deps. Keys of
-    implements and verifies without a colon are file names in this package
-    and must exist. Keys with a colon (":test_target", "//pkg:file") are not
+    implements and verifies are files ("file.cc", "//pkg:file.cc") and must
+    exist; files of other packages must be exported. Keys that start with a
+    colon (":test_target") are identifiers of the current package and are not
     checked.
 
     Args:
@@ -115,7 +116,7 @@ def source_traceability(name, deps, implements = {}, verifies = {}, tags = [], v
         name = name,
         deps = deps,
         implements = implements,
-        srcs = {key: True for key in implements.keys() + verifies.keys() if ":" not in key}.keys(),
+        srcs = {key: True for key in implements.keys() + verifies.keys() if not key.startswith(":")}.keys(),
         verifies = verifies,
         out = name + ".trace.json",
         tags = tags,
