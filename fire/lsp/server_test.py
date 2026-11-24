@@ -410,12 +410,28 @@ class TestLinkCompletion:
         anchors = _complete(client, uri, 2, len(lines[2]))
         assert [i["label"] for i in anchors["items"]] == ["REQ-A"]
 
+    def test_complete_links_can_be_inserted(self, client, workspace):
+        (workspace / "p.yaml").write_text(_PARAMS)
+        (workspace / "reqs.sysreq.md").write_text(_TARGET)
+        _initialize_with_folder(client, workspace)
+        uri = (workspace / "doc.sysreq.md").as_uri()
+        lines = ["See [@", "See [REQ"]
+        _open(client, uri, "\n".join(lines) + "\n")
+        parameters = _complete(client, uri, 0, len(lines[0]))["items"]
+        assert [i["label"] for i in parameters] == ["@x"]
+        assert parameters[0]["textEdit"]["newText"] == "[@x](/p.yaml?version=1#x)"
+        requirements = _complete(client, uri, 1, len(lines[1]))["items"]
+        assert (
+            requirements[0]["textEdit"]["newText"]
+            == "[REQ-A](/reqs.sysreq.md?version=3#REQ-A)"
+        )
+
     def test_link_characters_are_triggers(self, client):
         response = _initialize(client)
         triggers = response["result"]["capabilities"]["completionProvider"][
             "triggerCharacters"
         ]
-        assert {"(", "/", "?", "#", "="} <= set(triggers)
+        assert {"(", "/", "?", "#", "=", "@", "["} <= set(triggers)
 
 
 class TestCompletion:

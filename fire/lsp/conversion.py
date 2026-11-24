@@ -84,6 +84,7 @@ def to_lsp_completion_item(
         detail=candidate.detail or None,
         documentation=candidate.documentation or None,
         sort_text=candidate.sort_text,
+        filter_text=candidate.filter_text,
         text_edit=lsp.TextEdit(
             to_lsp_range(candidate.replace, lines), candidate.new_text
         ),

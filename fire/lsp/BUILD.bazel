@@ -134,6 +134,8 @@ py_library(
         ":diagnostics",
         ":link_completion",
         ":link_index",
+        ":link_insertion",
+        ":link_targets",
         ":navigation",
         ":parameter_diagnostics",
         ":reference_diagnostics",
@@ -516,6 +518,49 @@ py_test(
         ":document_parser",
         ":link_completion",
         ":workspace",
+        "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "link_targets",
+    srcs = ["link_targets.py"],
+    deps = [
+        ":file_index",
+        ":index",
+    ],
+)
+
+py_library(
+    name = "link_insertion",
+    srcs = ["link_insertion.py"],
+    deps = [
+        ":completion",
+        ":document_parser",
+        ":link_targets",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_test(
+    name = "link_targets_test",
+    size = "small",
+    srcs = ["link_targets_test.py"],
+    deps = [
+        ":link_targets",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "link_insertion_test",
+    size = "small",
+    srcs = ["link_insertion_test.py"],
+    deps = [
+        ":document_parser",
+        ":link_insertion",
+        ":link_targets",
         "@pip//lsprotocol",
         "@pip//pytest",
     ],
