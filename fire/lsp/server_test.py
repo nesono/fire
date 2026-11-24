@@ -257,5 +257,47 @@ class TestDocumentSymbols:
         assert [s["name"] for s in result] == ["REQ-A", "REQ-B"]
 
 
+def _workspace_symbols(client: _Client, query: str) -> list[dict[str, Any]]:
+    client.send({"id": 60, "method": "workspace/symbol", "params": {"query": query}})
+    return client.receive_until(lambda m: m.get("id") == 60)["result"]
+
+
+def _initialize_with_folder(client: _Client, folder) -> None:
+    params = {
+        "capabilities": {},
+        "workspaceFolders": [{"uri": folder.as_uri(), "name": "ws"}],
+    }
+    client.send({"id": 1, "method": "initialize", "params": params})
+    client.receive_until(lambda m: m.get("id") == 1)
+    client.send({"method": "initialized", "params": {}})
+
+
+class TestWorkspaceSymbols:
+    def test_search_across_the_workspace_folder(self, client, workspace):
+        (workspace / "a.sysreq.md").write_text("## REQ-FIND-ME\n\n## REQ-OTHER\n")
+        _initialize_with_folder(client, workspace)
+        result = _workspace_symbols(client, "find")
+        assert [s["name"] for s in result] == ["REQ-FIND-ME"]
+        assert result[0]["location"]["uri"] == (workspace / "a.sysreq.md").as_uri()
+        assert result[0]["containerName"] == "a.sysreq.md"
+
+    def test_unsaved_documents_are_included(self, client, workspace):
+        _initialize_with_folder(client, workspace)
+        _open(client, (workspace / "new.sysreq.md").as_uri(), "## REQ-UNSAVED\n")
+        assert [s["name"] for s in _workspace_symbols(client, "unsaved")] == [
+            "REQ-UNSAVED"
+        ]
+
+    def test_files_changed_on_disk_are_picked_up(self, client, workspace):
+        _initialize_with_folder(client, workspace)
+        assert _workspace_symbols(client, "late") == []
+        (workspace / "late.sysreq.md").write_text("## REQ-LATE\n")
+        assert [s["name"] for s in _workspace_symbols(client, "late")] == ["REQ-LATE"]
+
+    def test_without_a_workspace_the_result_is_empty(self, client):
+        _initialize(client)
+        assert _workspace_symbols(client, "x") == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Final
 
@@ -18,9 +18,11 @@ from fire.lsp.conversion import (
 from fire.lsp.diagnostics import diagnose_requirements
 from fire.lsp.navigation import definition_at
 from fire.lsp.reference_diagnostics import ReferenceChecker
+from fire.lsp.symbol_search import search_symbols
 from fire.lsp.symbols import parameter_symbols, requirement_symbols
 from fire.lsp.uris import uri_to_path
 from fire.lsp.workspace import Workspace, find_workspace_root
+from fire.lsp.workspace_index import WorkspaceIndex
 from fire.starlark.config_models import FireConfig
 from fire.starlark.dynamic_requirement_model import (
     build_models_from_config,
@@ -29,6 +31,14 @@ from fire.starlark.dynamic_requirement_model import (
 
 
 _YAML_SUFFIX: Final = ".yaml"
+_WORKSPACE_SYMBOL_LIMIT: Final = 200
+
+
+def _root_of(path: Path) -> Path | None:
+    root = find_workspace_root(path)
+    if root is None and path.is_dir():
+        root = path
+    return root.resolve() if root else None
 
 
 class Analyzer:
@@ -38,6 +48,7 @@ class Analyzer:
         self._config = config
         self._models = build_models_from_config(config)
         self._suffixes = tuple(dt.suffix for dt in config.document_types.values())
+        self._indexes: dict[Path, WorkspaceIndex] = {}
 
     def _workspace(self, path: Path, overlay: Mapping[Path, str]) -> Workspace | None:
         root = find_workspace_root(path)
@@ -106,3 +117,34 @@ class Analyzer:
             return []
         lines = text.split("\n")
         return [to_lsp_symbol(symbol, lines) for symbol in symbols]
+
+    def _index_for(self, root: Path) -> WorkspaceIndex:
+        if root not in self._indexes:
+            self._indexes[root] = WorkspaceIndex(root, self._suffixes)
+        return self._indexes[root]
+
+    def workspace_symbols(
+        self,
+        query: str,
+        start_paths: Iterable[Path],
+        overlay: Mapping[Path, str] | None = None,
+    ) -> list[lsp.WorkspaceSymbol]:
+        """Search requirement IDs and parameter keys in the workspaces of *start_paths*.
+
+        Each start path (a folder or a file) is mapped to its workspace root.
+        """
+        roots = dict.fromkeys(r for p in start_paths if (r := _root_of(p)) is not None)
+        symbols = [
+            symbol
+            for root in roots
+            for symbol in self._index_for(root).symbols(overlay or {})
+        ]
+        return [
+            lsp.WorkspaceSymbol(
+                name=symbol.name,
+                kind=symbol.kind,
+                location=symbol.location,
+                container_name=symbol.container,
+            )
+            for symbol in search_symbols(symbols, query, _WORKSPACE_SYMBOL_LIMIT)
+        ]

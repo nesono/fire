@@ -132,5 +132,56 @@ class TestDocumentSymbols:
         assert symbol.range.end == lsp.Position(4, 7)
 
 
+class TestWorkspaceSymbols:
+    def _workspace(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        (tmp_path / "reqs").mkdir()
+        (tmp_path / "reqs" / "a.sysreq.md").write_text("## REQ-BRK-1\n\n## REQ-VEL-1\n")
+        (tmp_path / "params.yaml").write_text("max_speed_v1:\n  value: 1\n")
+        return tmp_path
+
+    def _names(self, symbols):
+        return [s.name for s in symbols]
+
+    def test_query_across_requirements_and_parameters(self, tmp_path):
+        root = self._workspace(tmp_path)
+        assert self._names(_ANALYZER.workspace_symbols("brk", [root])) == ["REQ-BRK-1"]
+        assert self._names(_ANALYZER.workspace_symbols("speed", [root])) == [
+            "max_speed_v1"
+        ]
+
+    def test_symbol_shape(self, tmp_path):
+        root = self._workspace(tmp_path)
+        (symbol,) = _ANALYZER.workspace_symbols("vel", [root])
+        assert symbol.kind == lsp.SymbolKind.Key
+        assert symbol.container_name == "reqs/a.sysreq.md"
+        assert symbol.location.uri == (root / "reqs" / "a.sysreq.md").as_uri()
+        assert symbol.location.range.start == lsp.Position(2, 3)
+
+    def test_root_is_found_from_a_file_inside_the_workspace(self, tmp_path):
+        root = self._workspace(tmp_path)
+        start = root / "reqs" / "a.sysreq.md"
+        assert self._names(_ANALYZER.workspace_symbols("brk", [start])) == ["REQ-BRK-1"]
+
+    def test_folder_without_a_marker_is_its_own_root(self, tmp_path):
+        (tmp_path / "x.sysreq.md").write_text("## REQ-X\n")
+        assert self._names(_ANALYZER.workspace_symbols("", [tmp_path])) == ["REQ-X"]
+
+    def test_the_same_workspace_is_not_listed_twice(self, tmp_path):
+        root = self._workspace(tmp_path)
+        starts = [root, root / "reqs" / "a.sysreq.md"]
+        assert self._names(_ANALYZER.workspace_symbols("brk", starts)) == ["REQ-BRK-1"]
+
+    def test_unsaved_documents_are_searchable(self, tmp_path):
+        root = self._workspace(tmp_path)
+        overlay = {root / "new.sysreq.md": "## REQ-NEW-1\n"}
+        assert self._names(_ANALYZER.workspace_symbols("new", [root], overlay)) == [
+            "REQ-NEW-1"
+        ]
+
+    def test_no_workspace_means_no_symbols(self):
+        assert _ANALYZER.workspace_symbols("x", []) == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

@@ -46,6 +46,15 @@ as detail. In a parameter YAML file it lists each `name_vN` key. In Neovim use
 `vim.lsp.buf.document_symbol()`. Parameter files are only outlined if the editor
 sends them to the server, which the Neovim example above does not do.
 
+## Workspace symbols
+
+Search requirement IDs and parameter keys (`name_vN`) across the whole
+workspace by name. Matching is case-insensitive; prefix matches rank first, then
+substring matches, then in-order character matches, and at most 200 results are
+returned. Hidden directories, `bazel-*` output directories and `node_modules`
+are skipped. Open, unsaved documents are searched with their current content.
+In Neovim use `vim.lsp.buf.workspace_symbol("query")`.
+
 ## Diagnostics
 
 | Code      | Meaning                                                  |
