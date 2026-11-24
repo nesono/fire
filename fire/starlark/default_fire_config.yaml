@@ -60,6 +60,8 @@ document_types:
       - version
     optional_fields:
       - parent
+    coverage:
+      - child
 
   swreq:
     suffix: ".swreq.md"
@@ -71,6 +73,9 @@ document_types:
       - version
     optional_fields:
       - parent
+    coverage:
+      - implementation
+      - verification
 
   regreq:
     suffix: ".regreq.md"
@@ -82,3 +87,5 @@ document_types:
       - sil
       - sec
       - parent
+    coverage:
+      - verification

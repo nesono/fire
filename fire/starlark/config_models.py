@@ -9,11 +9,18 @@ Consumers supply a fire_config.yaml; when absent, the built-in default
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Final, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from fire.starlark import file_io_common
+
+
+CoverageKind = Literal["child", "implementation", "verification"]
+
+# Applies to document types that do not declare coverage, which is what the
+# release report required of every requirement before coverage was configurable.
+LEGACY_COVERAGE: Final[tuple[CoverageKind, ...]] = ("implementation", "verification")
 
 
 class FieldDefinition(BaseModel):
@@ -56,6 +63,22 @@ class DocumentTypeDefinition(BaseModel):
     description: str = ""
     required_fields: List[str] = Field(default_factory=list)
     optional_fields: List[str] = Field(default_factory=list)
+    coverage: Optional[List[CoverageKind]] = None
+
+    @field_validator("coverage")
+    @classmethod
+    def validate_coverage_unique(
+        cls, v: Optional[List[CoverageKind]]
+    ) -> Optional[List[CoverageKind]]:
+        if v is not None and len(set(v)) != len(v):
+            raise ValueError("coverage must not contain duplicates")
+        return v
+
+    def required_coverage(self) -> list[CoverageKind]:
+        """Return the coverage the release report requires for this type."""
+        if self.coverage is None:
+            return list(LEGACY_COVERAGE)
+        return list(self.coverage)
 
     @field_validator("suffix")
     @classmethod
