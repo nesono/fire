@@ -382,5 +382,37 @@ class TestParameterFiles:
         assert _diagnostics_for(client, doc_uri) == ["FIRE005"]
 
 
+def _complete(client: _Client, uri: str, line: int, character: int):
+    params = {
+        "textDocument": {"uri": uri},
+        "position": {"line": line, "character": character},
+    }
+    client.send({"id": 80, "method": "textDocument/completion", "params": params})
+    return client.receive_until(lambda m: m.get("id") == 80)["result"]
+
+
+class TestCompletion:
+    def test_server_announces_trigger_characters(self, client):
+        response = _initialize(client)
+        options = response["result"]["capabilities"]["completionProvider"]
+        assert ":" in options["triggerCharacters"]
+
+    def test_metadata_keys_and_values(self, client):
+        _initialize(client)
+        keys_uri, values_uri = "file:///repo/a.sysreq.md", "file:///repo/b.sysreq.md"
+        _open(client, keys_uri, "## R-1\n\nSIL: QM | \n")
+        _open(client, values_uri, "## R-1\n\nSIL: \n")
+        keys = _complete(client, keys_uri, 2, 10)
+        assert [i["label"] for i in keys["items"]] == ["Sec", "Version", "Parent"]
+        values = _complete(client, values_uri, 2, 5)
+        assert values["items"][0]["label"] == "ASIL-A"
+
+    def test_no_completions_outside_metadata(self, client):
+        _initialize(client)
+        uri = "file:///repo/a.sysreq.md"
+        _open(client, uri, "## R-1\n\nSIL: QM | Sec: false | Version: 1\n\nText\n")
+        assert _complete(client, uri, 4, 4)["items"] == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

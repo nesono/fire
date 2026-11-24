@@ -9,8 +9,10 @@ from typing import Final
 
 from lsprotocol import types as lsp
 
+from fire.lsp.completion import metadata_candidates
 from fire.lsp.conversion import (
     from_lsp_position,
+    to_lsp_completion_item,
     to_lsp_diagnostic,
     to_lsp_range,
     to_lsp_symbol,
@@ -34,7 +36,7 @@ from fire.lsp.symbols import parameter_symbols, requirement_symbols
 from fire.lsp.uris import uri_to_path
 from fire.lsp.workspace import Workspace, find_workspace_root
 from fire.lsp.workspace_index import WorkspaceIndex
-from fire.starlark.config_models import FireConfig
+from fire.starlark.config_models import DocumentTypeDefinition, FireConfig
 from fire.starlark.dynamic_requirement_model import (
     build_models_from_config,
     model_for_suffix,
@@ -91,6 +93,26 @@ class Analyzer:
                 text, model, self._references(path, overlay or {})
             )
         ]
+
+    def _document_type(self, path: Path) -> DocumentTypeDefinition | None:
+        for doc_type in self._config.document_types.values():
+            if str(path).endswith(doc_type.suffix):
+                return doc_type
+        return None
+
+    def completions(
+        self, uri: str, text: str, position: lsp.Position
+    ) -> list[lsp.CompletionItem]:
+        """Complete metadata field names and values in a requirement document."""
+        path = uri_to_path(uri)
+        doc_type = self._document_type(path) if path else None
+        if doc_type is None:
+            return []
+        lines = text.split("\n")
+        cursor = from_lsp_position(position, lines)
+        fields = self._config.field_definitions
+        candidates = metadata_candidates(text, cursor, doc_type, fields)
+        return [to_lsp_completion_item(c, lines) for c in candidates]
 
     def _diagnose_parameters(self, text: str) -> list[lsp.Diagnostic]:
         if not looks_like_parameter_file(text):

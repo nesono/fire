@@ -53,6 +53,18 @@ jumps to the latest one; if the file exists but the ID or parameter does not, it
 jumps to the top of the file. In Neovim use `vim.lsp.buf.definition()` or
 `<C-]>`. Unsaved buffers are preferred over files on disk.
 
+## Completion
+
+In a requirement document the metadata line under a requirement heading is
+completed: field names of the document type (required fields first, fields
+already present left out) and, after `Key:`, the allowed values (enum values,
+`true`/`false`) and a `TODO(KEY-1234)` snippet where the field allows a TODO.
+Nothing is offered outside the metadata line. The server asks the editor to
+trigger completion after `:` and a space. Completion plugins such as
+blink.cmp or nvim-cmp use it automatically; Neovim's built-in completion needs
+`vim.lsp.completion.enable(true, client_id, bufnr, { autotrigger = true })`,
+for example in an `LspAttach` autocommand.
+
 ## Find references
 
 On a requirement heading ID, a `name_vN` key in a parameter file, or a link,
