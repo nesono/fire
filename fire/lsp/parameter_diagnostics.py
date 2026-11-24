@@ -58,6 +58,9 @@ _SHAPE_MESSAGE: Final = (
     "or a table with columns and rows"
 )
 _DOCUMENT_START: Final = Range(Position(0, 0), Position(0, 0))
+_VERSIONED_KEY_RE: Final = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_]*_v[0-9]+[ \t]*:", re.MULTILINE
+)
 
 
 def _base_name(key: str) -> str:
@@ -155,3 +158,14 @@ def diagnose_parameters(text: str) -> list[Diagnostic]:
             unique, key=lambda d: (d.range.start.line, d.range.start.character)
         )
     return []
+
+
+def looks_like_parameter_file(text: str) -> bool:
+    """True if a top-level key ends in ``_v<digits>``, as parameter keys do.
+
+    A plain ``.yaml`` file has no distinctive name, and CI or Docker files must
+    not be flagged. The check works on the raw text so that a parameter file
+    that is invalid YAML while being edited still gets its diagnostics, and a
+    wrongly written key such as ``maxSpeed_v1`` still counts.
+    """
+    return _VERSIONED_KEY_RE.search(text) is not None

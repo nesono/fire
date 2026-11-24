@@ -69,8 +69,8 @@ def _initialize(client: _Client) -> dict[str, Any]:
     return response
 
 
-def _open(client: _Client, uri: str, text: str) -> None:
-    item = {"uri": uri, "languageId": "markdown", "version": 1, "text": text}
+def _open(client: _Client, uri: str, text: str, language: str = "markdown") -> None:
+    item = {"uri": uri, "languageId": language, "version": 1, "text": text}
     client.send({"method": "textDocument/didOpen", "params": {"textDocument": item}})
 
 
@@ -345,6 +345,41 @@ class TestReferences:
     def test_no_references_off_a_symbol(self, client, workspace):
         uri = self._setup(client, workspace)
         assert _references(client, uri, 2, 1) == []
+
+
+_PARAMS_OK = "max_speed_v1:\n  value: 30.0\n  unit: m/s\n  description: Maximum speed\n"
+_PARAMS_NO_UNIT = "max_speed_v1:\n  value: 30.0\n  description: Maximum speed\n"
+
+
+def _change(client: _Client, uri: str, version: int, text: str) -> None:
+    client.send(
+        {
+            "method": "textDocument/didChange",
+            "params": {
+                "textDocument": {"uri": uri, "version": version},
+                "contentChanges": [{"text": text}],
+            },
+        }
+    )
+
+
+class TestParameterFiles:
+    def test_removing_the_unit_shows_a_diagnostic_and_adding_it_clears_it(self, client):
+        _initialize(client)
+        uri = "file:///repo/params.yaml"
+        _open(client, uri, _PARAMS_OK, "yaml")
+        _change(client, uri, 2, _PARAMS_NO_UNIT)
+        assert _diagnostics_for(client, uri) == ["FIRE018"]
+        _change(client, uri, 3, _PARAMS_OK)
+        assert _diagnostics_for(client, uri) == []
+
+    def test_other_yaml_files_get_no_diagnostics(self, client):
+        _initialize(client)
+        yaml_uri = "file:///repo/ci.yaml"
+        _open(client, yaml_uri, "name: ci\non: push\n", "yaml")
+        doc_uri = "file:///repo/a.sysreq.md"
+        _open(client, doc_uri, _BAD_SIL)
+        assert _diagnostics_for(client, doc_uri) == ["FIRE005"]
 
 
 if __name__ == "__main__":

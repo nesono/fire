@@ -5,7 +5,10 @@ import pytest
 
 from fire.lsp.diagnostic import Severity
 from fire.lsp.document_parser import Position, Range
-from fire.lsp.parameter_diagnostics import diagnose_parameters
+from fire.lsp.parameter_diagnostics import (
+    diagnose_parameters,
+    looks_like_parameter_file,
+)
 
 _VALID = """max_speed_v1:
   value: 30.0
@@ -148,6 +151,34 @@ class TestRootLevelErrors:
         (diag,) = diagnose_parameters("- a\n- b\n")
         assert diag.code == "FIRE018"
         assert diag.range.start == Position(0, 0)
+
+
+class TestLooksLikeParameterFile:
+    def test_valid_parameter_file(self):
+        assert looks_like_parameter_file(_VALID)
+
+    def test_a_wrongly_cased_key_still_counts(self):
+        assert looks_like_parameter_file("maxSpeed_v1:\n  value: 1\n")
+
+    def test_a_file_with_a_syntax_error_still_counts(self):
+        assert looks_like_parameter_file("a_v1:\n  value: [1, 2\n")
+
+    def test_the_first_version_marker_is_enough(self):
+        assert looks_like_parameter_file("# comment\n\nb_v2:\n  value: 1\n")
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "",
+            "name: ci\non: push\njobs:\n  build:\n    runs-on: ubuntu\n",
+            "services:\n  web_v1:\n    image: x\n",
+            "# a_v1:\n",
+            "version: 1\nname_version1: x\n",
+            "- a_v1: 1\n",
+        ],
+    )
+    def test_other_yaml_files_do_not(self, text):
+        assert not looks_like_parameter_file(text)
 
 
 if __name__ == "__main__":
