@@ -10,6 +10,7 @@ Columns are code points, like the rest of the language server.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any
 from dataclasses import dataclass
 
 import yaml
@@ -47,17 +48,26 @@ def _error_range(error: yaml.MarkedYAMLError) -> Range:
     return Range(Position(mark.line, mark.column), Position(mark.line, mark.column + 1))
 
 
+def _syntax_error(error: yaml.YAMLError) -> YamlSyntaxError:
+    if isinstance(error, yaml.MarkedYAMLError):
+        return YamlSyntaxError(error.problem or "invalid YAML", _error_range(error))
+    return YamlSyntaxError(str(error), Range(Position(0, 0), Position(0, 1)))
+
+
 def parse_yaml(text: str) -> yaml.Node | None:
     """Compose *text* into a node tree; ``None`` if it has no document."""
     try:
         return yaml.compose(text)
-    except yaml.MarkedYAMLError as error:
-        message = error.problem or "invalid YAML"
-        raise YamlSyntaxError(message, _error_range(error)) from error
     except yaml.YAMLError as error:
-        raise YamlSyntaxError(
-            str(error), Range(Position(0, 0), Position(0, 1))
-        ) from error
+        raise _syntax_error(error) from error
+
+
+def load_yaml(text: str) -> Any:
+    """Load *text* as plain data. Unsupported tags are reported as syntax errors."""
+    try:
+        return yaml.safe_load(text)
+    except yaml.YAMLError as error:
+        raise _syntax_error(error) from error
 
 
 def top_level_keys(root: yaml.Node | None) -> dict[str, Range]:

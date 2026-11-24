@@ -4,7 +4,13 @@
 import pytest
 
 from fire.lsp.document_parser import Position, Range
-from fire.lsp.yaml_nodes import YamlSyntaxError, locate, parse_yaml, top_level_keys
+from fire.lsp.yaml_nodes import (
+    YamlSyntaxError,
+    load_yaml,
+    locate,
+    parse_yaml,
+    top_level_keys,
+)
 
 _TEXT = """max_speed_v1:
   value: 30.0
@@ -106,6 +112,19 @@ class TestLocate:
 
     def test_no_document(self):
         assert locate(None, ["a"]) is None
+
+
+class TestLoadYaml:
+    def test_loads_plain_data(self):
+        assert load_yaml("a: 1\nb: [x, y]\n") == {"a": 1, "b": ["x", "y"]}
+
+    def test_unsupported_tags_are_syntax_errors(self):
+        with pytest.raises(YamlSyntaxError):
+            load_yaml("a: !!python/object:os.system {}\n")
+
+    def test_invalid_yaml(self):
+        with pytest.raises(YamlSyntaxError):
+            load_yaml("a: b: c\n")
 
 
 if __name__ == "__main__":

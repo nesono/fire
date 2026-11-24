@@ -440,3 +440,29 @@ py_test(
         "@pip//pytest",
     ],
 )
+
+py_library(
+    name = "parameter_diagnostics",
+    srcs = ["parameter_diagnostics.py"],
+    deps = [
+        ":diagnostic",
+        ":document_parser",
+        ":yaml_nodes",
+        "//fire/starlark:parameter_models",
+        "//fire/starlark:patterns",
+        "//fire/starlark:pydantic_tools",
+        "@pip//pydantic",
+    ],
+)
+
+py_test(
+    name = "parameter_diagnostics_test",
+    size = "small",
+    srcs = ["parameter_diagnostics_test.py"],
+    deps = [
+        ":diagnostic",
+        ":document_parser",
+        ":parameter_diagnostics",
+        "@pip//pytest",
+    ],
+)
