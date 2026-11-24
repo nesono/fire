@@ -183,5 +183,84 @@ class TestWorkspaceSymbols:
         assert _ANALYZER.workspace_symbols("x", []) == []
 
 
+_REQS = "## REQ-A\n\nSIL: QM | Sec: false | Version: 3\n"
+_LINKER = (
+    "## REQ-B\n\nSIL: QM | Sec: false | Version: 1\n\n"
+    "See [REQ-A](/reqs.sysreq.md?version=3#REQ-A) and [@x](/p.yaml?version=2#x).\n"
+)
+
+
+class TestReferences:
+    def _workspace(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        (tmp_path / "reqs.sysreq.md").write_text(_REQS)
+        (tmp_path / "linker.sysreq.md").write_text(_LINKER)
+        (tmp_path / "p.yaml").write_text("x_v1:\n  value: 1\nx_v2:\n  value: 2\n")
+        return tmp_path
+
+    def _refs(self, root, name, text, line, character, declaration=False, overlay=None):
+        uri = (root / name).as_uri()
+        position = lsp.Position(line, character)
+        return _ANALYZER.references(uri, text, position, declaration, overlay)
+
+    def test_from_a_requirement_heading(self, tmp_path):
+        root = self._workspace(tmp_path)
+        (location,) = self._refs(root, "reqs.sysreq.md", _REQS, 0, 5)
+        assert location.uri == (root / "linker.sysreq.md").as_uri()
+        assert location.range == lsp.Range(lsp.Position(4, 4), lsp.Position(4, 44))
+
+    def test_from_a_parameter_key(self, tmp_path):
+        root = self._workspace(tmp_path)
+        text = (root / "p.yaml").read_text()
+        (location,) = self._refs(root, "p.yaml", text, 2, 1)
+        assert location.uri == (root / "linker.sysreq.md").as_uri()
+        assert location.range.start == lsp.Position(4, 49)
+
+    def test_from_a_link(self, tmp_path):
+        root = self._workspace(tmp_path)
+        (location,) = self._refs(root, "linker.sysreq.md", _LINKER, 4, 10)
+        assert location.uri == (root / "linker.sysreq.md").as_uri()
+
+    def test_declaration_comes_first_when_requested(self, tmp_path):
+        root = self._workspace(tmp_path)
+        first, second = self._refs(root, "reqs.sysreq.md", _REQS, 0, 5, True)
+        assert first.uri == (root / "reqs.sysreq.md").as_uri()
+        assert first.range == lsp.Range(lsp.Position(0, 3), lsp.Position(0, 8))
+        assert second.uri == (root / "linker.sysreq.md").as_uri()
+
+    def test_parameter_declaration_is_the_key_at_the_cursor_version(self, tmp_path):
+        root = self._workspace(tmp_path)
+        text = (root / "p.yaml").read_text()
+        first, _ = self._refs(root, "p.yaml", text, 2, 1, True)
+        assert first.range.start == lsp.Position(2, 0)
+
+    def test_unsaved_documents_count(self, tmp_path):
+        root = self._workspace(tmp_path)
+        extra = "[REQ-A](/reqs.sysreq.md?version=3#REQ-A)\n"
+        overlay = {root / "new.sysreq.md": extra}
+        refs = self._refs(root, "reqs.sysreq.md", _REQS, 0, 5, overlay=overlay)
+        assert {r.uri for r in refs} == {
+            (root / "linker.sysreq.md").as_uri(),
+            (root / "new.sysreq.md").as_uri(),
+        }
+
+    def test_unsaved_edit_removes_a_reference(self, tmp_path):
+        root = self._workspace(tmp_path)
+        overlay = {root / "linker.sysreq.md": "no links any more\n"}
+        assert self._refs(root, "reqs.sysreq.md", _REQS, 0, 5, overlay=overlay) == []
+
+    def test_cursor_on_plain_text(self, tmp_path):
+        root = self._workspace(tmp_path)
+        assert self._refs(root, "reqs.sysreq.md", _REQS, 2, 1) == []
+
+    def test_other_documents_have_no_references(self, tmp_path):
+        root = self._workspace(tmp_path)
+        assert self._refs(root, "README.md", _REQS, 0, 5) == []
+
+    def test_no_workspace(self):
+        uri = "file:///nowhere/a.sysreq.md"
+        assert _ANALYZER.references(uri, _REQS, lsp.Position(0, 5), False) == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

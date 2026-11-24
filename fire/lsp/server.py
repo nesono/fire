@@ -77,6 +77,18 @@ def create_server(config: FireConfig | None = None) -> LanguageServer:
         overlay = document_overlay(documents)
         return analyzer.definition(uri, documents[uri], params.position, overlay)
 
+    @server.feature(lsp.TEXT_DOCUMENT_REFERENCES)
+    def references(params: lsp.ReferenceParams) -> list[lsp.Location]:
+        documents = open_documents()
+        uri = params.text_document.uri
+        if uri not in documents:
+            return []
+        overlay = document_overlay(documents)
+        include = params.context.include_declaration
+        return analyzer.references(
+            uri, documents[uri], params.position, include, overlay
+        )
+
     @server.feature(lsp.TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     def document_symbol(params: lsp.DocumentSymbolParams) -> list[lsp.DocumentSymbol]:
         uri = params.text_document.uri

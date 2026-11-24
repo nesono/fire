@@ -299,5 +299,53 @@ class TestWorkspaceSymbols:
         assert _workspace_symbols(client, "x") == []
 
 
+def _references(
+    client: _Client, uri: str, line: int, character: int, declaration=False
+):
+    params = {
+        "textDocument": {"uri": uri},
+        "position": {"line": line, "character": character},
+        "context": {"includeDeclaration": declaration},
+    }
+    client.send({"id": 70, "method": "textDocument/references", "params": params})
+    return client.receive_until(lambda m: m.get("id") == 70)["result"]
+
+
+_TARGET = "## REQ-A\n\nSIL: QM | Sec: false | Version: 3\n"
+_LINK = "[REQ-A](/reqs.sysreq.md?version=3#REQ-A)\n"
+
+
+class TestReferences:
+    def _setup(self, client, workspace):
+        (workspace / "reqs.sysreq.md").write_text(_TARGET)
+        (workspace / "other.sysreq.md").write_text("See " + _LINK)
+        _initialize_with_folder(client, workspace)
+        uri = (workspace / "reqs.sysreq.md").as_uri()
+        _open(client, uri, _TARGET)
+        return uri
+
+    def test_references_from_a_heading(self, client, workspace):
+        uri = self._setup(client, workspace)
+        result = _references(client, uri, 0, 5)
+        assert [r["uri"] for r in result] == [(workspace / "other.sysreq.md").as_uri()]
+        assert result[0]["range"]["start"] == {"line": 0, "character": 4}
+
+    def test_declaration_is_included_on_request(self, client, workspace):
+        uri = self._setup(client, workspace)
+        result = _references(client, uri, 0, 5, declaration=True)
+        assert [r["uri"] for r in result][0] == uri
+        assert len(result) == 2
+
+    def test_unsaved_buffer_adds_a_reference(self, client, workspace):
+        uri = self._setup(client, workspace)
+        _open(client, (workspace / "draft.sysreq.md").as_uri(), _LINK)
+        uris = {r["uri"] for r in _references(client, uri, 0, 5)}
+        assert (workspace / "draft.sysreq.md").as_uri() in uris
+
+    def test_no_references_off_a_symbol(self, client, workspace):
+        uri = self._setup(client, workspace)
+        assert _references(client, uri, 2, 1) == []
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

@@ -109,3 +109,18 @@ def find_references(
         and _points_at(link, target, root)
     ]
     return sorted(matching, key=lambda link: link.version != target.version)
+
+
+def declaration_range(target: ReferenceTarget, text: str) -> Range | None:
+    """Return where *target* is declared in *text*: its heading ID or key.
+
+    For a parameter this is the key of the target's version, or of the latest
+    version if that one is not defined.
+    """
+    if target.kind == PARAMETER:
+        info = parameters_in(text).get(target.name)
+        if info is None:
+            return None
+        return info.versions.get(target.version) or info.versions[max(info.versions)]
+    requirement = requirements_in(text).get(target.name)
+    return requirement.range if requirement else None
