@@ -71,6 +71,7 @@ document_types:
     description: "High-level system requirements"
     required_fields: [sil, sec, version]
     optional_fields: [parent]
+    coverage: [child]
 
   swreq:
     suffix: ".swreq.md"
@@ -78,6 +79,7 @@ document_types:
     description: "Implementation-level software requirements"
     required_fields: [sil, sec, version]
     optional_fields: [parent]
+    coverage: [implementation, verification]
 
   regreq:
     suffix: ".regreq.md"
@@ -85,6 +87,7 @@ document_types:
     description: "Regulatory obligations (SIL/Sec optional)"
     required_fields: [version]
     optional_fields: [sil, sec, parent]
+    coverage: [verification]
 ```
 
 Consumers extend this by adding their own types:
@@ -96,7 +99,6 @@ handbook:
   description: "Product handbook entries"
   required_fields: [version]
   optional_fields: []
-  coverage: []
 ```
 
 ## Key Architectural Decisions
