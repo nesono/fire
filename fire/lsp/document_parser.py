@@ -54,6 +54,14 @@ class Link:
     version: int | None
     anchor: str | None
 
+    @property
+    def span(self) -> Range:
+        """The whole ``[text](url)``, brackets included."""
+        line = self.text_range.start.line
+        return _range(
+            line, self.text_range.start.character - 1, self.url_range.end.character + 1
+        )
+
 
 @dataclass(frozen=True)
 class Todo:

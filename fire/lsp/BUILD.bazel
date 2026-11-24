@@ -328,6 +328,7 @@ py_library(
     srcs = ["workspace_index.py"],
     deps = [
         ":conversion",
+        ":file_index",
         ":symbols",
         "@pip//lsprotocol",
     ],
@@ -357,6 +358,61 @@ py_test(
     deps = [
         ":symbol_search",
         ":workspace_index",
+        "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "link_index",
+    srcs = ["link_index.py"],
+    deps = [
+        ":conversion",
+        ":document_parser",
+        ":file_index",
+        ":link_diagnostics",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_library(
+    name = "file_index",
+    srcs = ["file_index.py"],
+)
+
+py_library(
+    name = "references",
+    srcs = ["references.py"],
+    deps = [
+        ":document_parser",
+        ":index",
+        ":link_diagnostics",
+        ":link_index",
+        ":navigation",
+        ":workspace",
+    ],
+)
+
+py_test(
+    name = "link_index_test",
+    size = "small",
+    srcs = ["link_index_test.py"],
+    deps = [
+        ":link_index",
+        "@pip//lsprotocol",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "references_test",
+    size = "small",
+    srcs = ["references_test.py"],
+    deps = [
+        ":document_parser",
+        ":link_index",
+        ":references",
+        ":workspace",
         "@pip//lsprotocol",
         "@pip//pytest",
     ],
