@@ -117,6 +117,7 @@ py_library(
     name = "conversion",
     srcs = ["conversion.py"],
     deps = [
+        ":completion",
         ":diagnostic",
         ":document_parser",
         ":symbols",
@@ -128,6 +129,7 @@ py_library(
     name = "analysis",
     srcs = ["analysis.py"],
     deps = [
+        ":completion",
         ":conversion",
         ":diagnostics",
         ":link_index",
@@ -464,6 +466,30 @@ py_test(
         ":diagnostic",
         ":document_parser",
         ":parameter_diagnostics",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "completion",
+    srcs = ["completion.py"],
+    deps = [
+        ":document_parser",
+        "//fire/starlark:config_models",
+        "//fire/starlark:metadata_parsing",
+        "@pip//lsprotocol",
+    ],
+)
+
+py_test(
+    name = "completion_test",
+    size = "small",
+    srcs = ["completion_test.py"],
+    deps = [
+        ":completion",
+        ":document_parser",
+        "//fire/starlark:config_models",
+        "@pip//lsprotocol",
         "@pip//pytest",
     ],
 )

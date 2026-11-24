@@ -295,5 +295,50 @@ class TestParameterFiles:
         assert [d.code for d in _ANALYZER.diagnose(uri, _MISSING_UNIT)] == ["FIRE018"]
 
 
+class TestCompletions:
+    _URI = "file:///a/x.sysreq.md"
+
+    def _items(self, marked: str, uri: str = _URI):
+        before, _, after = marked.partition("§")
+        line = before.count("\n")
+        # LSP columns count UTF-16 units
+        character = len(before[before.rfind("\n") + 1 :].encode("utf-16-le")) // 2
+        return _ANALYZER.completions(uri, before + after, lsp.Position(line, character))
+
+    def test_metadata_keys_with_a_text_edit(self):
+        items = self._items("## R-1\n\nSI§\n")
+        sil = items[0]
+        assert (sil.label, sil.kind) == ("SIL", lsp.CompletionItemKind.Property)
+        assert sil.text_edit.new_text == "SIL: "
+        assert sil.text_edit.range == lsp.Range(lsp.Position(2, 0), lsp.Position(2, 2))
+        assert sil.insert_text_format == lsp.InsertTextFormat.PlainText
+        assert sil.detail == "required"
+
+    def test_enum_values_and_the_todo_snippet(self):
+        items = self._items("## R-1\n\nSIL: §\n")
+        assert items[0].label == "ASIL-A"
+        todo = items[-1]
+        assert todo.insert_text_format == lsp.InsertTextFormat.Snippet
+        assert todo.text_edit.new_text.startswith("TODO(")
+
+    def test_range_columns_are_utf16(self):
+        items = self._items("## R-1\n\nSIL: 😀 | §\n")
+        # the emoji is one code point but two UTF-16 units
+        assert items[0].text_edit.range.start.character == len("SIL: 😀 | ") + 1
+
+    def test_document_type_decides_the_fields(self):
+        items = self._items("## R-1\n\n§\n", "file:///a/x.regreq.md")
+        assert [i.detail for i in items][0] == "required"
+        assert items[0].label == "Version"
+
+    def test_other_documents_get_no_completions(self):
+        assert self._items("## R-1\n\n§\n", "file:///a/README.md") == []
+
+    def test_outside_the_metadata_line(self):
+        assert (
+            self._items("## R-1\n\nSIL: QM | Sec: false | Version: 1\n\nText §\n") == []
+        )
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

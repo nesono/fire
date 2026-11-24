@@ -17,6 +17,7 @@ _NAME: Final = "fire-ls"
 _VERSION: Final = "0.1.0"
 _WATCHED_GLOBS: Final = ("**/*.md", "**/*.yaml")
 _WATCH_REGISTRATION_ID: Final = "fire-watch-linked-files"
+_COMPLETION_TRIGGERS: Final = [":", " "]
 
 
 def _publish(
@@ -76,6 +77,18 @@ def create_server(config: FireConfig | None = None) -> LanguageServer:
         uri = params.text_document.uri
         overlay = document_overlay(documents)
         return analyzer.definition(uri, documents[uri], params.position, overlay)
+
+    @server.feature(
+        lsp.TEXT_DOCUMENT_COMPLETION,
+        lsp.CompletionOptions(trigger_characters=_COMPLETION_TRIGGERS),
+    )
+    def completion(params: lsp.CompletionParams) -> lsp.CompletionList:
+        uri = params.text_document.uri
+        text = open_documents().get(uri)
+        items = (
+            analyzer.completions(uri, text, params.position) if text is not None else []
+        )
+        return lsp.CompletionList(is_incomplete=False, items=items)
 
     @server.feature(lsp.TEXT_DOCUMENT_REFERENCES)
     def references(params: lsp.ReferenceParams) -> list[lsp.Location]:

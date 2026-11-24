@@ -8,6 +8,7 @@ from typing import Final
 from lsprotocol import types as lsp
 
 from fire.lsp.diagnostic import Diagnostic, Severity
+from fire.lsp.completion import Candidate
 from fire.lsp.document_parser import Position, Range
 from fire.lsp.symbols import Symbol
 
@@ -70,4 +71,23 @@ def to_lsp_symbol(symbol: Symbol, lines: list[str]) -> lsp.DocumentSymbol:
         range=to_lsp_range(symbol.range, lines),
         selection_range=to_lsp_range(symbol.selection_range, lines),
         detail=symbol.detail or None,
+    )
+
+
+def to_lsp_completion_item(
+    candidate: Candidate, lines: list[str]
+) -> lsp.CompletionItem:
+    snippet = candidate.snippet
+    return lsp.CompletionItem(
+        label=candidate.label,
+        kind=candidate.kind,
+        detail=candidate.detail or None,
+        documentation=candidate.documentation or None,
+        sort_text=candidate.sort_text,
+        text_edit=lsp.TextEdit(
+            to_lsp_range(candidate.replace, lines), candidate.new_text
+        ),
+        insert_text_format=(
+            lsp.InsertTextFormat.Snippet if snippet else lsp.InsertTextFormat.PlainText
+        ),
     )
