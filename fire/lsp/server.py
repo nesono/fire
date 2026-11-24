@@ -10,7 +10,7 @@ from pygls.lsp.server import LanguageServer
 
 from fire.lsp.analysis import Analyzer
 from fire.lsp.publisher import DiagnosticsPublisher
-from fire.lsp.uris import document_overlay
+from fire.lsp.uris import document_overlay, uri_to_path
 from fire.starlark.config_models import FireConfig, load_config
 
 _NAME: Final = "fire-ls"
@@ -82,6 +82,16 @@ def create_server(config: FireConfig | None = None) -> LanguageServer:
         uri = params.text_document.uri
         text = open_documents().get(uri)
         return analyzer.document_symbols(uri, text) if text is not None else []
+
+    @server.feature(lsp.WORKSPACE_SYMBOL)
+    def workspace_symbol(
+        params: lsp.WorkspaceSymbolParams,
+    ) -> list[lsp.WorkspaceSymbol]:
+        documents = open_documents()
+        uris = [*(f.uri for f in server.workspace.folders.values()), *documents]
+        paths = [path for uri in uris if (path := uri_to_path(uri)) is not None]
+        overlay = document_overlay(documents)
+        return analyzer.workspace_symbols(params.query, paths, overlay)
 
     @server.feature(lsp.INITIALIZED)
     def initialized(params: lsp.InitializedParams) -> None:
