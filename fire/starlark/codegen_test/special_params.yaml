@@ -1,0 +1,73 @@
+special_string_v1:
+  value: "say \"hi\" \\ back\\\\slash\ttab\nline2 é {x} %s $y 'q' /* c */ // not a comment \\u000a \\n ??/ \x01\x7fend\\"
+  unit: "1"
+  description: "first line\nint injected = 1; //\n\"\"\"\n*/ int also = 2; /* \\u000a \\"
+
+special_table_v1:
+  type: table
+  description: "table description\nint injected = 1; //\n\"\"\"\n*/ int also = 2; /* \\u000a \\"
+  columns:
+    - name: temp
+      unit: "°C"
+    - name: ratio
+      unit: "%"
+    - name: accel
+      unit: "m/s²"
+    - name: level
+      unit: "dB(A)"
+    - name: label
+      unit: "1"
+  rows:
+    - [
+        -40.5,
+        12.5,
+        9.81,
+        85.0,
+        "say \"hi\" \\ back\\\\slash\ttab\nline2 é {x} %s $y 'q' /* c */ // not a comment \\u000a \\n ??/ \x01\x7fend\\",
+      ]
+    - [20.0, 0.5, 0.0, 30.0, "plain"]
+
+temperature_v1:
+  value: 21.5
+  unit: "°C"
+  description: degrees celsius
+
+ratio_v1:
+  value: 12.5
+  unit: "%"
+  description: percent
+
+acceleration_v1:
+  value: 9.81
+  unit: "m/s²"
+  description: superscript two
+
+noise_level_v1:
+  value: 85.0
+  unit: "dB(A)"
+  description: parentheses
+
+thickness_v1:
+  value: 3.0
+  unit: "µm"
+  description: micro sign
+
+resistance_v1:
+  value: 4.7
+  unit: "Ω"
+  description: omega
+
+volume_v1:
+  value: 1.5
+  unit: "m³"
+  description: superscript three
+
+error_rate_v1:
+  value: 2.5
+  unit: "‰"
+  description: per mille
+
+turn_rate_v1:
+  value: 90.0
+  unit: "°/s"
+  description: degree per second
