@@ -18,7 +18,7 @@ from fire.lsp.completion import Candidate
 from fire.lsp.document_parser import Position, Range
 
 COMMON_UNITS: Final = (
-    "1", "count", "bool", "m", "mm", "km", "m/s", "km/h", "m/s^2", "s", "ms", "Hz",
+    "1", "count", "bool", "m", "mm", "km", "m/s", "km/h", "m/s²", "m/s^2", "m²", "m³", "s", "ms", "Hz",
     "kg", "N", "Pa", "bar", "°C", "V", "A", "W", "rad", "°", "%", "rpm",
 )  # fmt: skip
 _SCALAR_KEYS: Final = ("value", "unit", "description")

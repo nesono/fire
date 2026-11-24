@@ -98,6 +98,10 @@ class TestValues:
         assert set(COMMON_UNITS) <= set(labels)
         assert labels.count("m/s") == 1
 
+    def test_superscript_units_are_offered_without_any_workspace_units(self):
+        labels = _labels("a_v1:\n  unit: §\n")
+        assert {"m/s", "m/s²", "m²", "m³"} <= set(labels)
+
     def test_detail_tells_where_a_unit_comes_from(self):
         candidates = _complete("a_v1:\n  unit: §\n", ["bar"])
         assert candidates[0].detail == "used in this workspace"
