@@ -42,6 +42,13 @@ changes; each entry says what to change.
   `Implementation & Verification Coverage` is now `Coverage`, and a new
   finding `Missing child requirements` can make the report
   `NOT READY FOR RELEASE`. (#352, #357)
+- In `source_traceability`, every key of `implements` or `verifies` must be an
+  existing file, in this package (`file.cc`) or another one (`//pkg:file.cc`,
+  which the other package has to export); the build fails if it is not, for
+  example after a rename or a typo in a package name. Only keys that start with
+  a colon (`:test_target`) are identifiers and are not checked, so a
+  `//pkg:test_target` key is no longer possible. A path into a subpackage
+  (`sub/file.cc`) is rejected as an invalid label; write `//sub:file.cc`. (#363)
 - Python 3.10 is no longer supported. (#294)
 
 ### Added

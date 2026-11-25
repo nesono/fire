@@ -311,6 +311,10 @@ for target in $FAILURE_TARGETS; do
         elif grep -qE "is a required property|has no metadata|Field required" <<< "$output"; then
             echo "✅ PASS: Build failed with missing required field error"
             SUCCESSES=$((SUCCESSES + 1))
+        # Check for declared files or targets that do not exist (should FAIL)
+        elif grep -qE "missing input file|no such package|no such target" <<< "$output"; then
+            echo "✅ PASS: Build failed with missing traceability file error"
+            SUCCESSES=$((SUCCESSES + 1))
         # Check for non-repository-relative paths (should FAIL)
         elif grep -q "must be repository-relative" <<< "$output"; then
             echo "✅ PASS: Build failed with non-repository-relative path error"

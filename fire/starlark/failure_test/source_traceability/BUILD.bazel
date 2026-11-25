@@ -5,6 +5,7 @@ source traceability comments:
 - Missing version suffix: build error
 - Outdated version (v1 when v2 exists): warning but builds
 - Future version (v3 when only v2 exists): build error
+- Listed file that does not exist, also in another package: build error
 
 They are tagged as 'manual' and 'failure_test' so they don't run in normal test runs.
 """
@@ -74,6 +75,40 @@ source_traceability(
     implements = {
         "test_future_version.cc": [
             "REQ_TEST_FEATURE?version=3",  # Future: requirement is only at v2
+        ],
+    },
+)
+
+# =============================================================================
+# Missing File Tests - Should ERROR
+# Declared file does not exist
+# =============================================================================
+
+source_traceability(
+    name = "test_missing_file",
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+    deps = ["test_requirements.sysreq.md"],
+    implements = {
+        "this_file_does_not_exist.cc": [
+            "REQ_TEST_FEATURE?version=2",
+        ],
+    },
+)
+
+# File label with a misspelled package name - should ERROR
+source_traceability(
+    name = "test_missing_package",
+    tags = [
+        "failure_test",
+        "manual",
+    ],
+    deps = ["test_requirements.sysreq.md"],
+    implements = {
+        "//this_package_does_not_exist:file.cc": [
+            "REQ_TEST_FEATURE?version=2",
         ],
     },
 )

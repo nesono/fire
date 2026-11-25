@@ -366,6 +366,12 @@ IDs and versions ahead of the requirement fail the build. When a requirement is
 incremented past the version a trace declares, the build prints an `OUTDATED`
 warning so the source can be reviewed and re-pinned.
 
+A key is a file and must exist, or the build fails: `brake_controller.cc` in
+the package, or `//other:file.cc` in another package, which has to export it
+(`exports_files`). A key that starts with a colon (`:test_target`) is an
+identifier of the current package and is not checked. A path that leads into a
+subpackage (`sub/file.cc`) is not a valid label; write `//sub:file.cc`.
+
 The release report checks that each requirement has the coverage its document
 type requires (see [Release Readiness Report](#release-readiness-report)) and
 reports the rest as missing implementation or verification traces.

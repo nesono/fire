@@ -42,3 +42,9 @@ source_traceability(
         ],
     },
 )
+
+# Named by the traceability of the root package
+exports_files([
+    "test_cpp.cc",
+    "test_rust.rs",
+])
