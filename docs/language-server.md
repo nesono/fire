@@ -80,6 +80,20 @@ blink.cmp or nvim-cmp use it automatically; Neovim's built-in completion needs
 `vim.lsp.completion.enable(true, client_id, bufnr, { autotrigger = true })`,
 for example in an `LspAttach` autocommand.
 
+In parameter files (see below) the field names are completed under a parameter
+name: `value`, `unit`, `description` and `type` (only needed for tables), or
+`description`, `columns` and `rows` once `type: table` is present, and `name` and
+`unit` in a column item. Fields already present are left out. After `type:` the
+only value is `table`. After `unit:` the units already used in the parameter files
+of the workspace are offered first, then a short list of common units; values
+that YAML would read as something else, such as `1` or `%`, are always inserted
+quoted. Other units follow the style of the file: quoted if most `unit:` values in
+the file are quoted, plain if most are plain; on a tie the style of the
+workspace's parameter files decides, and without any example they are quoted. A
+quote you have already typed is kept, and an auto-paired closing quote is
+replaced together with it.
+Parameter names and `value` are free text and are not completed.
+
 ## Find references
 
 On a requirement heading ID, a `name_vN` key in a parameter file, or a link,

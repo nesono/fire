@@ -23,6 +23,7 @@ from fire.lsp.link_completion import link_candidates
 from fire.lsp.link_insertion import link_insertion_candidates
 from fire.lsp.link_targets import LinkTarget, LinkTargetIndex
 from fire.lsp.navigation import definition_at
+from fire.lsp.parameter_completion import WorkspaceUnits, parameter_candidates
 from fire.lsp.parameter_diagnostics import (
     diagnose_parameters,
     looks_like_parameter_file,
@@ -36,6 +37,7 @@ from fire.lsp.references import (
 )
 from fire.lsp.symbol_search import search_symbols
 from fire.lsp.symbols import parameter_symbols, requirement_symbols
+from fire.lsp.unit_index import UnitIndex
 from fire.lsp.uris import uri_to_path
 from fire.lsp.workspace import Workspace, find_workspace_root
 from fire.lsp.workspace_index import WorkspaceIndex
@@ -67,6 +69,7 @@ class Analyzer:
         self._indexes: dict[Path, WorkspaceIndex] = {}
         self._link_indexes: dict[Path, LinkIndex] = {}
         self._target_indexes: dict[Path, LinkTargetIndex] = {}
+        self._unit_indexes: dict[Path, UnitIndex] = {}
 
     def _workspace(self, path: Path, overlay: Mapping[Path, str]) -> Workspace | None:
         root = find_workspace_root(path)
@@ -116,6 +119,31 @@ class Analyzer:
         symbols = self._index_for(root).symbols(overlay)
         return sorted({"/" + symbol.container for symbol in symbols})
 
+    def _workspace_units(
+        self, path: Path, overlay: Mapping[Path, str]
+    ) -> WorkspaceUnits:
+        root = find_workspace_root(path)
+        if root is None:
+            return WorkspaceUnits([], None)
+        root = root.resolve()
+        if root not in self._unit_indexes:
+            self._unit_indexes[root] = UnitIndex(root)
+        return self._unit_indexes[root].workspace_units(overlay)
+
+    def _parameter_completions(
+        self, path: Path, text: str, position: lsp.Position, overlay: Mapping[Path, str]
+    ) -> list[lsp.CompletionItem]:
+        if not looks_like_parameter_file(text):
+            return []
+        lines = text.split("\n")
+        cursor = from_lsp_position(position, lines)
+
+        def units() -> WorkspaceUnits:
+            return self._workspace_units(path, overlay)
+
+        candidates = parameter_candidates(text, cursor, units)
+        return [to_lsp_completion_item(c, lines) for c in candidates]
+
     def completions(
         self,
         uri: str,
@@ -123,8 +151,10 @@ class Analyzer:
         position: lsp.Position,
         overlay: Mapping[Path, str] | None = None,
     ) -> list[lsp.CompletionItem]:
-        """Complete metadata lines and link URLs in a requirement document."""
+        """Complete requirement documents (metadata, links) and parameter files."""
         path = uri_to_path(uri)
+        if path is not None and path.suffix == _YAML_SUFFIX:
+            return self._parameter_completions(path, text, position, overlay or {})
         doc_type = self._document_type(path) if path else None
         if path is None or doc_type is None:
             return []
