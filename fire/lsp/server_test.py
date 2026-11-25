@@ -403,6 +403,40 @@ class TestParameterFileCompletion:
         assert units[0]["label"] == "furlong"
 
 
+class TestPositionEncoding:
+    def _initialize_offering(self, client, encodings):
+        capabilities = {"general": {"positionEncodings": encodings}}
+        client.send(
+            {"id": 1, "method": "initialize", "params": {"capabilities": capabilities}}
+        )
+        return client.receive_until(lambda m: m.get("id") == 1)["result"]
+
+    def test_utf16_is_chosen_even_if_the_client_prefers_utf8(self, client):
+        # All positions are computed in UTF-16 code units. Neovim lists utf-8
+        # first, and pygls would pick it, which makes every column on a line
+        # with non-ASCII text wrong in the editor.
+        result = self._initialize_offering(client, ["utf-8", "utf-16", "utf-32"])
+        assert result["capabilities"]["positionEncoding"] == "utf-16"
+
+    def test_utf16_is_chosen_whatever_the_client_lists_first(self, client):
+        result = self._initialize_offering(client, ["utf-32", "utf-16"])
+        assert result["capabilities"]["positionEncoding"] == "utf-16"
+
+    def test_utf16_is_chosen_if_the_client_does_not_say(self, client):
+        client.send({"id": 1, "method": "initialize", "params": {"capabilities": {}}})
+        result = client.receive_until(lambda m: m.get("id") == 1)["result"]
+        assert result["capabilities"]["positionEncoding"] == "utf-16"
+
+    def test_columns_after_non_ascii_text_are_utf16_units(self, client):
+        self._initialize_offering(client, ["utf-8", "utf-16"])
+        client.send({"method": "initialized", "params": {}})
+        uri = "file:///repo/a.sysreq.md"
+        _open(client, uri, "## R-1\n\nSIL: 😀 | \n")
+        cursor = len("SIL: 😀 | ") + 1  # the emoji is two UTF-16 units
+        keys = _complete(client, uri, 2, cursor)["items"]
+        assert keys[0]["textEdit"]["range"]["start"]["character"] == cursor
+
+
 class TestLinkCompletion:
     def test_paths_versions_and_anchors(self, client, workspace):
         (workspace / "p.yaml").write_text(_PARAMS)
