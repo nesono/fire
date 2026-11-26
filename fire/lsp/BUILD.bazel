@@ -117,6 +117,7 @@ py_library(
     name = "conversion",
     srcs = ["conversion.py"],
     deps = [
+        ":code_actions",
         ":completion",
         ":diagnostic",
         ":document_parser",
@@ -129,6 +130,7 @@ py_library(
     name = "analysis",
     srcs = ["analysis.py"],
     deps = [
+        ":code_actions",
         ":completion",
         ":conversion",
         ":diagnostics",
@@ -644,6 +646,27 @@ py_test(
         "//fire/starlark:dynamic_requirement_model",
         "//fire/starlark:validate_cross_references_lib",
         "//fire/starlark:validate_parameters_lib",
+        "@pip//pytest",
+    ],
+)
+
+py_library(
+    name = "code_actions",
+    srcs = ["code_actions.py"],
+    deps = [
+        ":diagnostic",
+        ":document_parser",
+    ],
+)
+
+py_test(
+    name = "code_actions_test",
+    size = "small",
+    srcs = ["code_actions_test.py"],
+    deps = [
+        ":analysis",
+        "//fire/starlark:config_models",
+        "@pip//lsprotocol",
         "@pip//pytest",
     ],
 )

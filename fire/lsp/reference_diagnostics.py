@@ -42,7 +42,7 @@ def _stale_or_future(
         make = error if future_is_error else warning
         return [make(link.url_range, "FIRE014", message)]
     message = f"{label} links version {link.version}, but the latest is {current}"
-    return [warning(link.url_range, "FIRE015", message)]
+    return [warning(link.url_range, "FIRE015", message, {"latest": current})]
 
 
 def _parameter_diagnostics(link: Link, targets: _Targets) -> list[Diagnostic]:
@@ -101,6 +101,21 @@ class ReferenceChecker:
             if is_checked_link(link) and link.path.startswith("/"):
                 diagnostics.extend(self._diagnose_link(link, targets))
         return diagnostics
+
+    def latest_version(self, link: Link) -> int | None:
+        """The newest version of the parameter or requirement *link* points at."""
+        if not (is_checked_link(link) and link.path.startswith("/")):
+            return None
+        text = self._workspace.read(link.path)
+        if text is None:
+            return None
+        if is_parameter_link(link):
+            info = parameters_in(text).get(link.anchor or link.text[1:])
+            return max(info.versions) if info and info.versions else None
+        if not link.path.endswith(self._suffixes):
+            return None
+        requirement = requirements_in(text).get(link.text)
+        return requirement.version if requirement else None
 
     def _diagnose_link(self, link: Link, targets: _Targets) -> list[Diagnostic]:
         if is_parameter_link(link):

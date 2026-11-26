@@ -8,6 +8,7 @@ from typing import Final
 from lsprotocol import types as lsp
 
 from fire.lsp.diagnostic import Diagnostic, Severity
+from fire.lsp.code_actions import Action
 from fire.lsp.completion import Candidate
 from fire.lsp.document_parser import Position, Range
 from fire.lsp.symbols import Symbol
@@ -61,6 +62,7 @@ def to_lsp_diagnostic(diagnostic: Diagnostic, lines: list[str]) -> lsp.Diagnosti
         severity=_SEVERITIES[diagnostic.severity],
         code=diagnostic.code,
         source=_SOURCE,
+        data=diagnostic.data,
     )
 
 
@@ -91,4 +93,17 @@ def to_lsp_completion_item(
         insert_text_format=(
             lsp.InsertTextFormat.Snippet if snippet else lsp.InsertTextFormat.PlainText
         ),
+    )
+
+
+def to_lsp_code_action(action: Action, uri: str, lines: list[str]) -> lsp.CodeAction:
+    edits = [
+        lsp.TextEdit(to_lsp_range(edit.range, lines), edit.new_text)
+        for edit in action.edits
+    ]
+    return lsp.CodeAction(
+        title=action.title,
+        kind=lsp.CodeActionKind.QuickFix,
+        is_preferred=action.preferred or None,
+        edit=lsp.WorkspaceEdit(changes={uri: edits}),
     )

@@ -103,6 +103,17 @@ version at the cursor come first. With `includeDeclaration` the heading or key
 itself is listed first. Open, unsaved documents are searched with their current
 content. In Neovim use `vim.lsp.buf.references()`.
 
+## Code actions
+
+Quick fixes for the diagnostic under the cursor or selection:
+
+- `FIRE015` stale version: update the link to the target's latest version, or
+  update all stale links in the file at once.
+- `FIRE010` missing `?version=N`: add the target's current version.
+- `FIRE004` bare `TODO`: replace it with the `TODO(KEY-1234)` template.
+
+In Neovim use `vim.lsp.buf.code_action()`.
+
 ## Document symbols
 
 The outline of a requirement file lists each requirement ID with its metadata

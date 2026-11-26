@@ -9,15 +9,18 @@ from typing import Final
 
 from lsprotocol import types as lsp
 
+from fire.lsp.code_actions import code_actions
 from fire.lsp.completion import metadata_candidates
 from fire.lsp.conversion import (
     from_lsp_position,
+    to_lsp_code_action,
     to_lsp_completion_item,
     to_lsp_diagnostic,
     to_lsp_range,
     to_lsp_symbol,
 )
 from fire.lsp.diagnostics import diagnose_requirements
+from fire.lsp.document_parser import Range as ParsedRange
 from fire.lsp.link_index import LinkIndex
 from fire.lsp.link_completion import link_candidates
 from fire.lsp.link_insertion import link_insertion_candidates
@@ -100,6 +103,31 @@ class Analyzer:
                 text, model, self._references(path, overlay or {})
             )
         ]
+
+    def code_actions(
+        self,
+        uri: str,
+        text: str,
+        selection: lsp.Range,
+        overlay: Mapping[Path, str] | None = None,
+    ) -> list[lsp.CodeAction]:
+        """Return quick fixes for the diagnostics of a requirement document."""
+        path = uri_to_path(uri)
+        if path is None or path.suffix == _YAML_SUFFIX:
+            return []
+        model = model_for_suffix(self._config, self._models, str(path))
+        if model is None:
+            return []
+        references = self._references(path, overlay or {})
+        diagnostics = diagnose_requirements(text, model, references)
+        lines = text.split("\n")
+        wanted = ParsedRange(
+            from_lsp_position(selection.start, lines),
+            from_lsp_position(selection.end, lines),
+        )
+        latest = references.latest_version if references else (lambda link: None)
+        actions = code_actions(text, diagnostics, wanted, latest)
+        return [to_lsp_code_action(action, uri, lines) for action in actions]
 
     def _document_type(self, path: Path) -> DocumentTypeDefinition | None:
         for doc_type in self._config.document_types.values():
