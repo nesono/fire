@@ -133,6 +133,61 @@ class TestBareTodo:
         assert _codes(doc, fixed) == []
 
 
+class TestMetadata:
+    def test_missing_metadata_line_gets_a_skeleton(self, doc):
+        text = "## REQ-A\n\nJust text.\n"
+        assert _codes(doc, text) == ["FIRE003"]
+        fixed = _fix(doc, text, "Insert metadata line")
+        assert fixed.startswith(
+            "## REQ-A\n\nSIL: TODO(KEY-1234) | Sec: TODO(KEY-1234) | Version: 1\n"
+        )
+        assert _codes(doc, fixed) == []
+
+    def test_missing_required_field_is_added_to_the_metadata_line(self, doc):
+        text = "## REQ-A\n\nSIL: QM | Version: 1\n"
+        assert _codes(doc, text) == ["FIRE006"]
+        fixed = _fix(doc, text, "Add Sec: TODO(KEY-1234)")
+        assert "SIL: QM | Version: 1 | Sec: TODO(KEY-1234)\n" in fixed
+        assert _codes(doc, fixed) == []
+
+    def test_missing_version_is_added_as_one(self, doc):
+        text = "## REQ-A\n\nSIL: QM | Sec: false\n"
+        fixed = _fix(doc, text, "Add Version: 1")
+        assert "Sec: false | Version: 1\n" in fixed
+        assert _codes(doc, fixed) == []
+
+    def test_invalid_enum_value_offers_the_valid_ones(self, doc):
+        text = "## REQ-A\n\nSIL: ASIL-Z | Sec: false | Version: 1\n"
+        assert _codes(doc, text) == ["FIRE005"]
+        fixed = _fix(doc, text, "Change SIL to QM")
+        assert "SIL: QM | Sec" in fixed
+        assert _codes(doc, fixed) == []
+
+    def test_every_enum_value_is_offered(self, doc):
+        text = "## REQ-A\n\nSIL: ASIL-Z | Sec: false | Version: 1\n"
+        actions = _ANALYZER.code_actions(doc.as_uri(), text, _whole(text))
+        titles = {a.title for a in actions}
+        assert {"Change SIL to ASIL-A", "Change SIL to PL-e"} <= titles
+
+    def test_quoted_bool_is_replaced(self, doc):
+        text = '## REQ-A\n\nSIL: QM | Sec: "true" | Version: 1\n'
+        fixed = _fix(doc, text, "Change Sec to true")
+        assert "Sec: true | Version" in fixed
+        assert _codes(doc, fixed) == []
+
+    def test_invalid_version_has_no_value_to_offer(self, doc):
+        text = "## REQ-A\n\nSIL: QM | Sec: false | Version: 0\n"
+        assert _ANALYZER.code_actions(doc.as_uri(), text, _whole(text)) == []
+
+    def test_regreq_skeleton_uses_its_own_required_fields(self, tmp_path):
+        (tmp_path / "MODULE.bazel").write_text("")
+        path = tmp_path / "a.regreq.md"
+        text = "## REQ-A\n\nText.\n"
+        actions = _ANALYZER.code_actions(path.as_uri(), text, _whole(text))
+        (edit,) = actions[0].edit.changes[path.as_uri()]
+        assert edit.new_text == "\n\nVersion: 1"
+
+
 class TestIgnoredDocuments:
     def test_unknown_suffix(self, tmp_path):
         uri = (tmp_path / "README.md").as_uri()

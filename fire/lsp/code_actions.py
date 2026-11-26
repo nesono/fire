@@ -13,10 +13,19 @@ from dataclasses import dataclass
 from typing import Final
 
 from fire.lsp.diagnostic import Diagnostic
-from fire.lsp.document_parser import Link, Position, Range, parse_links
+from fire.lsp.document_parser import (
+    Link,
+    Position,
+    Range,
+    Requirement,
+    parse_links,
+    parse_requirements,
+)
+from fire.starlark.config_models import DocumentTypeDefinition, FieldDefinition
 
 _VERSION_RE: Final = re.compile(r"version=(\d+)")
 _TODO_TEMPLATE: Final = "TODO(KEY-1234)"
+_SEPARATOR: Final = " | "
 
 
 @dataclass(frozen=True)
@@ -119,20 +128,114 @@ def _todo_actions(diagnostics: list[Diagnostic], selection: Range) -> list[Actio
     ]
 
 
+def _requirements_by_heading(text: str) -> dict[Range, Requirement]:
+    return {r.id_range: r for r in parse_requirements(text)}
+
+
+def _field_values(field: FieldDefinition) -> list[str]:
+    if field.type == "enum":
+        return list(field.values or [])
+    if field.type == "bool":
+        return ["true", "false"]
+    return []
+
+
+def _placeholders(field: FieldDefinition) -> list[str]:
+    """Values to offer for a field that has none yet."""
+    if field.type == "int":
+        return [str(field.min_value or 1)]
+    if field.allow_todo:
+        return [_TODO_TEMPLATE]
+    return _field_values(field)
+
+
+def _value_actions(
+    diagnostics: list[Diagnostic],
+    selection: Range,
+    fields: dict[str, FieldDefinition],
+) -> list[Action]:
+    actions = []
+    for d in diagnostics:
+        field = fields.get((d.data or {}).get("field", ""))
+        if d.code != "FIRE005" or field is None or not _touches(d.range, selection):
+            continue
+        for value in _field_values(field):
+            title = f"Change {field.display_name} to {value}"
+            actions.append(Action(title, (Edit(d.range, value),)))
+    return actions
+
+
+def _missing_field_actions(
+    text: str,
+    diagnostics: list[Diagnostic],
+    selection: Range,
+    fields: dict[str, FieldDefinition],
+) -> list[Action]:
+    requirements = _requirements_by_heading(text)
+    actions = []
+    for d in diagnostics:
+        field = fields.get((d.data or {}).get("field", ""))
+        requirement = requirements.get(d.range)
+        if d.code != "FIRE006" or field is None or not requirement:
+            continue
+        if not requirement.fields or not _touches(d.range, selection):
+            continue
+        end = requirement.fields[-1].value_range.end
+        for value in _placeholders(field):
+            new_text = f"{_SEPARATOR}{field.display_name}: {value}"
+            title = f"Add {field.display_name}: {value}"
+            actions.append(Action(title, (Edit(Range(end, end), new_text),)))
+    return actions
+
+
+def _skeleton(
+    doc_type: DocumentTypeDefinition, fields: dict[str, FieldDefinition]
+) -> str:
+    parts = []
+    for name in doc_type.required_fields:
+        values = _placeholders(fields[name])
+        parts.append(f"{fields[name].display_name}: {values[0] if values else ''}")
+    return _SEPARATOR.join(parts)
+
+
+def _skeleton_actions(
+    text: str,
+    diagnostics: list[Diagnostic],
+    selection: Range,
+    doc_type: DocumentTypeDefinition,
+    fields: dict[str, FieldDefinition],
+) -> list[Action]:
+    lines = text.split("\n")
+    actions = []
+    for d in diagnostics:
+        if d.code != "FIRE003" or not _touches(d.range, selection):
+            continue
+        end = Position(d.range.start.line, len(lines[d.range.start.line].rstrip()))
+        new_text = f"\n\n{_skeleton(doc_type, fields)}"
+        title = "Insert metadata line"
+        actions.append(Action(title, (Edit(Range(end, end), new_text),), True))
+    return actions
+
+
 def code_actions(
     text: str,
     diagnostics: list[Diagnostic],
     selection: Range,
     latest_version: Callable[[Link], int | None],
+    doc_type: DocumentTypeDefinition,
+    fields: dict[str, FieldDefinition],
 ) -> list[Action]:
     """Return the quick fixes for the diagnostics that touch *selection*.
 
     *latest_version* gives the newest version of a link's target, if it
-    resolves.
+    resolves. *doc_type* and *fields* come from the FIRE configuration.
     """
     lines = text.split("\n")
     return [
         *_stale_actions(lines, diagnostics, selection),
         *_missing_version_actions(text, lines, diagnostics, selection, latest_version),
         *_todo_actions(diagnostics, selection),
+        *_skeleton_actions(text, diagnostics, selection, doc_type, fields),
+        *_missing_field_actions(text, diagnostics, selection, fields),
+        *_value_actions(diagnostics, selection, fields),
     ]

@@ -111,6 +111,11 @@ Quick fixes for the diagnostic under the cursor or selection:
   update all stale links in the file at once.
 - `FIRE010` missing `?version=N`: add the target's current version.
 - `FIRE004` bare `TODO`: replace it with the `TODO(KEY-1234)` template.
+- `FIRE003` missing metadata line: insert one with the document type's required
+  fields.
+- `FIRE006` missing required field: append it to the metadata line.
+- `FIRE005` invalid enum or boolean value: replace it with one of the valid
+  values.
 
 In Neovim use `vim.lsp.buf.code_action()`.
 

@@ -116,7 +116,8 @@ class Analyzer:
         if path is None or path.suffix == _YAML_SUFFIX:
             return []
         model = model_for_suffix(self._config, self._models, str(path))
-        if model is None:
+        doc_type = self._document_type(path)
+        if model is None or doc_type is None:
             return []
         references = self._references(path, overlay or {})
         diagnostics = diagnose_requirements(text, model, references)
@@ -126,7 +127,8 @@ class Analyzer:
             from_lsp_position(selection.end, lines),
         )
         latest = references.latest_version if references else (lambda link: None)
-        actions = code_actions(text, diagnostics, wanted, latest)
+        fields = self._config.field_definitions
+        actions = code_actions(text, diagnostics, wanted, latest, doc_type, fields)
         return [to_lsp_code_action(action, uri, lines) for action in actions]
 
     def _document_type(self, path: Path) -> DocumentTypeDefinition | None:
