@@ -42,13 +42,15 @@ def _diagnostics_for_error(
 ) -> list[Diagnostic]:
     name = str(err["loc"][0])
     if err["type"] == "missing":
-        return [error(requirement.id_range, "FIRE006", message)]
+        data = {"field": name}
+        return [error(requirement.id_range, "FIRE006", message, data)]
     fields = _fields_named(requirement, name)
     if err["type"] == "extra_forbidden":
         return [error(f.key_range, "FIRE007", message) for f in fields]
     if name == "parent":
         return _parent_diagnostics(requirement)
-    return [error(f.value_range, "FIRE005", message) for f in fields[-1:]]
+    data = {"field": name}
+    return [error(f.value_range, "FIRE005", message, data) for f in fields[-1:]]
 
 
 def diagnose_fields(

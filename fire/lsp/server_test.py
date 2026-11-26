@@ -234,6 +234,28 @@ class TestDefinition:
         assert _definition(client, uri, 0, 1) is None
 
 
+class TestCodeActions:
+    def test_stale_link_gets_a_quick_fix(self, client, workspace):
+        (workspace / "p.yaml").write_text(
+            _PARAMS + "x_v2:\n  value: 2\n  unit: m\n  description: d\n"
+        )
+        uri = _open_linking_document_without_target(client, workspace)
+        params = {
+            "textDocument": {"uri": uri},
+            "range": {
+                "start": {"line": 4, "character": 0},
+                "end": {"line": 4, "character": 12},
+            },
+            "context": {"diagnostics": []},
+        }
+        client.send({"id": 98, "method": "textDocument/codeAction", "params": params})
+        result = client.receive_until(lambda m: m.get("id") == 98)["result"]
+        (action,) = result
+        assert action["title"] == "Update link to version 2"
+        (edit,) = action["edit"]["changes"][uri]
+        assert edit["newText"] == "2"
+
+
 def _open_linking_document_without_target(client: _Client, workspace) -> str:
     _initialize(client)
     uri = (workspace / "a.sysreq.md").as_uri()

@@ -109,6 +109,18 @@ def create_server(config: FireConfig | None = None) -> LanguageServer:
         )
         return lsp.CompletionList(is_incomplete=False, items=items)
 
+    @server.feature(
+        lsp.TEXT_DOCUMENT_CODE_ACTION,
+        lsp.CodeActionOptions(code_action_kinds=[lsp.CodeActionKind.QuickFix]),
+    )
+    def code_action(params: lsp.CodeActionParams) -> list[lsp.CodeAction]:
+        documents = open_documents()
+        uri = params.text_document.uri
+        if uri not in documents:
+            return []
+        overlay = document_overlay(documents)
+        return analyzer.code_actions(uri, documents[uri], params.range, overlay)
+
     @server.feature(lsp.TEXT_DOCUMENT_REFERENCES)
     def references(params: lsp.ReferenceParams) -> list[lsp.Location]:
         documents = open_documents()
