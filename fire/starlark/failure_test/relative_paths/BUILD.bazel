@@ -52,3 +52,17 @@ requirement_library(
     ],
     deps = [":test_params"],
 )
+
+# Read by the parity test in //fire/lsp:build_parity_test.
+filegroup(
+    name = "fixtures",
+    srcs = glob(
+        [
+            "*.bzl",
+            "*.md",
+            "*.yaml",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//fire/lsp:__pkg__"],
+)

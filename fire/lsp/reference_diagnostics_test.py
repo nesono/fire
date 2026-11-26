@@ -63,6 +63,16 @@ class TestParameterReferences:
     def test_stale_version_is_a_warning(self, checker):
         assert _codes(checker, _param(1)) == [("FIRE015", Severity.WARNING)]
 
+    def test_undeclared_version_below_the_latest_is_an_error(self, tmp_path):
+        (tmp_path / "gap.yaml").write_text(
+            "speed_v2:\n  value: 2\nspeed_v3:\n  value: 3\n"
+        )
+        checker = ReferenceChecker(Workspace(tmp_path), _SUFFIXES)
+        text = _param(1, path="/gap.yaml", name="speed")
+        (diag,) = checker.diagnose(text)
+        assert (diag.code, diag.severity) == ("FIRE013", Severity.ERROR)
+        assert "available: 2, 3" in diag.message
+
     def test_missing_version_query_is_left_to_syntax_rules(self, checker):
         assert checker.diagnose("[@max_speed](/params.yaml#max_speed)") == []
 

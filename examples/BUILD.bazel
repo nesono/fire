@@ -227,3 +227,13 @@ release_readiness_test(
     report = ":release_report",
     tags = ["manual"],
 )
+
+# Read by the parity test in //fire/lsp:build_parity_test.
+filegroup(
+    name = "fixtures",
+    srcs = glob([
+        "*/doc/*.md",
+        "requirements/*.md",
+    ]) + ["vehicle_params.yaml"],
+    visibility = ["//fire/lsp:__pkg__"],
+)
