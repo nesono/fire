@@ -80,6 +80,12 @@ class TestStaleVersion:
         assert "?version=4#REQ-B" in fixed
         assert _codes(doc, fixed) == []
 
+    def test_cursor_anywhere_on_the_line_is_enough(self, doc):
+        text = _HEADER + "TODO fix this later\n"
+        selection = _selection(4, 15)
+        (action,) = _ANALYZER.code_actions(doc.as_uri(), text, selection)
+        assert action.title == "Replace with TODO(KEY-1234)"
+
     def test_only_links_at_the_cursor_are_offered(self, doc):
         text = _HEADER + "[@speed](/p.yaml?version=1#speed)\n\nPlain.\n"
         assert _ANALYZER.code_actions(doc.as_uri(), text, _selection(7)) == []

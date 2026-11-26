@@ -42,11 +42,14 @@ class Action:
 
 
 def _touches(diagnostic: Range, selection: Range) -> bool:
-    def key(p: Position) -> tuple[int, int]:
-        return (p.line, p.character)
+    """True if the selection is on a line the diagnostic spans.
 
-    return key(diagnostic.start) <= key(selection.end) and key(selection.start) <= key(
-        diagnostic.end
+    Matching whole lines keeps the fix available with the cursor anywhere on
+    the line, as editors such as Neovim only send the cursor position.
+    """
+    return (
+        diagnostic.start.line <= selection.end.line
+        and selection.start.line <= diagnostic.end.line
     )
 
 
