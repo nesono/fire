@@ -56,6 +56,14 @@ def _parameter_diagnostics(link: Link, targets: _Targets) -> list[Diagnostic]:
         message = f"Parameter '{name}' not found in {link.path}"
         return [error(link.text_range, "FIRE013", message)]
     latest = max(info.versions)
+    if link.version is not None and link.version < latest:
+        if link.version not in info.versions:
+            available = ", ".join(str(v) for v in sorted(info.versions))
+            message = (
+                f"Parameter '{name}' has no version {link.version} "
+                f"(available: {available})"
+            )
+            return [error(link.url_range, "FIRE013", message)]
     return _stale_or_future(link, latest, f"Parameter '{name}'", True)
 
 
