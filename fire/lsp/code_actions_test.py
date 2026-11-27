@@ -62,6 +62,11 @@ def _fix(doc, text: str, title_start: str, selection: lsp.Range | None = None) -
     return _apply(text, action.edit.changes[uri])
 
 
+def _quick_fixes(uri: str, text: str, selection: lsp.Range | None = None):
+    actions = _ANALYZER.code_actions(uri, text, selection or _whole(text))
+    return [a for a in actions if a.kind == lsp.CodeActionKind.QuickFix]
+
+
 def _codes(doc, text: str) -> list[str]:
     return [d.code for d in _ANALYZER.diagnose(doc.as_uri(), text)]
 
@@ -109,7 +114,7 @@ class TestStaleVersion:
 
     def test_future_version_has_no_action(self, doc):
         text = _HEADER + "[@speed](/p.yaml?version=3#speed)\n"
-        assert _ANALYZER.code_actions(doc.as_uri(), text, _whole(text)) == []
+        assert _quick_fixes(doc.as_uri(), text) == []
 
 
 class TestMissingVersion:
@@ -127,7 +132,7 @@ class TestMissingVersion:
 
     def test_unresolvable_target_has_no_action(self, doc):
         text = _HEADER + "[@speed](/gone.yaml#speed)\n"
-        assert _ANALYZER.code_actions(doc.as_uri(), text, _whole(text)) == []
+        assert _quick_fixes(doc.as_uri(), text) == []
 
 
 class TestBareTodo:
@@ -183,7 +188,7 @@ class TestMetadata:
 
     def test_invalid_version_has_no_value_to_offer(self, doc):
         text = "## REQ-A\n\nSIL: QM | Sec: false | Version: 0\n"
-        assert _ANALYZER.code_actions(doc.as_uri(), text, _whole(text)) == []
+        assert _quick_fixes(doc.as_uri(), text) == []
 
     def test_regreq_skeleton_uses_its_own_required_fields(self, tmp_path):
         (tmp_path / "MODULE.bazel").write_text("")
@@ -192,6 +197,52 @@ class TestMetadata:
         actions = _ANALYZER.code_actions(path.as_uri(), text, _whole(text))
         (edit,) = actions[0].edit.changes[path.as_uri()]
         assert edit.new_text == "\n\nVersion: 1"
+
+
+class TestRepositoryPath:
+    def test_root_relative_path_gets_a_slash(self, doc):
+        text = _HEADER + "[@speed](p.yaml?version=2#speed)\n"
+        assert "FIRE009" in _codes(doc, text)
+        fixed = _fix(doc, text, "Make path repository-relative")
+        assert fixed.endswith("[@speed](/p.yaml?version=2#speed)\n")
+        assert _codes(doc, fixed) == []
+
+    def test_path_relative_to_the_document_is_resolved(self, doc):
+        folder = doc.parent / "docs"
+        folder.mkdir()
+        text = _HEADER + "[@speed](../p.yaml?version=2#speed)\n"
+        path = folder / "b.sysreq.md"
+        uri = path.as_uri()
+        (action,) = _quick_fixes(uri, text)
+        (edit,) = action.edit.changes[uri]
+        assert edit.new_text == "/p.yaml"
+
+    def test_unknown_file_still_gets_a_slash(self, doc):
+        text = _HEADER + "[@speed](nowhere/p.yaml?version=2#speed)\n"
+        fixed = _fix(doc, text, "Make path repository-relative")
+        assert "(/nowhere/p.yaml?" in fixed
+
+
+class TestIncrementVersion:
+    def test_from_the_heading(self, doc):
+        text = "## REQ-A\n\nSIL: QM | Sec: false | Version: 7\n"
+        fixed = _fix(doc, text, "Increment REQ-A to version 8", _selection(0))
+        assert "Version: 8\n" in fixed
+
+    def test_is_a_refactor(self, doc):
+        text = "## REQ-A\n\nSIL: QM | Sec: false | Version: 7\n"
+        (action,) = _ANALYZER.code_actions(doc.as_uri(), text, _selection(2))
+        assert action.kind == lsp.CodeActionKind.RefactorRewrite
+
+    def test_not_offered_in_the_body(self, doc):
+        text = "## REQ-A\n\nSIL: QM | Sec: false | Version: 7\n\nBody.\n"
+        assert _ANALYZER.code_actions(doc.as_uri(), text, _selection(4)) == []
+
+    def test_only_the_requirement_under_the_cursor(self, doc):
+        meta = "SIL: QM | Sec: false | Version: {}\n"
+        text = f"## REQ-A\n\n{meta.format(1)}\n---\n\n## REQ-B\n\n{meta.format(5)}"
+        (action,) = _ANALYZER.code_actions(doc.as_uri(), text, _selection(7))
+        assert action.title == "Increment REQ-B to version 6"
 
 
 class TestIgnoredDocuments:

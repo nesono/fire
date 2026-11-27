@@ -111,7 +111,12 @@ def create_server(config: FireConfig | None = None) -> LanguageServer:
 
     @server.feature(
         lsp.TEXT_DOCUMENT_CODE_ACTION,
-        lsp.CodeActionOptions(code_action_kinds=[lsp.CodeActionKind.QuickFix]),
+        lsp.CodeActionOptions(
+            code_action_kinds=[
+                lsp.CodeActionKind.QuickFix,
+                lsp.CodeActionKind.RefactorRewrite,
+            ]
+        ),
     )
     def code_action(params: lsp.CodeActionParams) -> list[lsp.CodeAction]:
         documents = open_documents()

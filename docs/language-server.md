@@ -111,11 +111,17 @@ Quick fixes for the diagnostic under the cursor or selection:
   update all stale links in the file at once.
 - `FIRE010` missing `?version=N`: add the target's current version.
 - `FIRE004` bare `TODO`: replace it with the `TODO(KEY-1234)` template.
+- `FIRE009` relative path: add the leading `/`. A path relative to the
+  document's folder is resolved against it when the file is found there.
 - `FIRE003` missing metadata line: insert one with the document type's required
   fields.
 - `FIRE006` missing required field: append it to the metadata line.
 - `FIRE005` invalid enum or boolean value: replace it with one of the valid
   values.
+
+On a requirement's heading or metadata line, "Increment REQ-ID to version N"
+bumps its `Version` field. Links to the requirement are not updated; they show
+`FIRE015` until you bump them.
 
 In Neovim use `vim.lsp.buf.code_action()`.
 

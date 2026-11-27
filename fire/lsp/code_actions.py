@@ -26,6 +26,7 @@ from fire.starlark.config_models import DocumentTypeDefinition, FieldDefinition
 _VERSION_RE: Final = re.compile(r"version=(\d+)")
 _TODO_TEMPLATE: Final = "TODO(KEY-1234)"
 _SEPARATOR: Final = " | "
+_PATH_END_RE: Final = re.compile(r"[?#]")
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,7 @@ class Action:
     title: str
     edits: tuple[Edit, ...]
     preferred: bool = False
+    refactor: bool = False
 
 
 def _touches(diagnostic: Range, selection: Range) -> bool:
@@ -117,6 +119,45 @@ def _missing_version_actions(
             edit = _version_insertion(lines, link, latest)
             actions.append(Action(f"Add ?version={latest}", (edit,), True))
     return list(dict.fromkeys(actions))
+
+
+def _path_actions(
+    lines: list[str],
+    diagnostics: list[Diagnostic],
+    selection: Range,
+    repository_path: Callable[[str], str],
+) -> list[Action]:
+    actions = []
+    for d in diagnostics:
+        if d.code != "FIRE009" or not _touches(d.range, selection):
+            continue
+        path = _PATH_END_RE.split(_segment(lines, d.range), maxsplit=1)[0]
+        edit = Edit(_within_line(d.range, 0, len(path)), repository_path(path))
+        actions.append(Action("Make path repository-relative", (edit,), True))
+    return actions
+
+
+def _increment_actions(text: str, selection: Range) -> list[Action]:
+    actions = []
+    for requirement in parse_requirements(text):
+        version = next(
+            (
+                f
+                for f in requirement.fields
+                if f.key.lower() == "version" and f.value.isdigit()
+            ),
+            None,
+        )
+        if version is None:
+            continue
+        lines = (requirement.id_range.start.line, version.value_range.end.line)
+        if not lines[0] <= selection.end.line or selection.start.line > lines[1]:
+            continue
+        new = int(version.value) + 1
+        title = f"Increment {requirement.id} to version {new}"
+        edit = Edit(version.value_range, str(new))
+        actions.append(Action(title, (edit,), refactor=True))
+    return actions
 
 
 def _todo_actions(diagnostics: list[Diagnostic], selection: Range) -> list[Action]:
@@ -227,18 +268,23 @@ def code_actions(
     latest_version: Callable[[Link], int | None],
     doc_type: DocumentTypeDefinition,
     fields: dict[str, FieldDefinition],
+    repository_path: Callable[[str], str],
 ) -> list[Action]:
     """Return the quick fixes for the diagnostics that touch *selection*.
 
     *latest_version* gives the newest version of a link's target, if it
     resolves. *doc_type* and *fields* come from the FIRE configuration.
+    *repository_path* turns a link path that lacks the leading ``/`` into a
+    repository-relative one.
     """
     lines = text.split("\n")
     return [
         *_stale_actions(lines, diagnostics, selection),
         *_missing_version_actions(text, lines, diagnostics, selection, latest_version),
+        *_path_actions(lines, diagnostics, selection, repository_path),
         *_todo_actions(diagnostics, selection),
         *_skeleton_actions(text, diagnostics, selection, doc_type, fields),
         *_missing_field_actions(text, diagnostics, selection, fields),
         *_value_actions(diagnostics, selection, fields),
+        *_increment_actions(text, selection),
     ]
