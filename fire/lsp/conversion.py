@@ -103,7 +103,11 @@ def to_lsp_code_action(action: Action, uri: str, lines: list[str]) -> lsp.CodeAc
     ]
     return lsp.CodeAction(
         title=action.title,
-        kind=lsp.CodeActionKind.QuickFix,
+        kind=(
+            lsp.CodeActionKind.RefactorRewrite
+            if action.refactor
+            else lsp.CodeActionKind.QuickFix
+        ),
         is_preferred=action.preferred or None,
         edit=lsp.WorkspaceEdit(changes={uri: edits}),
     )

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import posixpath
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Final
@@ -60,6 +61,24 @@ def _root_of(path: Path) -> Path | None:
     if root is None and path.is_dir():
         root = path
     return root.resolve() if root else None
+
+
+def _repository_path(document: Path, workspace: Workspace | None, link: str) -> str:
+    """Prefix *link* with ``/``.
+
+    The link may be relative to the workspace root or to the document's folder;
+    the one that names an existing file wins, the root otherwise.
+    """
+    candidates = [posixpath.normpath(link)]
+    folder = document.resolve().parent
+    if workspace is not None and folder.is_relative_to(workspace.root):
+        relative = folder.relative_to(workspace.root).as_posix()
+        candidates.append(posixpath.normpath(posixpath.join(relative, link)))
+    for candidate in candidates:
+        found = workspace.read("/" + candidate) if workspace else None
+        if found is not None and not candidate.startswith(".."):
+            return "/" + candidate
+    return "/" + link
 
 
 class Analyzer:
@@ -128,7 +147,14 @@ class Analyzer:
         )
         latest = references.latest_version if references else (lambda link: None)
         fields = self._config.field_definitions
-        actions = code_actions(text, diagnostics, wanted, latest, doc_type, fields)
+        workspace = self._workspace(path, overlay or {})
+
+        def repository_path(link_path: str) -> str:
+            return _repository_path(path, workspace, link_path)
+
+        actions = code_actions(
+            text, diagnostics, wanted, latest, doc_type, fields, repository_path
+        )
         return [to_lsp_code_action(action, uri, lines) for action in actions]
 
     def _document_type(self, path: Path) -> DocumentTypeDefinition | None:
